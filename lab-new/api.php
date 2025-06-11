@@ -254,10 +254,9 @@ function saveLabOrder($conn) {
             $testName = trim($item['name']);
             $testPrice = floatval($item['price']);
             $sampleType = isset($item['sample']) ? trim($item['sample']) : 'N/A';
-            $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
 
-            if (empty($testName) || $testPrice <= 0 || $quantity <= 0 || $testId <= 0) {
-                throw new Exception("Invalid item data: $testName (ID: $testId, Price: $testPrice, Qty: $quantity)");
+            if (empty($testName) || $testPrice <= 0 || $testId <= 0) {
+                throw new Exception("Invalid item data: $testName (ID: $testId, Price: $testPrice)");
             }
 
             // Verify test exists in database
@@ -274,17 +273,15 @@ function saveLabOrder($conn) {
             $dbTest = $verifyResult->fetch_assoc();
             $verifyStmt->close();
 
-            // Use database values for security (prevent price manipulation)
-            $subtotal = floatval($dbTest['price']) * $quantity;
-            $calculatedTotal += $subtotal;
+            // Use database values for security (prevent price manipulation) - no quantity
+            $testPrice = floatval($dbTest['price']);
+            $calculatedTotal += $testPrice;
 
             $validatedCart[] = [
                 'id' => $testId,
                 'name' => $dbTest['name'],
-                'price' => floatval($dbTest['price']),
-                'sample_type' => $dbTest['sample_type'] ?? 'N/A',
-                'quantity' => $quantity,
-                'subtotal' => $subtotal
+                'price' => $testPrice,
+                'sample_type' => $dbTest['sample_type'] ?? 'N/A'
             ];
         }
 
@@ -316,19 +313,17 @@ function saveLabOrder($conn) {
         $orderId = $conn->insert_id;
         $stmt->close();
 
-        // Insert order items using validated cart data
+        // Insert order items using validated cart data - removed quantity field
         $itemStmt = $conn->prepare("INSERT INTO lab_order_items (
-                        order_id, test_name, test_price, sample_type, quantity, subtotal
-                    ) VALUES (?, ?, ?, ?, ?, ?)");
+                        order_id, test_name, test_price, sample_type
+                    ) VALUES (?, ?, ?, ?)");
 
         foreach ($validatedCart as $item) {
-            $itemStmt->bind_param("isdsid", 
+            $itemStmt->bind_param("isds", 
                 $orderId, 
                 $item['name'], 
                 $item['price'], 
-                $item['sample_type'], 
-                $item['quantity'], 
-                $item['subtotal']
+                $item['sample_type']
             );
 
             if (!$itemStmt->execute()) {
@@ -370,7 +365,7 @@ function getLabOrders($conn) {
         $filterByUser = isset($_GET['user_orders']) && $_GET['user_orders'] === 'true';
         $userId = $_SESSION['user_id'] ?? 0;
         
-        // Get orders with items
+        // Get orders with items - removed quantity references
         if ($filterByUser && $userId > 0) {
             $stmt = $conn->prepare("SELECT 
                                     o.id, o.booking_id, o.customer_name, o.phone, o.email, 
@@ -378,7 +373,7 @@ function getLabOrders($conn) {
                                     o.total_amount, o.created_at, o.status,
                                     o.booked_by_user_id, o.booked_by_email, o.booked_by_name,
                                     GROUP_CONCAT(
-                                        CONCAT(oi.test_name, ' (Qty: ', oi.quantity, ', Price: ₹', oi.test_price, ')')
+                                        CONCAT(oi.test_name, ' (Price: ₹', oi.test_price, ')')
                                         SEPARATOR '; '
                                     ) as tests
                                 FROM lab_orders o
@@ -395,7 +390,7 @@ function getLabOrders($conn) {
                                     o.total_amount, o.created_at, o.status,
                                     o.booked_by_user_id, o.booked_by_email, o.booked_by_name,
                                     GROUP_CONCAT(
-                                        CONCAT(oi.test_name, ' (Qty: ', oi.quantity, ', Price: ₹', oi.test_price, ')')
+                                        CONCAT(oi.test_name, ' (Price: ₹', oi.test_price, ')')
                                         SEPARATOR '; '
                                     ) as tests
                                 FROM lab_orders o

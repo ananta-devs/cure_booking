@@ -312,7 +312,6 @@
                 <li><a href="#">Video Consult</a></li>
                 <li><a href="http://localhost/cure_booking/medicines/medicines.php">Medicines</a></li>
                 <li><a href="http://localhost/cure_booking/lab-new/lab.php">Lab Tests</a></li>
-                <li><a href="http://localhost/cure_booking/surgery/surgery.php">Surgeries</a></li>
             </ul>
         </div>
         <div class="header-right">

@@ -216,8 +216,7 @@
                             ${cart.map(item => `
                                 <div class="checkout-item">
                                     <span class="item-name">${item.name}</span>
-                                    <span class="item-qty">Qty: ${item.quantity}</span
-                                    <span class="item-price">₹${(item.price * item.quantity).toFixed(0)}</span>
+                                    <span class="item-price">₹${item.price.toFixed(0)}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -346,7 +345,7 @@
                 dateInput.min = `${yyyy}-${mm}-${dd}`;
             }
 
-            // Cart management functions
+            // Cart management functions - MODIFIED FOR SINGLE SELECTION
             function addToCart(labTest) {
                 // Check if user is logged in - redirect to login if not
                 if (!isUserLoggedIn) {
@@ -356,20 +355,23 @@
                     return;
                 }
                 
+                // Check if item already exists in cart
                 const existingItem = cart.find(item => item.id === labTest.id);
                 
                 if (existingItem) {
-                    existingItem.quantity += 1;
-                } else {
-                    cart.push({
-                        id: labTest.id,
-                        name: labTest.name,
-                        price: parseFloat(labTest.price) || 0,
-                        sample: labTest.sample,
-                        description: labTest.description,
-                        quantity: 1
-                    });
+                    showNotification(`${labTest.name} is already in your cart!`);
+                    return;
                 }
+                
+                // Add new item to cart (always quantity 1)
+                cart.push({
+                    id: labTest.id,
+                    name: labTest.name,
+                    price: parseFloat(labTest.price) || 0,
+                    sample: labTest.sample,
+                    description: labTest.description,
+                    quantity: 1 // Always 1, no quantity changes allowed
+                });
                 
                 updateCartDisplay();
                 showNotification(`${labTest.name} added to cart!`);
@@ -384,24 +386,7 @@
                 cart = cart.filter(item => item.id !== testId);
                 updateCartDisplay();
                 updateCartModal();
-            }
-            
-            function updateQuantity(testId, newQuantity) {
-                if (!isUserLoggedIn) {
-                    window.location.href = '../user/login.php';
-                    return;
-                }
-                
-                const item = cart.find(item => item.id === testId);
-                if (item) {
-                    if (newQuantity <= 0) {
-                        removeFromCart(testId);
-                    } else {
-                        item.quantity = newQuantity;
-                        updateCartDisplay();
-                        updateCartModal();
-                    }
-                }
+                showNotification('Test removed from cart');
             }
             
             function clearCart() {
@@ -417,7 +402,7 @@
             }
             
             function calculateCartTotal() {
-                return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+                return cart.reduce((total, item) => total + item.price, 0); // No quantity multiplication needed
             }
             
             function updateCartDisplay() {
@@ -426,7 +411,7 @@
                     return;
                 }
                 
-                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const totalItems = cart.length; // Just count items, no quantity
                 const total = calculateCartTotal();
                 
                 if (cartCount) cartCount.textContent = totalItems;
@@ -456,12 +441,7 @@
                             <p class="cart-item-description">${item.description}</p>
                         </div>
                         <div class="cart-item-controls">
-                            <div class="quantity-controls">
-                                <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantity - 1})">-</button>
-                                <span class="quantity">${item.quantity}</span>
-                                <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
-                            </div>
-                            <div class="cart-item-price">₹${(item.price * item.quantity).toFixed(0)}</div>
+                            <div class="cart-item-price">₹${item.price.toFixed(0)}</div>
                             <button class="remove-btn" onclick="removeFromCart(${item.id})">&times;</button>
                         </div>
                     </div>
@@ -494,7 +474,6 @@
             }
             
             // Make functions global for onclick handlers
-            window.updateQuantity = updateQuantity;
             window.removeFromCart = removeFromCart;
             window.addToCart = addToCart;
 
@@ -693,20 +672,32 @@
                 const buttonContainer = document.createElement('div');
                 buttonContainer.className = 'button-container';
                 
+                // Check if item is already in cart
+                const isInCart = cart.some(item => item.id === labTest.id);
+                
                 const addToCartBtn = document.createElement('button');
-                addToCartBtn.className = 'add-to-cart-btn';
-                addToCartBtn.innerHTML = '<i class="ri-shopping-cart-line"></i> Add to Cart';
+                addToCartBtn.className = isInCart ? 'add-to-cart-btn in-cart' : 'add-to-cart-btn';
+                addToCartBtn.innerHTML = isInCart ? 
+                    '<i class="ri-check-line"></i> Added' : 
+                    '<i class="ri-shopping-cart-line"></i> Add to Cart';
                 addToCartBtn.setAttribute('data-test-id', labTest.id || '');
+                addToCartBtn.disabled = isInCart;
                 
                 addToCartBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    addToCart({
-                        id: labTest.id,
-                        name: labTest.name,
-                        price: labTest.price,
-                        sample: labTest.sample,
-                        description: labTest.description
-                    });
+                    if (!isInCart) {
+                        addToCart({
+                            id: labTest.id,
+                            name: labTest.name,
+                            price: labTest.price,
+                            sample: labTest.sample,
+                            description: labTest.description
+                        });
+                        // Update button state
+                        this.innerHTML = '<i class="ri-check-line"></i> Added';
+                        this.className = 'add-to-cart-btn in-cart';
+                        this.disabled = true;
+                    }
                 });
                 
                 buttonContainer.appendChild(addToCartBtn);
