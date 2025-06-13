@@ -123,7 +123,7 @@ $currentAdmin = $stmt->fetch(PDO::FETCH_ASSOC);
 <body>
     <div class="container">
         <div class="header">
-            <a href="http://localhost/adminhub/index.php" class="back-btn"><i class="fas fa-arrow-left"></i> Back</a>
+            <a href="http://localhost/cure_booking/adminhub/index.php" class="back-btn"><i class="fas fa-arrow-left"></i> Back</a>
             <h1><i class="fas fa-user-cog"></i> Admin Profile</h1>
         </div>
 

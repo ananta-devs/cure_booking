@@ -9,6 +9,6 @@
     session_destroy();
 
     // Redirect to login page
-    header("Location: http://localhost/adminhub/login.php");
+    header("Location: http://localhost/cure_booking/adminhub/login.php");
     exit;
 ?>

@@ -126,7 +126,7 @@
 	<?php
         session_start();
         if (!isset($_SESSION['adm_id'])) {
-            header("Location: http://localhost/adminhub/login.php");
+            header("Location: http://localhost/cure_booking/adminhub/login.php");
             exit();
         }
 

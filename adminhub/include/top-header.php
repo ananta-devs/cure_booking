@@ -19,7 +19,7 @@
         $stmt->close();
     }
 
-    $image_path = "http://localhost/adminhub/sett/admin_images/" . $adm_img;
+    $image_path = "http://localhost/cure_booking/adminhub/sett/admin_images/" . $adm_img;
 ?>
 <!-- Fixed top-header.php -->
 <style>
@@ -198,50 +198,50 @@
     }
     
     /* Additional styling for the mobile search form */
-@media screen and (max-width: 576px) {
-	#content nav form .form-input input {
-		display: none;
-	}
+    @media screen and (max-width: 576px) {
+        #content nav form .form-input input {
+            display: none;
+        }
 
-	#content nav form .form-input button {
-		width: auto;
-		height: auto;
-		background: transparent;
-		border-radius: none;
-		color: var(--dark);
-	}
+        #content nav form .form-input button {
+            width: auto;
+            height: auto;
+            background: transparent;
+            border-radius: none;
+            color: var(--dark);
+        }
 
-	#content nav form.show .form-input input {
-		display: block;
-		width: 100%;
-	}
-	#content nav form.show .form-input button {
-		width: 36px;
-		height: 100%;
-		border-radius: 0 36px 36px 0;
-		color: var(--light);
-		background: var(--red);
-	}
+        #content nav form.show .form-input input {
+            display: block;
+            width: 100%;
+        }
+        #content nav form.show .form-input button {
+            width: 36px;
+            height: 100%;
+            border-radius: 0 36px 36px 0;
+            color: var(--light);
+            background: var(--red);
+        }
 
-	#content nav form.show ~ .notification,
-	#content nav form.show ~ .profile {
-		display: none;
-	}
+        #content nav form.show ~ .notification,
+        #content nav form.show ~ .profile {
+            display: none;
+        }
 
-	#content main .box-info {
-		grid-template-columns: 1fr;
-	}
+        #content main .box-info {
+            grid-template-columns: 1fr;
+        }
 
-	#content main .table-data .head {
-		min-width: 420px;
-	}
-	#content main .table-data .order table {
-		min-width: 420px;
-	}
-	#content main .table-data .todo .todo-list {
-		min-width: 420px;
-	}
-}
+        #content main .table-data .head {
+            min-width: 420px;
+        }
+        #content main .table-data .order table {
+            min-width: 420px;
+        }
+        #content main .table-data .todo .todo-list {
+            min-width: 420px;
+        }
+    }
 </style>
 
 <!-- NAVBAR -->
@@ -255,7 +255,7 @@
     </form>
     <input type="checkbox" id="switch-mode" hidden>
     <label for="switch-mode" class="switch-mode"></label>
-            <a href="http://localhost/adminhub/admin_profile.php" class="profile">
+            <a href="http://localhost/cure_booking/adminhub/admin_profile.php" class="profile">
 				<img src="<?php echo htmlspecialchars($image_path); ?>" alt="Admin Profile">
 			</a>
 </nav>
@@ -266,214 +266,214 @@
 
 <!-- Include the updated script to handle sidebar toggle -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Element references
-    const menuBar = document.querySelector('#content nav .bx.bx-menu');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarCloseBtn = document.querySelector('#sidebar .close-btn');
-    const overlay = document.querySelector('.sidebar-overlay');
-    const searchButton = document.querySelector('#content nav form .form-input button');
-    const searchButtonIcon = document.querySelector('#content nav form .form-input button .bx');
-    const searchForm = document.querySelector('#content nav form');
-    const switchMode = document.getElementById('switch-mode');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Element references
+        const menuBar = document.querySelector('#content nav .bx.bx-menu');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarCloseBtn = document.querySelector('#sidebar .close-btn');
+        const overlay = document.querySelector('.sidebar-overlay');
+        const searchButton = document.querySelector('#content nav form .form-input button');
+        const searchButtonIcon = document.querySelector('#content nav form .form-input button .bx');
+        const searchForm = document.querySelector('#content nav form');
+        const switchMode = document.getElementById('switch-mode');
 
-    // Function to toggle mobile search
-    function toggleMobileSearch() {
-        if (window.innerWidth < 576) {
-            searchForm.classList.toggle('show');
-            if (searchForm.classList.contains('show')) {
-                searchButtonIcon.classList.remove('bx-search');
-                searchButtonIcon.classList.add('bx-x');
-            } else {
-                searchButtonIcon.classList.remove('bx-x');
-                searchButtonIcon.classList.add('bx-search');
+        // Function to toggle mobile search
+        function toggleMobileSearch() {
+            if (window.innerWidth < 576) {
+                searchForm.classList.toggle('show');
+                if (searchForm.classList.contains('show')) {
+                    searchButtonIcon.classList.remove('bx-search');
+                    searchButtonIcon.classList.add('bx-x');
+                } else {
+                    searchButtonIcon.classList.remove('bx-x');
+                    searchButtonIcon.classList.add('bx-search');
+                }
             }
         }
-    }
 
-    // Function to handle search icon state
-    function updateSearchIconState() {
-        if (window.innerWidth > 576) {
-            // For larger screens, always reset to search icon
-            if (searchButtonIcon && searchButtonIcon.classList.contains('bx-x')) {
-                searchButtonIcon.classList.remove('bx-x');
-                searchButtonIcon.classList.add('bx-search');
-            }
-            if (searchForm) {
-                searchForm.classList.remove('show');
-            }
-        }
-    }
-
-    // Function to update menu button state
-    function updateMenuButtonState(sidebarVisible) {
-        if (menuBar) {
-            if (sidebarVisible) {
-                // Show X button when sidebar is visible
-                menuBar.classList.remove('bx-menu');
-                menuBar.classList.add('bx-x');
-            } else {
-                // Show menu button when sidebar is hidden
-                menuBar.classList.remove('bx-x');
-                menuBar.classList.add('bx-menu');
+        // Function to handle search icon state
+        function updateSearchIconState() {
+            if (window.innerWidth > 576) {
+                // For larger screens, always reset to search icon
+                if (searchButtonIcon && searchButtonIcon.classList.contains('bx-x')) {
+                    searchButtonIcon.classList.remove('bx-x');
+                    searchButtonIcon.classList.add('bx-search');
+                }
+                if (searchForm) {
+                    searchForm.classList.remove('show');
+                }
             }
         }
-    }
 
-    // Initialize state based on screen size
-    function initializeState() {
-        // Ensure navbar is always visible
-        const navbar = document.querySelector('#content nav');
-        if (navbar) {
-            navbar.style.display = 'flex';
-            navbar.style.visibility = 'visible';
-            navbar.style.opacity = '1';
+        // Function to update menu button state
+        function updateMenuButtonState(sidebarVisible) {
+            if (menuBar) {
+                if (sidebarVisible) {
+                    // Show X button when sidebar is visible
+                    menuBar.classList.remove('bx-menu');
+                    menuBar.classList.add('bx-x');
+                } else {
+                    // Show menu button when sidebar is hidden
+                    menuBar.classList.remove('bx-x');
+                    menuBar.classList.add('bx-menu');
+                }
+            }
         }
-        
-        if (sidebar) {
-            // Only hide sidebar initially on smaller screens
-            if (window.innerWidth < 768) {
+
+        // Initialize state based on screen size
+        function initializeState() {
+            // Ensure navbar is always visible
+            const navbar = document.querySelector('#content nav');
+            if (navbar) {
+                navbar.style.display = 'flex';
+                navbar.style.visibility = 'visible';
+                navbar.style.opacity = '1';
+            }
+            
+            if (sidebar) {
+                // Only hide sidebar initially on smaller screens
+                if (window.innerWidth < 768) {
+                    sidebar.classList.add('hide');
+                    if (overlay) overlay.classList.remove('active');
+                    updateMenuButtonState(false);
+                    
+                    // Ensure menu button is visible on mobile
+                    if (menuBar) {
+                        menuBar.style.display = 'inline-block';
+                    }
+                } else {
+                    // Ensure sidebar is visible on large screens
+                    sidebar.classList.remove('hide');
+                    // Hide menu button completely on large screens
+                    if (menuBar) {
+                        menuBar.style.display = 'none';
+                    }
+                }
+            }
+            
+            // Always call this to ensure search icon state is correct on load
+            updateSearchIconState();
+        }
+
+        // Run initialization
+        initializeState();
+
+        // TOGGLE SIDEBAR - modified for new functionality
+        if (menuBar && sidebar) {
+            menuBar.addEventListener('click', function () {
+                if (sidebar.classList.contains('hide')) {
+                    // Show sidebar
+                    sidebar.classList.remove('hide');
+                    if (overlay) overlay.classList.add('active');
+                    updateMenuButtonState(true);
+                } else {
+                    // Hide sidebar
+                    sidebar.classList.add('hide');
+                    if (overlay) overlay.classList.remove('active');
+                    updateMenuButtonState(false);
+                }
+            });
+        }
+
+        // Close sidebar when clicking on overlay (mobile only)
+        if (overlay && sidebar && menuBar) {
+            overlay.addEventListener('click', function() {
+                sidebar.classList.add('hide');
+                overlay.classList.remove('active');
+                updateMenuButtonState(false);
+            });
+        }
+
+        // Handle sidebar close button click
+        if (sidebarCloseBtn && sidebar) {
+            sidebarCloseBtn.addEventListener('click', function() {
                 sidebar.classList.add('hide');
                 if (overlay) overlay.classList.remove('active');
                 updateMenuButtonState(false);
-                
-                // Ensure menu button is visible on mobile
-                if (menuBar) {
-                    menuBar.style.display = 'inline-block';
+            });
+        }
+
+        // Search functionality - Fix for mobile
+        if (searchButton) {
+            searchButton.addEventListener('click', function (e) {
+                e.preventDefault(); // Always prevent default
+                toggleMobileSearch();
+            });
+        }
+        
+        // Handle form submission properly
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                // Only prevent default if we're showing the mobile search input
+                if (window.innerWidth < 576 && !searchForm.classList.contains('show')) {
+                    e.preventDefault();
+                    toggleMobileSearch();
                 }
-            } else {
-                // Ensure sidebar is visible on large screens
-                sidebar.classList.remove('hide');
-                // Hide menu button completely on large screens
+                // Otherwise let the form submit normally
+            });
+        }
+
+        // Handle responsive behavior on window resize
+        window.addEventListener('resize', function () {
+            // Ensure navbar is always visible
+            const navbar = document.querySelector('#content nav');
+            if (navbar) {
+                navbar.style.display = 'flex';
+                navbar.style.visibility = 'visible';
+                navbar.style.opacity = '1';
+            }
+            
+            // Update search icon state on every resize
+            updateSearchIconState();
+            
+            // Large screens (> 768px)
+            if (this.innerWidth > 768) {
+                if (overlay) overlay.classList.remove('active');
+                // Always show sidebar on large screens
+                if (sidebar) sidebar.classList.remove('hide');
+                // Always hide menu button on large screens
                 if (menuBar) {
                     menuBar.style.display = 'none';
                 }
+            } 
+            // Small/Medium screens (<= 768px)
+            else {
+                if (sidebar) {
+                    // Only hide sidebar if it's not already hidden
+                    const isCurrentlyHidden = sidebar.classList.contains('hide');
+                    if (!isCurrentlyHidden) {
+                        sidebar.classList.add('hide');
+                    }
+                    // Show menu button on small screens
+                    if (menuBar) {
+                        menuBar.style.display = 'inline-block';
+                        updateMenuButtonState(!isCurrentlyHidden);
+                    }
+                }
+                if (overlay) overlay.classList.remove('active');
             }
+        });
+
+        // Dark mode toggle
+        if (switchMode) {
+            switchMode.addEventListener('change', function () {
+                if (this.checked) {
+                    document.body.classList.add('dark');
+                } else {
+                    document.body.classList.remove('dark');
+                }
+            });
         }
         
-        // Always call this to ensure search icon state is correct on load
-        updateSearchIconState();
-    }
-
-    // Run initialization
-    initializeState();
-
-    // TOGGLE SIDEBAR - modified for new functionality
-    if (menuBar && sidebar) {
-        menuBar.addEventListener('click', function () {
-            if (sidebar.classList.contains('hide')) {
-                // Show sidebar
-                sidebar.classList.remove('hide');
-                if (overlay) overlay.classList.add('active');
-                updateMenuButtonState(true);
-            } else {
-                // Hide sidebar
-                sidebar.classList.add('hide');
-                if (overlay) overlay.classList.remove('active');
-                updateMenuButtonState(false);
-            }
-        });
-    }
-
-    // Close sidebar when clicking on overlay (mobile only)
-    if (overlay && sidebar && menuBar) {
-        overlay.addEventListener('click', function() {
-            sidebar.classList.add('hide');
-            overlay.classList.remove('active');
-            updateMenuButtonState(false);
-        });
-    }
-
-    // Handle sidebar close button click
-    if (sidebarCloseBtn && sidebar) {
-        sidebarCloseBtn.addEventListener('click', function() {
-            sidebar.classList.add('hide');
-            if (overlay) overlay.classList.remove('active');
-            updateMenuButtonState(false);
-        });
-    }
-
-    // Search functionality - Fix for mobile
-    if (searchButton) {
-        searchButton.addEventListener('click', function (e) {
-            e.preventDefault(); // Always prevent default
-            toggleMobileSearch();
-        });
-    }
-    
-    // Handle form submission properly
-    if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
-            // Only prevent default if we're showing the mobile search input
-            if (window.innerWidth < 576 && !searchForm.classList.contains('show')) {
-                e.preventDefault();
+        // Close search form when clicking outside
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth < 576 && 
+                searchForm && 
+                searchForm.classList.contains('show') && 
+                !searchForm.contains(e.target) && 
+                e.target !== searchButton) {
                 toggleMobileSearch();
             }
-            // Otherwise let the form submit normally
         });
-    }
-
-    // Handle responsive behavior on window resize
-    window.addEventListener('resize', function () {
-        // Ensure navbar is always visible
-        const navbar = document.querySelector('#content nav');
-        if (navbar) {
-            navbar.style.display = 'flex';
-            navbar.style.visibility = 'visible';
-            navbar.style.opacity = '1';
-        }
-        
-        // Update search icon state on every resize
-        updateSearchIconState();
-        
-        // Large screens (> 768px)
-        if (this.innerWidth > 768) {
-            if (overlay) overlay.classList.remove('active');
-            // Always show sidebar on large screens
-            if (sidebar) sidebar.classList.remove('hide');
-            // Always hide menu button on large screens
-            if (menuBar) {
-                menuBar.style.display = 'none';
-            }
-        } 
-        // Small/Medium screens (<= 768px)
-        else {
-            if (sidebar) {
-                // Only hide sidebar if it's not already hidden
-                const isCurrentlyHidden = sidebar.classList.contains('hide');
-                if (!isCurrentlyHidden) {
-                    sidebar.classList.add('hide');
-                }
-                // Show menu button on small screens
-                if (menuBar) {
-                    menuBar.style.display = 'inline-block';
-                    updateMenuButtonState(!isCurrentlyHidden);
-                }
-            }
-            if (overlay) overlay.classList.remove('active');
-        }
     });
-
-    // Dark mode toggle
-    if (switchMode) {
-        switchMode.addEventListener('change', function () {
-            if (this.checked) {
-                document.body.classList.add('dark');
-            } else {
-                document.body.classList.remove('dark');
-            }
-        });
-    }
-    
-    // Close search form when clicking outside
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth < 576 && 
-            searchForm && 
-            searchForm.classList.contains('show') && 
-            !searchForm.contains(e.target) && 
-            e.target !== searchButton) {
-            toggleMobileSearch();
-        }
-    });
-});
 </script>

@@ -2,7 +2,7 @@
 session_start();
 
 // Check if user is logged in
-if (!isset($_SESSION['user_id']) && !isset($_SESSION['email'])) {
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['user_email'])) {
     header("Location: login.php");
     exit();
 }
@@ -21,10 +21,10 @@ try {
 }
 
 // Get user information
-$user_email = $_SESSION['email'] ?? '';
+$user_email = $_SESSION['user_email'] ?? '';
 $user_id = $_SESSION['user_id'] ?? 0;
 
-// UPDATED: Get user's lab orders with items - now includes orders booked by this user for others
+// Get user's lab orders with items
 $stmt = $pdo->prepare("
     SELECT 
         lo.id,
@@ -38,25 +38,20 @@ $stmt = $pdo->prepare("
         lo.total_amount,
         lo.status,
         lo.created_at,
-        lo.booked_by_user_id,
+        lo.notes,
         'lab' as order_type,
         GROUP_CONCAT(
             CONCAT(loi.test_name, ' (₹', loi.test_price, ')')
             SEPARATOR ', '
-        ) as item_details,
-        CASE 
-            WHEN lo.email = ? THEN 'self'
-            ELSE 'other'
-        END as booking_for
+        ) as item_details
     FROM lab_orders lo
     LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-    WHERE (lo.booked_by_user_id = ? AND lo.booked_by_user_id IS NOT NULL) 
-       OR lo.email = ?
+    WHERE lo.email = ?
     GROUP BY lo.id
     ORDER BY lo.created_at DESC
 ");
 
-$stmt->execute([$user_email, $user_id, $user_email]);
+$stmt->execute([$user_email]);
 $lab_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get user's medicine orders with items
@@ -73,7 +68,6 @@ $medicine_stmt = $pdo->prepare("
         mo.order_date,
         mo.created_at,
         mo.updated_at,
-        mo.booked_by_user_id,
         'medicine' as order_type,
         COALESCE(
             GROUP_CONCAT(
@@ -81,11 +75,7 @@ $medicine_stmt = $pdo->prepare("
                 SEPARATOR ', '
             ),
             'Order details not available'
-        ) as item_details,
-        CASE 
-            WHEN mo.email = ? THEN 'self'
-            ELSE 'other'
-        END as booking_for
+        ) as item_details
     FROM medicine_orders mo
     LEFT JOIN medicine_order_items moi ON mo.id = moi.order_id
     WHERE (mo.booked_by_user_id = ? AND mo.booked_by_user_id IS NOT NULL) 
@@ -94,7 +84,7 @@ $medicine_stmt = $pdo->prepare("
     ORDER BY mo.created_at DESC
 ");
 
-$medicine_stmt->execute([$user_id, $user_id, $user_email]);
+$medicine_stmt->execute([$user_id, $user_email]);
 $medicine_orders = $medicine_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Combine all orders
@@ -105,7 +95,7 @@ usort($all_orders, function($a, $b) {
     return strtotime($b['created_at']) - strtotime($a['created_at']);
 });
 
-// Status color mapping for lab orders - UPDATED to include Upload Done
+// Status color mapping for lab orders
 function getLabStatusColor($status) {
     switch($status) {
         case 'Pending':
@@ -116,8 +106,6 @@ function getLabStatusColor($status) {
             return '#9c27b0';
         case 'In Progress':
             return '#607d8b';
-        case 'Upload Done':
-            return '#4caf50';
         case 'Completed':
             return '#4caf50';
         case 'Cancelled':
@@ -145,7 +133,7 @@ function getMedicineStatusColor($status) {
     }
 }
 
-// Status icon mapping for lab orders - UPDATED to include Upload Done
+// Status icon mapping for lab orders
 function getLabStatusIcon($status) {
     switch($status) {
         case 'Pending':
@@ -156,8 +144,6 @@ function getLabStatusIcon($status) {
             return '🩸';
         case 'In Progress':
             return '🔬';
-        case 'Upload Done':
-            return '📊';
         case 'Completed':
             return '✅';
         case 'Cancelled':
@@ -193,21 +179,6 @@ function getStatusColor($status, $type) {
 // Get appropriate status icon
 function getStatusIcon($status, $type) {
     return $type === 'lab' ? getLabStatusIcon($status) : getMedicineStatusIcon($status);
-}
-
-// FIXED: Function to check if lab report is available for download - now checks for Upload Done
-function isLabReportAvailable($status) {
-    return in_array($status, ['Upload Done']);
-}
-
-// Function to check if receipt is available for download
-function isReceiptAvailable($status, $type) {
-    if ($type === 'lab') {
-         return in_array($status, ['Upload Done','Sample Collected']);
-    } elseif ($type === 'medicine') {
-        return strtolower($status) === 'delivered';
-    }
-    return false;
 }
 
 // Function to get short item preview (first few items)
@@ -406,7 +377,6 @@ function getShortItemPreview($item_details, $maxLength = 80) {
             justify-content: space-between;
             align-items: center;
             margin-top: 8px;
-            gap: 8px;
         }
 
         .status-badge {
@@ -418,12 +388,6 @@ function getShortItemPreview($item_details, $maxLength = 80) {
             color: white;
             font-weight: 500;
             font-size: 0.8rem;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
         }
 
         .more-details-btn {
@@ -448,103 +412,6 @@ function getShortItemPreview($item_details, $maxLength = 80) {
             border-color: #512da8;
         }
 
-        .download-receipt-btn {
-            background: #27ae60;
-            border: none;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-
-        .download-receipt-btn:hover {
-            background: #219a52;
-            transform: translateY(-1px);
-        }
-
-        /* Disabled receipt button styling */
-        .download-receipt-btn.disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .download-receipt-btn.disabled:hover {
-            background: #bdc3c7;
-            transform: none;
-        }
-
-        /* Lab Report Download Button */
-        .download-report-btn {
-            background: #3498db;
-            border: none;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-
-        .download-report-btn:hover {
-            background: #2980b9;
-            transform: translateY(-1px);
-        }
-
-        .download-report-btn.disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .download-report-btn.disabled:hover {
-            background: #bdc3c7;
-            transform: none;
-        }
-
-        /* Report Status Indicator */
-        .report-status {
-            font-size: 0.75rem;
-            color: #666;
-            margin-top: 4px;
-            font-style: italic;
-        }
-
-        .report-status.available {
-            color: #27ae60;
-        }
-
-        .report-status.pending {
-            color: #f39c12;
-        }
-
-        /* Receipt Status Indicator */
-        .receipt-status {
-            font-size: 0.75rem;
-            color: #666;
-            margin-top: 4px;
-            font-style: italic;
-        }
-
-        .receipt-status.available {
-            color: #27ae60;
-        }
-
-        .receipt-status.pending {
-            color: #f39c12;
-        }
-
         /* Expandable Details */
         .order-details {
             padding: 0 20px;
@@ -561,7 +428,7 @@ function getShortItemPreview($item_details, $maxLength = 80) {
         .details-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
+            gap: 1rem;
             margin-bottom: 1rem;
         }
 
@@ -569,7 +436,7 @@ function getShortItemPreview($item_details, $maxLength = 80) {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 2px 0;
+            padding: 8px 0;
         }
 
         .detail-label {
@@ -690,10 +557,6 @@ function getShortItemPreview($item_details, $maxLength = 80) {
                 align-items: stretch;
             }
 
-            .action-buttons {
-                justify-content: space-between;
-            }
-
             .details-grid {
                 grid-template-columns: 1fr;
             }
@@ -760,46 +623,9 @@ function getShortItemPreview($item_details, $maxLength = 80) {
                                     <?php echo getStatusIcon($order['status'], $order['order_type']); ?>
                                     <?php echo htmlspecialchars(ucfirst($order['status'])); ?>
                                 </div>
-                                <div class="action-buttons">
-                                    <button class="more-details-btn" onclick="toggleDetails(<?php echo $index; ?>)">
-                                        More Details
-                                    </button>
-                                    
-                                    <!-- Conditional Receipt Download -->
-                                    <?php if (isReceiptAvailable($order['status'], $order['order_type'])): ?>
-                                        <a href="view-receipt.php?order_id=<?php echo $order['id']; ?>&type=<?php echo $order['order_type']; ?>" 
-                                           class="download-receipt-btn">
-                                            📄 Receipt
-                                        </a>
-                                    <?php else: ?>
-                                        <button class="download-receipt-btn disabled" disabled 
-                                                title="Receipt will be available when <?php echo $order['order_type'] === 'lab' ? 'sample is collected' : 'order is shipped'; ?>">
-                                            📄 Receipt
-                                        </button>
-                                    <?php endif; ?>
-                                    
-                                    <!-- Lab Report Download (only for lab orders) -->
-                                    <?php if ($order['order_type'] === 'lab'): ?>
-                                        <?php if (isLabReportAvailable($order['status'])): ?>
-                                            <a href="view-lab-report.php?order_id=<?php echo $order['id']; ?>" 
-                                               class="download-report-btn" target="_blank" 
-                                               title="View lab report">
-                                                🔬 View Report
-                                            </a>
-                                            <a href="view-lab-report.php?order_id=<?php echo $order['id']; ?>&action=download" 
-                                               class="download-report-btn" 
-                                               title="Download lab report">
-                                                📥 Download
-                                            </a>
-                                        <?php else: ?>
-                                            <button class="download-report-btn disabled" disabled 
-                                                    title="Lab report will be available when results are uploaded">
-                                                🔬 Lab Report
-                                            </button>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
-                                </div>
-                                
+                                <button class="more-details-btn" onclick="toggleDetails(<?php echo $index; ?>)">
+                                    More Details
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -857,6 +683,12 @@ function getShortItemPreview($item_details, $maxLength = 80) {
                             </div>
                         <?php endif; ?>
 
+                        <?php if ($order['order_type'] === 'lab' && !empty($order['notes'])): ?>
+                            <div class="notes-section">
+                                <h5>📝 Additional Notes:</h5>
+                                <p><?php echo htmlspecialchars($order['notes']); ?></p>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -866,10 +698,10 @@ function getShortItemPreview($item_details, $maxLength = 80) {
                 <h3>No Orders Found</h3>
                 <p>You haven't placed any orders yet. Start by exploring our services!</p>
                 <br>
-                <a href="http://localhost/sample-final/frontend/lab-new/lab.php" class="back-btn">
+                <a href="http://localhost/cure_booking/lab-new/lab.php" class="back-btn">
                     🧪 Browse Lab Tests
                 </a>
-                <a href="http://localhost/sample-final/frontend/medicine/medicine.php" class="back-btn" style="background: #e74c3c;">
+                <a href="http://localhost/cure_booking/medicine/medicine.php" class="back-btn" style="background: #e74c3c;">
                     💊 Browse Medicines
                 </a>
             </div>

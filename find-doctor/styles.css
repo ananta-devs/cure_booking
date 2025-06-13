@@ -1,96 +1,3 @@
-/* Hero Section */
-/* .hero {
-    background-color: #512da8;
-    color: #ffffff;
-    padding: 4rem 2rem;
-    text-align: center;
-}
-
-.hero-content {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.hero h2 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    color: #ffffff;
-}
-
-.hero p {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-    opacity: 0.9;
-    color: #ffffff;
-}
-
-.search-container {
-    max-width: 600px;
-    margin: 0 auto;
-} */
-
-/* .search-bar {
-    display: flex;
-    background-color: #ffffff;
-    border-radius: 50px;
-    overflow: hidden;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-} */
-
-/* .search-bar select {
-    flex: 1;
-    padding: 1rem 1.5rem;
-    border: none;
-    border-right: 1px solid #e0e0e0;
-    cursor: pointer;
-} */
-
-/* .search-bar button {
-    padding: 1rem 1.5rem;
-    background-color: #3498db;
-    color: #ffffff;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.3s ease;
-} */
-
-/* .search-bar button:hover {
-    background-color: #2980b9;
-} */
-
-/* Filter Section */
-/* .filter-section {
-    background-color: #ffffff;
-    padding: 1rem 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-}
-
-.filter-controls {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    flex-wrap: wrap;
-}
-
-.filter-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.filter-group label {
-    font-weight: 500;
-}
-
-.filter-group select {
-    padding: 0.5rem 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    cursor: pointer;
-} */
-
 /* Doctors Section */
 .doctors-section {
     padding: 2rem 5%;
@@ -273,38 +180,6 @@
     border-bottom: 1px solid #e0e0e0;
 }
 
-/* .availability {
-    margin-top: 1rem;
-}
-
-.availability h3 {
-    margin-bottom: 1rem;
-}
-
-.availability-days {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-}
-
-.availability-day {
-    padding: 0.5rem 1rem;
-    background-color: #f8f9fa;
-    border-radius: 20px;
-    font-size: 0.9rem;
-} */
-
-/* .appointment-form {
-    margin-top: 2rem;
-    border-top: 1px solid #e0e0e0;
-    padding-top: 1rem;
-} */
-
-/* .appointment-form h3 {
-    margin-bottom: 1rem;
-} */
-
 .form-group {
     margin-bottom: 1rem;
 }
@@ -314,15 +189,6 @@
     margin-bottom: 0.5rem;
     font-weight: 500;
 }
-
-/* .form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-} */
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -336,33 +202,10 @@
         width: 100%;
     }
 
-    /* .filter-controls {
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .filter-group {
-        width: 100%;
-        max-width: 300px;
-    } */
-
     .doctors-container {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
 }
-
-@media (max-width: 480px) {
-    /* .search-bar {
-        flex-direction: column;
-        border-radius: 8px;
-    } */
-
-    /* .search-bar select {
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
-    }*/
-} 
 
 /* No Results State */
 .no-results {

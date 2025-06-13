@@ -239,7 +239,7 @@
     </a>
     <ul class="side-menu top">
         <li class="active">
-            <a href="http://localhost/adminhub/index.php">
+            <a href="http://localhost/cure_booking/adminhub/index.php">
                 <i class='bx bxs-dashboard'></i>
                 <span class="text">Dashboard</span>
             </a>
@@ -251,13 +251,13 @@
             </a>
             <ul class="submenu">
                 <li>
-                    <a href="http://localhost/adminhub/manage-appointments/add-appointment.php">
+                    <a href="http://localhost/cure_booking/adminhub/manage-appointments/add-appointment.php">
                         <i class='bx bxs-user-plus'></i>
                         <span class="text">Add Appointment</span>
                     </a>
                 </li>
                 <li>
-                    <a href="http://localhost/adminhub/manage-appointments/view_appointments.php">
+                    <a href="http://localhost/cure_booking/adminhub/manage-appointments/view_appointments.php">
                         <i class='bx bx-list-ul'></i>
                         <span class="text">Appointments List</span>
                     </a>
@@ -265,13 +265,13 @@
             </ul>
         </li>
         <li>
-            <a href="http://localhost/adminhub/lab-bookings/view_lab_bookings.php">
+            <a href="http://localhost/cure_booking/adminhub/lab-bookings/view_lab_bookings.php">
                 <i class='bx bxs-doughnut-chart'></i>
                 <span class="text">Lab Bookings</span>
             </a>
         </li>
         <li>
-            <a href="http://localhost/adminhub/medicine-orders/view_medicine_orders.php">
+            <a href="http://localhost/cure_booking/adminhub/medicine-orders/view_medicine_orders.php">
                 <i class='bx bxs-message-dots'></i>
                 <span class="text">Medicine Orders</span>
             </a>
@@ -283,13 +283,13 @@
             </a>
             <ul class="submenu">
                 <li>
-                    <a href="http://localhost/adminhub/manage-doctors/add-doctors.php">
+                    <a href="http://localhost/cure_booking/adminhub/manage-doctors/add-doctors.php">
                         <i class='bx bxs-user-plus'></i>
                         <span class="text">Add Doctors</span>
                     </a>
                 </li>
                 <li>
-                    <a href="http://localhost/adminhub/manage-doctors/doctors_list.php">
+                    <a href="http://localhost/cure_booking/adminhub/manage-doctors/doctors_list.php">
                         <i class='bx bx-list-ul'></i>
                         <span class="text">Doctors List</span>
                     </a>
@@ -303,13 +303,13 @@
             </a>
             <ul class="submenu">
                 <li>
-                    <a href="#">
+                    <a href="http://localhost/cure_booking/adminhub/manage-clinics/add-clinics.php">
                         <i class='bx bxs-user-plus'></i>
                         <span class="text">Add Clinics</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#">
+                    <a href="http://localhost/cure_booking/adminhub/manage-clinics/show_clinics.php">
                         <i class='bx bx-list-ul'></i>
                         <span class="text">Clinic List</span>
                     </a>
@@ -319,13 +319,13 @@
     </ul>
     <ul class="side-menu">
         <li>
-            <a href="http://localhost/adminhub/sett/admin.php">
+            <a href="http://localhost/cure_booking/adminhub/sett/admin.php">
                 <i class='bx bxs-cog'></i>
                 <span class="text">Settings</span>
             </a>
         </li>
         <li>
-            <a href="http://localhost/adminhub/logout.php" class="logout">
+            <a href="http://localhost/cure_booking/adminhub/logout.php" class="logout">
                 <i class='bx bxs-log-out-circle'></i>
                 <span class="text">Logout</span>
             </a>

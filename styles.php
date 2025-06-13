@@ -660,9 +660,5 @@ textarea {
     height: 100px;
     resize: vertical;
 }
-/* .primary-btn{
-    align-items: center;
-    justify-content: center;
-} */
 
 </style>
