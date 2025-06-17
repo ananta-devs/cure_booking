@@ -1,0 +1,117 @@
+<form id="appointmentForm">
+    <div class="form-section">
+        <h2>Patient Information</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="firstName" class="required">Name</label>
+                <input type="text" id="firstName" name="firstName" required />
+                <div class="error" id="firstNameError">
+                    Please enter your name
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="required">Gender</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input
+                            type="radio"
+                            id="genderMale"
+                            name="gender"
+                            value="male"
+                            required
+                        />
+                        <label for="genderMale">Male</label>
+                    </div>
+                    <div class="radio-option">
+                        <input
+                            type="radio"
+                            id="genderFemale"
+                            name="gender"
+                            value="female"
+                        />
+                        <label for="genderFemale">Female</label>
+                    </div>
+                    <div class="radio-option">
+                        <input
+                            type="radio"
+                            id="genderOther"
+                            name="gender"
+                            value="other"
+                        />
+                        <label for="genderOther">Other</label>
+                    </div>
+                </div>
+                <div class="error" id="genderError">
+                    Please select your gender
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="phone" class="required">Phone Number</label>
+                <input type="tel" id="phone" name="phone" required />
+                <div class="error" id="phoneError">
+                    Please enter a valid phone number
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="email" class="required">Email Address</label>
+                <input type="email" id="email" name="email" required />
+                <div class="error" id="emailError">
+                    Please enter a valid email address
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h2>Appointment Details</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="specialityType" class="required">Speciality</label>
+                <select id="specialityType" name="specialityType" required>
+                    <option value="">Select Speciality</option>
+                </select>
+                <div class="loading" id="specialityLoading">
+                    Loading specialities...
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="doctor" class="required">Preferred Doctor</label>
+                <select id="doctor" name="doctor" required>
+                    <option value="">Select Doctor</option>
+                </select>
+                <div class="loading" id="doctorLoading">Loading doctors...</div>
+                <div class="doctor-info" id="doctorInfo"></div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="preferredDate" class="required"
+                    >Preferred Date</label
+                >
+                <input
+                    type="date"
+                    id="preferredDate"
+                    name="preferredDate"
+                    required
+                />
+                <div class="error" id="preferredDateError">
+                    Please select a preferred date
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="time" class="required">Time Slot</label>
+                <select id="time" name="time" required>
+                    <option value="">Select Time</option>
+                    <option value="11:00-13:00">11:00-01:00 PM</option>
+                    <option value="14:00-16:00">02:00-04:00 PM</option>
+                    <option value="17:00-19:00">05:00-07:00 PM</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit">Book appointment</button>
+</form>

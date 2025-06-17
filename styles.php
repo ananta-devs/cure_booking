@@ -140,6 +140,7 @@ h1 {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
+    margin-top: 20px;
     margin-bottom: 30px;
     width: 100%;
 }
@@ -201,6 +202,25 @@ h1 {
     border-radius: 50%;
 }
 
+.medicine-pack{
+    font-size: 14px;
+    color: #4a5568;
+    margin-bottom: 10px;
+    font-style: italic;
+    /* padding-left: 0px; */
+    position: relative;
+}
+
+.medicine-pack:before{
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    background-color: #512da8;
+    border-radius: 50%;
+}
+
 .price {
     font-size: 14px;
     color: #4a5568;
@@ -224,7 +244,7 @@ h1 {
 .medicine-composition {
     font-size: 14px;
     color: #718096;
-    margin-bottom: 15px;
+    /* margin-bottom: 15px; */
     line-height: 1.5;
     flex-grow: 1;
     padding-top: 8px;

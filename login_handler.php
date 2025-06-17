@@ -82,11 +82,11 @@ try {
     
 } catch (PDOException $e) {
     error_log("Database error in login: " . $e->getMessage());
-    sendResponse(false, 'Database error: ' . $e->getMessage());
+    sendResponse(false, 'Database connection failed. Please try again later.');
     
 } catch (Exception $e) {
     error_log("General error in login: " . $e->getMessage());
-    sendResponse(false, 'Error: ' . $e->getMessage());
+    sendResponse(false, 'An unexpected error occurred. Please try again.');
 }
 
 // Function to handle doctor login
@@ -149,8 +149,8 @@ function handleDoctorLogin($pdo, $email, $inputPassword) {
 
 // Function to handle clinic login
 function handleClinicLogin($pdo, $email, $inputPassword) {
-    // Prepare and execute query to find clinic by email
-    $stmt = $pdo->prepare("SELECT clinic_id, clinic_name, clinic_email, clinic_pass, address, clinic_ph FROM clinic WHERE clinic_email = :email LIMIT 1");
+    // Prepare and execute query to find clinic by email and check if active
+    $stmt = $pdo->prepare("SELECT clinic_id, clinic_name, clinic_email, clinic_pass, location, contact_number, status FROM clinics WHERE clinic_email = :email LIMIT 1");
     $stmt->bindParam(':email', $email, PDO::PARAM_STR);
     $stmt->execute();
     
@@ -158,6 +158,22 @@ function handleClinicLogin($pdo, $email, $inputPassword) {
     
     if (!$clinic) {
         sendResponse(false, 'No clinic account found with this email address');
+    }
+    
+    // Check if clinic is active
+    if ($clinic['status'] !== 'active') {
+        $statusMessage = '';
+        switch ($clinic['status']) {
+            case 'inactive':
+                $statusMessage = 'Your clinic account is currently inactive. Please contact support.';
+                break;
+            case 'suspended':
+                $statusMessage = 'Your clinic account has been suspended. Please contact support.';
+                break;
+            default:
+                $statusMessage = 'Your clinic account is not available for login. Please contact support.';
+        }
+        sendResponse(false, $statusMessage);
     }
     
     // Try both hashed and plain text password verification
@@ -174,31 +190,37 @@ function handleClinicLogin($pdo, $email, $inputPassword) {
     }
     
     if ($passwordMatch) {
+        // Clear any existing sessions to prevent conflicts
+        session_unset();
+        session_regenerate_id(true);
+        
         // Password is correct - create session
         $_SESSION['clinic_id'] = $clinic['clinic_id'];
         $_SESSION['clinic_name'] = $clinic['clinic_name'];
         $_SESSION['clinic_email'] = $clinic['clinic_email'];
-        $_SESSION['clinic_address'] = $clinic['address'];
-        $_SESSION['clinic_phone'] = $clinic['clinic_ph'];
+        $_SESSION['clinic_location'] = $clinic['location'];
+        $_SESSION['contact_number'] = $clinic['contact_number'];
+        $_SESSION['clinic_status'] = $clinic['status'];
+        $_SESSION['logged_in'] = true;
         $_SESSION['clinic_logged_in'] = true;
+        $_SESSION['login_time'] = time();
         $_SESSION['clinic_login_time'] = time();
         $_SESSION['user_type'] = 'clinic';
         
-        // Update last login (optional)
+        // Update last login timestamp (add column if it doesn't exist)
         try {
-            $updateStmt = $pdo->prepare("UPDATE clinic SET last_login = NOW() WHERE clinic_id = :id");
+            $updateStmt = $pdo->prepare("UPDATE clinics SET updated_at = NOW() WHERE clinic_id = :id");
             $updateStmt->bindParam(':id', $clinic['clinic_id'], PDO::PARAM_INT);
             $updateStmt->execute();
         } catch (Exception $e) {
-            // Ignore if last_login column doesn't exist
             error_log("Clinic last login update failed: " . $e->getMessage());
         }
         
-        sendResponse(true, "Welcome back, " . $clinic['clinic_name'] . "!", "http://localhost/cure_booking/clinic_dashboard.php",
-        [
+        sendResponse(true, "Welcome back, " . $clinic['clinic_name'] . "!", "http://localhost/cure_booking/clinic/home.php", [
             'clinic_id' => $clinic['clinic_id'],
             'clinic_name' => $clinic['clinic_name'],
-            'user_type' => 'clinic'
+            'user_type' => 'clinic',
+            'status' => $clinic['status']
         ]);
         
     } else {

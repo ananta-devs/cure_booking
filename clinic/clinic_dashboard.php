@@ -12,8 +12,8 @@
     $clinic_id = $_SESSION['clinic_id'];
     $clinic_name = $_SESSION['clinic_name'];
     $clinic_email = $_SESSION['clinic_email'];
-    $clinic_address = $_SESSION['clinic_address'] ?? '';
-    $clinic_phone = $_SESSION['clinic_phone'] ?? '';
+    $clinic_location = $_SESSION['clinic_location'] ?? '';
+    $contact_number = $_SESSION['contact_number'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -237,11 +237,11 @@
                 </div>
                 <div class="info-item">
                     <label>Address</label>
-                    <span><?php echo htmlspecialchars($clinic_address ?: 'Not provided'); ?></span>
+                    <span><?php echo htmlspecialchars($clinic_location ?: 'Not provided'); ?></span>
                 </div>
                 <div class="info-item">
                     <label>Phone Number</label>
-                    <span><?php echo htmlspecialchars($clinic_phone ?: 'Not provided'); ?></span>
+                    <span><?php echo htmlspecialchars($contact_number ?: 'Not provided'); ?></span>
                 </div>
                 <div class="info-item">
                     <label>Login Time</label>
