@@ -10,6 +10,8 @@
 <body>
     <?php
         session_start();
+        // Add this after session_start() in lab.php
+        echo "<script>console.log('Session data:', " . json_encode($_SESSION) . ");</script>";
         include '../include/header.php';
         include '../styles.php';
         
@@ -51,8 +53,6 @@
             </div>
         </div>
 
-
-        <br>
         <div id="loading" class="loading-indicator hidden">Loading lab test data...</div>
         <div id="error-message" class="error-message hidden"></div>
         <div id="results-container" class="results-container"></div>
@@ -81,6 +81,7 @@
         </div>
     </div>
 
+    <!-- Booking Modal -->
     <div id="bookingModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -102,6 +103,12 @@
                 <div class="form-group">
                     <label for="address">Address for Sample Collection</label>
                     <textarea id="address" name="address" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="clinic_id">Choose a clinic (Optional - Leave blank for home collection)</label>
+                    <select name="clinic_id" id="clinic_id">
+                        <option value="">Home Collection (No clinic)</option>
+                    </select>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -127,11 +134,12 @@
     </div>
     
     <script>
-        // Pass PHP login status and user info to JavaScript
+        // Pass PHP data to JavaScript
         const isUserLoggedIn = <?php echo json_encode($isLoggedIn); ?>;
         const userInfo = <?php echo json_encode($userInfo); ?>;
         
         document.addEventListener('DOMContentLoaded', function() {
+            // DOM elements
             const searchInput = document.getElementById('search-bar');
             const loadMoreBtn = document.getElementById('load-more-btn');
             const loadingIndicator = document.getElementById('loading');
@@ -141,8 +149,8 @@
             const cartModal = document.getElementById('cartModal');
             const modalTestInfo = document.getElementById('modalTestInfo');
             const bookingForm = document.getElementById('bookingForm');
-            const closeModalBtn = document.querySelector('.modal .close');
             const searchForm = document.querySelector('.search-container');
+            const clinicSelect = document.getElementById('clinic_id');
             
             // Cart elements
             const cartSummary = document.getElementById('cart-summary');
@@ -155,20 +163,20 @@
             const clearCartBtn = document.getElementById('clear-cart-btn');
             const proceedCheckoutBtn = document.getElementById('proceed-checkout-btn');
             
+            // Variables
             let allLabTests = [];
             let currentSearchResults = [];
             let currentPage = 1;
             const itemsPerPage = 9;
             let cart = [];
+            let clinics = [];
             
+            // Initialize
             loadLabTestsData();
+            loadClinics();
+            if (isUserLoggedIn) updateCartDisplay();
             
-            // Only update cart display if user is logged in
-            if (isUserLoggedIn) {
-                updateCartDisplay();
-                console.log('User logged in:', userInfo);
-            }
-            
+            // Event listeners
             if (searchForm) {
                 searchForm.addEventListener('submit', function(e) {
                     e.preventDefault();
@@ -183,17 +191,134 @@
                 }
             });
 
-            // Cart event listeners - only add if user is logged in
+            // Cart event listeners
             if (isUserLoggedIn) {
                 if (viewCartBtn) viewCartBtn.addEventListener('click', () => openModal('cart'));
-                if (checkoutBtn) checkoutBtn.addEventListener('click', () => proceedToCheckout());
+                if (checkoutBtn) checkoutBtn.addEventListener('click', proceedToCheckout);
                 if (clearCartBtn) clearCartBtn.addEventListener('click', clearCart);
-                if (proceedCheckoutBtn) {
-                    proceedCheckoutBtn.addEventListener('click', () => {
-                        closeModal('cart');
-                        proceedToCheckout();
-                    });
+                if (proceedCheckoutBtn) proceedCheckoutBtn.addEventListener('click', () => {
+                    closeModal('cart');
+                    proceedToCheckout();
+                });
+            }
+
+            // Modal event listeners
+            document.querySelectorAll('.modal .close').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const modalType = this.getAttribute('data-modal');
+                    closeModal(modalType === 'cart' ? 'cart' : 'booking');
+                    if (modalType !== 'cart') bookingForm.reset();
+                });
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    bookingForm.reset();
+                    closeModal('booking');
+                } else if (event.target === cartModal) {
+                    closeModal('cart');
                 }
+            });
+            
+            loadMoreBtn.addEventListener('click', loadMoreResults);
+
+            // Form submission
+            if (bookingForm) {
+                bookingForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    if (!isUserLoggedIn) {
+                        window.location.href = '../user/login.php';
+                        return;
+                    }
+                    
+                    if (cart.length === 0) {
+                        alert('Your cart is empty!');
+                        return;
+                    }
+                    
+                    const formData = new FormData(bookingForm);
+                    formData.append('action', 'save_booking');
+                    formData.append('cart', JSON.stringify(cart));
+                    formData.append('totalAmount', calculateCartTotal().toFixed(2));
+                    
+                    const submitBtn = bookingForm.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.textContent;
+                    submitBtn.textContent = 'Processing...';
+                    submitBtn.disabled = true;
+                    
+                    fetch('api.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        submitBtn.textContent = originalBtnText;
+                        submitBtn.disabled = false;
+                        
+                        if (data.status === 'success') {
+                            alert(data.message);
+                            bookingForm.reset();
+                            closeModal('booking');
+                            clearCart();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        submitBtn.textContent = originalBtnText;
+                        submitBtn.disabled = false;
+                        alert('Error submitting form: ' + error.message);
+                    });
+                });
+            }
+
+            // Set minimum date to today
+            const dateInput = document.getElementById('date');
+            if (dateInput) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateInput.min = `${yyyy}-${mm}-${dd}`;
+            }
+
+            // Functions
+            async function loadClinics() {
+                try {
+                    const response = await fetch('api.php?action=get_clinics');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        clinics = data.clinics || [];
+                        populateClinicSelect();
+                    } else {
+                        console.error('Error loading clinics:', data.message);
+                    }
+                } catch (error) {
+                    console.error('Error loading clinics:', error);
+                }
+            }
+
+            function populateClinicSelect() {
+                if (!clinicSelect) return;
+                
+                // Clear existing options except the first one (Home Collection)
+                while (clinicSelect.children.length > 1) {
+                    clinicSelect.removeChild(clinicSelect.lastChild);
+                }
+                
+                // Add clinic options
+                clinics.forEach(clinic => {
+                    const option = document.createElement('option');
+                    option.value = clinic.id;
+                    option.textContent = `${clinic.name} - ${clinic.location}`;
+                    clinicSelect.appendChild(option);
+                });
             }
 
             function proceedToCheckout() {
@@ -208,7 +333,6 @@
                     return;
                 }
                 
-                // Populate modal with cart summary
                 const cartSummaryHtml = `
                     <div class="checkout-summary">
                         <h3>Order Summary</h3>
@@ -256,121 +380,27 @@
                 }
                 document.body.style.overflow = 'hidden';
             }
-            
-            if (closeModalBtn) {
-                closeModalBtn.addEventListener('click', function() {
-                    closeModal('booking');
-                    bookingForm.reset();
-                });
-            }
-            
-            // Close modals with X button
-            document.querySelectorAll('.modal .close').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const modalType = this.getAttribute('data-modal');
-                    if (modalType === 'cart') {
-                        closeModal('cart');
-                    } else {
-                        closeModal('booking');
-                        bookingForm.reset();
-                    }
-                });
-            });
-            
-            window.addEventListener('click', function(event) {
-                if (event.target === modal) {
-                    bookingForm.reset();
-                    closeModal('booking');
-                } else if (event.target === cartModal) {
-                    closeModal('cart');
-                }
-            });
-            
-            if (bookingForm) {
-                bookingForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    if (!isUserLoggedIn) {
-                        window.location.href = '../user/login.php';
-                        return;
-                    }
-                    
-                    if (cart.length === 0) {
-                        alert('Your cart is empty!');
-                        return;
-                    }
-                    
-                    const formData = new FormData(bookingForm);
-                    formData.append('action', 'save_booking');
-                    formData.append('cart', JSON.stringify(cart));
-                    formData.append('totalAmount', calculateCartTotal().toFixed(2));
-                    
-                    const submitBtn = bookingForm.querySelector('button[type="submit"]');
-                    const originalBtnText = submitBtn.textContent;
-                    submitBtn.textContent = 'Processing...';
-                    submitBtn.disabled = true;
-                    
-                    fetch('api.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        submitBtn.textContent = originalBtnText;
-                        submitBtn.disabled = false;
-                        
-                        if (data.status === 'success') {
-                            alert(data.message);
-                            bookingForm.reset();
-                            closeModal('booking');
-                            clearCart(); // Clear cart after successful booking
-                        } else {
-                            alert('Error: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        submitBtn.textContent = originalBtnText;
-                        submitBtn.disabled = false;
-                        alert('Error submitting form: ' + error.message);
-                    });
-                });
-            }
 
-            const dateInput = document.getElementById('date');
-            if (dateInput) {
-                const today = new Date();
-                const yyyy = today.getFullYear();
-                const mm = String(today.getMonth() + 1).padStart(2, '0');
-                const dd = String(today.getDate()).padStart(2, '0');
-                dateInput.min = `${yyyy}-${mm}-${dd}`;
-            }
-
-            // Cart management functions - MODIFIED FOR SINGLE SELECTION
             function addToCart(labTest) {
-                // Check if user is logged in - redirect to login if not
                 if (!isUserLoggedIn) {
-                    // Store the current page URL to redirect back after login (optional)
                     sessionStorage.setItem('returnUrl', window.location.href);
                     window.location.href = '../user/login.php';
                     return;
                 }
                 
-                // Check if item already exists in cart
                 const existingItem = cart.find(item => item.id === labTest.id);
-                
                 if (existingItem) {
                     showNotification(`${labTest.name} is already in your cart!`);
                     return;
                 }
                 
-                // Add new item to cart (always quantity 1)
                 cart.push({
                     id: labTest.id,
                     name: labTest.name,
                     price: parseFloat(labTest.price) || 0,
                     sample: labTest.sample,
                     description: labTest.description,
-                    quantity: 1 // Always 1, no quantity changes allowed
+                    quantity: 1
                 });
                 
                 updateCartDisplay();
@@ -402,7 +432,7 @@
             }
             
             function calculateCartTotal() {
-                return cart.reduce((total, item) => total + item.price, 0); // No quantity multiplication needed
+                return cart.reduce((total, item) => total + item.price, 0);
             }
             
             function updateCartDisplay() {
@@ -411,7 +441,7 @@
                     return;
                 }
                 
-                const totalItems = cart.length; // Just count items, no quantity
+                const totalItems = cart.length;
                 const total = calculateCartTotal();
                 
                 if (cartCount) cartCount.textContent = totalItems;
@@ -449,7 +479,6 @@
             }
             
             function showNotification(message) {
-                // Create notification element
                 const notification = document.createElement('div');
                 notification.className = 'notification';
                 notification.textContent = message;
@@ -467,7 +496,6 @@
                 `;
                 document.body.appendChild(notification);
                 
-                // Remove notification after 3 seconds
                 setTimeout(() => {
                     notification.remove();
                 }, 3000);
@@ -482,7 +510,7 @@
                 clearError();
                 
                 try {
-                    const response = await fetch('api.php?action=get_tests&limit=1000'); // Increase limit to get more data
+                    const response = await fetch('api.php?action=get_tests&limit=1000');
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }   
@@ -500,7 +528,6 @@
                         return;
                     }
                     
-                    console.log(`Loaded ${allLabTests.length} lab tests`);
                     displayRandomLabTests();
                     
                 } catch (error) {
@@ -535,17 +562,14 @@
             function performSearch(query) {
                 query = query.toLowerCase();
                 
-                // Enhanced search logic - search in multiple fields with partial matching
                 currentSearchResults = allLabTests.filter(labTest => {
                     const labName = (labTest.name || '').toLowerCase();
                     const labSample = (labTest.sample || '').toLowerCase();
                     const labDescription = (labTest.description || '').toLowerCase();
                     
-                    // Search in name, sample type, and description
                     return labName.includes(query) || 
                         labSample.includes(query) || 
                         labDescription.includes(query) ||
-                        // Also try word-by-word matching for better results
                         query.split(' ').some(word => 
                             word.length > 2 && (
                                 labName.includes(word) || 
@@ -564,28 +588,22 @@
                     return;
                 }
                 
-                // Sort results by relevance (exact matches first, then partial matches)
+                // Sort results by relevance
                 currentSearchResults.sort((a, b) => {
                     const aName = (a.name || '').toLowerCase();
                     const bName = (b.name || '').toLowerCase();
                     const queryLower = query.toLowerCase();
                     
-                    // Exact name matches first
                     if (aName === queryLower && bName !== queryLower) return -1;
                     if (bName === queryLower && aName !== queryLower) return 1;
-                    
-                    // Name starts with query next
                     if (aName.startsWith(queryLower) && !bName.startsWith(queryLower)) return -1;
                     if (bName.startsWith(queryLower) && !aName.startsWith(queryLower)) return 1;
                     
-                    // Alphabetical order for rest
                     return aName.localeCompare(bName);
                 });
                 
                 const resultsForCurrentPage = currentSearchResults.slice(0, itemsPerPage);
                 displayResults(resultsForCurrentPage);
-                
-                // Show search results count
                 showSearchResultsCount(currentSearchResults.length, searchInput.value);
                 
                 if(currentSearchResults.length > itemsPerPage) {
@@ -596,13 +614,9 @@
             }
 
             function showSearchResultsCount(count, query) {
-                // Remove existing results info if any
                 const existingInfo = document.querySelector('.search-results-info');
-                if (existingInfo) {
-                    existingInfo.remove();
-                }
+                if (existingInfo) existingInfo.remove();
                 
-                // Create and insert results info
                 const resultsInfo = document.createElement('div');
                 resultsInfo.className = 'search-results-info';
                 resultsInfo.style.cssText = `
@@ -620,10 +634,8 @@
 
             function loadMoreResults() {
                 currentPage++;
-                
                 const startIndex = (currentPage - 1) * itemsPerPage;
                 const endIndex = startIndex + itemsPerPage;
-                
                 const nextPageResults = currentSearchResults.slice(startIndex, endIndex);
                 appendResults(nextPageResults);
                 
@@ -664,7 +676,7 @@
                 
                 details.innerHTML = `
                     <h3 class="name">${labTest.name}</h3>
-                    <div class="lab-sample"><strong>Sample:&nbsp</strong> ${labTest.sample || 'N/A'}</div>
+                    <div class="lab-sample"><strong>Sample:</strong> ${labTest.sample || 'N/A'}</div>
                     <div class="price"><strong>Price:</strong> ₹${labTest.price || 'N/A'}/-</div>
                     <div class="lab-desc">${labTest.description || 'No description available'}</div>
                 `;
@@ -672,7 +684,6 @@
                 const buttonContainer = document.createElement('div');
                 buttonContainer.className = 'button-container';
                 
-                // Check if item is already in cart
                 const isInCart = cart.some(item => item.id === labTest.id);
                 
                 const addToCartBtn = document.createElement('button');
@@ -693,7 +704,6 @@
                             sample: labTest.sample,
                             description: labTest.description
                         });
-                        // Update button state
                         this.innerHTML = '<i class="ri-check-line"></i> Added';
                         this.className = 'add-to-cart-btn in-cart';
                         this.disabled = true;
@@ -725,17 +735,6 @@
                 errorMessage.classList.remove('hidden');
             }
             
-            function debugLabTests() {
-                console.log('Total lab tests loaded:', allLabTests.length);
-                console.log('Sample of loaded data:', allLabTests.slice(0, 3));
-                
-                // Check for missing or empty fields
-                const issues = allLabTests.filter(test => !test.name || !test.description);
-                if (issues.length > 0) {
-                    console.warn('Tests with missing data:', issues.length);
-                }
-            }
-
             function clearError() {
                 errorMessage.textContent = '';
                 errorMessage.classList.add('hidden');
@@ -744,8 +743,6 @@
             function clearResults() {
                 resultsContainer.innerHTML = '';
             }
-            
-            loadMoreBtn.addEventListener('click', loadMoreResults);
         });
     </script>
 </body>

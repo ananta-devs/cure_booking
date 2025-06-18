@@ -150,7 +150,7 @@ try {
     $available_statuses = ['Pending', 'Confirmed', 'Sample Collected', 'In Progress', 'Upload Done', 'Completed', 'Cancelled'];
 }
 
-include './top-header.php';
+include './include/top-header.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -229,7 +229,7 @@ include './top-header.php';
     </div>
 
     <div class="container">
-        <?php include './sidebar.php'; ?>
+        <?php include './include/sidebar.php'; ?>
         
         <main class="main-content">
             <div id="lab-bookings-section" class="content-section active">
