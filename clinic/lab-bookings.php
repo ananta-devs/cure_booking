@@ -1,156 +1,156 @@
 <?php
-session_start();
+    session_start();
 
-// Check if clinic is logged in
-if (!isset($_SESSION['clinic_id'])) {
-    header("Location: login.php");
-    exit();
-}
-
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cure_booking";
-
-try {
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    if ($conn->connect_error) {
-        throw new Exception("Connection failed: " . $conn->connect_error);
+    // Check if clinic is logged in
+    if (!isset($_SESSION['clinic_id'])) {
+        header("Location: login.php");
+        exit();
     }
-    $conn->set_charset("utf8");
-} catch (Exception $e) {
-    die('<div class="error-message">Database connection failed: ' . htmlspecialchars($e->getMessage()) . '</div>');
-}
 
-// Get clinic info
-$clinic_id = (int)$_SESSION['clinic_id'];
-$clinic_name = $_SESSION['clinic_name'] ?? 'Unknown Clinic';
+    // Database connection
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "cure_booking";
 
-// Handle AJAX request for booking details
-if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_booking_details' && isset($_GET['booking_id'])) {
-    $booking_id = (int)$_GET['booking_id'];
-    
-    // Get booking details with test items
-    $detail_sql = "SELECT lo.*, 
-                          GROUP_CONCAT(
-                              CONCAT(loi.test_name, ' - ₹', loi.test_price) 
-                              SEPARATOR '|'
-                          ) as test_details
-                   FROM lab_orders lo 
-                   LEFT JOIN lab_order_items loi ON lo.id = loi.order_id 
-                   WHERE lo.id = ? AND lo.clinic_id = ?
-                   GROUP BY lo.id";
-    
     try {
-        $detail_stmt = $conn->prepare($detail_sql);
-        $detail_stmt->bind_param("ii", $booking_id, $clinic_id);
-        $detail_stmt->execute();
-        $booking_details = $detail_stmt->get_result()->fetch_assoc();
-        
-        if ($booking_details) {
-            header('Content-Type: application/json');
-            echo json_encode($booking_details);
-        } else {
-            http_response_code(404);
-            echo json_encode(['error' => 'Booking not found']);
+        $conn = new mysqli($servername, $username, $password, $dbname);
+        if ($conn->connect_error) {
+            throw new Exception("Connection failed: " . $conn->connect_error);
         }
+        $conn->set_charset("utf8");
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Database error']);
+        die('<div class="error-message">Database connection failed: ' . htmlspecialchars($e->getMessage()) . '</div>');
     }
-    exit();
-}
 
-// Pagination and filters
-$page = max(1, (int)($_GET['page'] ?? 1));
-$limit = 10;
-$offset = ($page - 1) * $limit;
+    // Get clinic info
+    $clinic_id = (int)$_SESSION['clinic_id'];
+    $clinic_name = $_SESSION['clinic_name'] ?? 'Unknown Clinic';
 
-$date_filter = !empty($_GET['date_filter']) ? $_GET['date_filter'] : '';
-$status_filter = !empty($_GET['status_filter']) ? $_GET['status_filter'] : '';
-$search_query = !empty($_GET['search']) ? trim($_GET['search']) : '';
-
-// Build WHERE conditions
-$where_conditions = ["lo.clinic_id = ?"];
-$params = [$clinic_id];
-$types = "i";
-
-if ($date_filter) {
-    $where_conditions[] = "DATE(lo.sample_collection_date) = ?";
-    $params[] = $date_filter;
-    $types .= "s";
-}
-
-if ($status_filter) {
-    $where_conditions[] = "lo.status = ?";
-    $params[] = $status_filter;
-    $types .= "s";
-}
-
-if ($search_query) {
-    $where_conditions[] = "(lo.customer_name LIKE ? OR lo.phone LIKE ? OR lo.booking_id LIKE ?)";
-    $search_param = '%' . $search_query . '%';
-    $params = array_merge($params, [$search_param, $search_param, $search_param]);
-    $types .= "sss";
-}
-
-$where_clause = implode(" AND ", $where_conditions);
-
-// Get total count for pagination
-$count_sql = "SELECT COUNT(DISTINCT lo.id) as total FROM lab_orders lo WHERE $where_clause";
-try {
-    $count_stmt = $conn->prepare($count_sql);
-    if (!empty($params)) {
-        $count_stmt->bind_param($types, ...$params);
+    // Handle AJAX request for booking details
+    if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_booking_details' && isset($_GET['booking_id'])) {
+        $booking_id = (int)$_GET['booking_id'];
+        
+        // Get booking details with test items
+        $detail_sql = "SELECT lo.*, 
+                            GROUP_CONCAT(
+                                CONCAT(loi.test_name, ' - ₹', loi.test_price) 
+                                SEPARATOR '|'
+                            ) as test_details
+                    FROM lab_orders lo 
+                    LEFT JOIN lab_order_items loi ON lo.id = loi.order_id 
+                    WHERE lo.id = ? AND lo.clinic_id = ?
+                    GROUP BY lo.id";
+        
+        try {
+            $detail_stmt = $conn->prepare($detail_sql);
+            $detail_stmt->bind_param("ii", $booking_id, $clinic_id);
+            $detail_stmt->execute();
+            $booking_details = $detail_stmt->get_result()->fetch_assoc();
+            
+            if ($booking_details) {
+                header('Content-Type: application/json');
+                echo json_encode($booking_details);
+            } else {
+                http_response_code(404);
+                echo json_encode(['error' => 'Booking not found']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Database error']);
+        }
+        exit();
     }
-    $count_stmt->execute();
-    $total_records = $count_stmt->get_result()->fetch_assoc()['total'];
-    $total_pages = ceil($total_records / $limit);
-} catch (Exception $e) {
-    $total_records = 0;
-    $total_pages = 0;
-}
 
-// Main query with pagination
-$sql = "SELECT lo.*, 
-               COUNT(loi.id) as test_count,
-               GROUP_CONCAT(loi.test_name SEPARATOR ', ') as test_names
-        FROM lab_orders lo 
-        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id 
-        WHERE $where_clause
-        GROUP BY lo.id 
-        ORDER BY lo.sample_collection_date DESC, lo.created_at DESC
-        LIMIT ? OFFSET ?";
+    // Pagination and filters
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $limit = 10;
+    $offset = ($page - 1) * $limit;
 
-$params[] = $limit;
-$params[] = $offset;
-$types .= "ii";
+    $date_filter = !empty($_GET['date_filter']) ? $_GET['date_filter'] : '';
+    $status_filter = !empty($_GET['status_filter']) ? $_GET['status_filter'] : '';
+    $search_query = !empty($_GET['search']) ? trim($_GET['search']) : '';
 
-try {
-    $stmt = $conn->prepare($sql);
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
+    // Build WHERE conditions
+    $where_conditions = ["lo.clinic_id = ?"];
+    $params = [$clinic_id];
+    $types = "i";
+
+    if ($date_filter) {
+        $where_conditions[] = "DATE(lo.sample_collection_date) = ?";
+        $params[] = $date_filter;
+        $types .= "s";
     }
-    $stmt->execute();
-    $bookings_result = $stmt->get_result();
-} catch (Exception $e) {
-    die('<div class="error-message">Error fetching bookings: ' . htmlspecialchars($e->getMessage()) . '</div>');
-}
+
+    if ($status_filter) {
+        $where_conditions[] = "lo.status = ?";
+        $params[] = $status_filter;
+        $types .= "s";
+    }
+
+    if ($search_query) {
+        $where_conditions[] = "(lo.customer_name LIKE ? OR lo.phone LIKE ? OR lo.booking_id LIKE ?)";
+        $search_param = '%' . $search_query . '%';
+        $params = array_merge($params, [$search_param, $search_param, $search_param]);
+        $types .= "sss";
+    }
+
+    $where_clause = implode(" AND ", $where_conditions);
+
+    // Get total count for pagination
+    $count_sql = "SELECT COUNT(DISTINCT lo.id) as total FROM lab_orders lo WHERE $where_clause";
+    try {
+        $count_stmt = $conn->prepare($count_sql);
+        if (!empty($params)) {
+            $count_stmt->bind_param($types, ...$params);
+        }
+        $count_stmt->execute();
+        $total_records = $count_stmt->get_result()->fetch_assoc()['total'];
+        $total_pages = ceil($total_records / $limit);
+    } catch (Exception $e) {
+        $total_records = 0;
+        $total_pages = 0;
+    }
+
+    // Main query with pagination
+    $sql = "SELECT lo.*, 
+                COUNT(loi.id) as test_count,
+                GROUP_CONCAT(loi.test_name SEPARATOR ', ') as test_names
+            FROM lab_orders lo 
+            LEFT JOIN lab_order_items loi ON lo.id = loi.order_id 
+            WHERE $where_clause
+            GROUP BY lo.id 
+            ORDER BY lo.sample_collection_date DESC, lo.created_at DESC
+            LIMIT ? OFFSET ?";
+
+    $params[] = $limit;
+    $params[] = $offset;
+    $types .= "ii";
+
+    try {
+        $stmt = $conn->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $bookings_result = $stmt->get_result();
+    } catch (Exception $e) {
+        die('<div class="error-message">Error fetching bookings: ' . htmlspecialchars($e->getMessage()) . '</div>');
+    }
 
 
-// Get available statuses
-$status_sql = "SELECT DISTINCT status FROM lab_orders WHERE clinic_id = ? ORDER BY status";
-try {
-    $status_stmt = $conn->prepare($status_sql);
-    $status_stmt->bind_param("i", $clinic_id);
-    $status_stmt->execute();
-    $available_statuses = array_column($status_stmt->get_result()->fetch_all(MYSQLI_ASSOC), 'status');
-} catch (Exception $e) {
-    $available_statuses = ['Pending', 'Confirmed', 'Sample Collected', 'In Progress', 'Upload Done', 'Completed', 'Cancelled'];
-}
+    // Get available statuses
+    $status_sql = "SELECT DISTINCT status FROM lab_orders WHERE clinic_id = ? ORDER BY status";
+    try {
+        $status_stmt = $conn->prepare($status_sql);
+        $status_stmt->bind_param("i", $clinic_id);
+        $status_stmt->execute();
+        $available_statuses = array_column($status_stmt->get_result()->fetch_all(MYSQLI_ASSOC), 'status');
+    } catch (Exception $e) {
+        $available_statuses = ['Pending', 'Confirmed', 'Sample Collected', 'In Progress', 'Upload Done', 'Completed', 'Cancelled'];
+    }
 
-include './include/top-header.php';
+    include './include/top-header.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -161,50 +161,7 @@ include './include/top-header.php';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="style_lab.css">
-    <style>
-        .upload-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .upload-btn:hover {
-            background: #218838;
-            color: white;
-        }
-        
-        .upload-btn:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-        
-        .status-upload-done {
-            background: #17a2b8;
-            color: white;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-        
-        .btn-sm {
-            padding: 6px 10px;
-            font-size: 0.85rem;
-            min-width: 35px;
-        }
-        
-    </style>
+
 </head>
 <body>
     <div class="refresh-indicator" id="refreshIndicator">

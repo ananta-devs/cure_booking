@@ -1,230 +1,230 @@
 <?php
-session_start();
+    session_start();
 
-// Check if user is logged in (for both doctor and clinic)
-if (!isset($_SESSION['logged_in']) && !isset($_SESSION['clinic_logged_in'])) {
-    header('Location: ../login.php');
-    exit;
-}
-
-// Database configuration
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cure_booking";
-
-// Initialize user data variables
-$user_data = [];
-$user_type = '';
-
-try {
-    $pdo = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Determine user type and fetch data
-    if (isset($_SESSION['clinic_logged_in']) && $_SESSION['user_type'] === 'clinic') {
-        $user_type = 'clinic';
-        $stmt = $pdo->prepare("SELECT * FROM clinics WHERE clinic_id = :id");
-        $stmt->bindParam(':id', $_SESSION['clinic_id'], PDO::PARAM_INT);
-        $stmt->execute();
-        $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
-    } elseif (isset($_SESSION['logged_in']) && $_SESSION['user_type'] === 'doctor') {
-        $user_type = 'doctor';
-        $stmt = $pdo->prepare("SELECT * FROM doctor WHERE id = :id");
-        $stmt->bindParam(':id', $_SESSION['doctor_id'], PDO::PARAM_INT);
-        $stmt->execute();
-        $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Check if user is logged in (for both doctor and clinic)
+    if (!isset($_SESSION['logged_in']) && !isset($_SESSION['clinic_logged_in'])) {
+        header('Location: ../login.php');
+        exit;
     }
-    
-} catch (PDOException $e) {
-    error_log("Database error: " . $e->getMessage());
-    $error_message = "Database connection failed";
-}
 
-// Handle AJAX requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
-    
-    $action = $_POST['action'] ?? '';
-    
-    if ($action === 'changePassword') {
-        handlePasswordChange($pdo, $user_type);
-    } elseif ($action === 'updateImage') {
-        handleImageUpload($pdo, $user_type);
-    }
-    
-    exit;
-}
+    // Database configuration
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "cure_booking";
 
-function handlePasswordChange($pdo, $user_type) {
-    $currentPassword = trim($_POST['currentPassword'] ?? '');
-    $newPassword = trim($_POST['newPassword'] ?? '');
-    
-    // Validation
-    if (empty($currentPassword) || empty($newPassword)) {
-        echo json_encode(['success' => false, 'message' => 'All fields are required']);
-        return;
-    }
-    
-    if (strlen($newPassword) < 6) {
-        echo json_encode(['success' => false, 'message' => 'New password must be at least 6 characters']);
-        return;
-    }
-    
+    // Initialize user data variables
+    $user_data = [];
+    $user_type = '';
+
     try {
-        if ($user_type === 'clinic') {
-            $stmt = $pdo->prepare("SELECT clinic_pass FROM clinics WHERE clinic_id = :id");
+        $pdo = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        // Determine user type and fetch data
+        if (isset($_SESSION['clinic_logged_in']) && $_SESSION['user_type'] === 'clinic') {
+            $user_type = 'clinic';
+            $stmt = $pdo->prepare("SELECT * FROM clinics WHERE clinic_id = :id");
             $stmt->bindParam(':id', $_SESSION['clinic_id'], PDO::PARAM_INT);
             $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            $storedPassword = $result['clinic_pass'];
-            
-            // Verify current password
-            $passwordMatch = false;
-            if (password_verify($currentPassword, $storedPassword)) {
-                $passwordMatch = true;
-            } elseif ($currentPassword === $storedPassword) {
-                $passwordMatch = true;
-            }
-            
-            if (!$passwordMatch) {
-                echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
-                return;
-            }
-            
-            // Update password
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $updateStmt = $pdo->prepare("UPDATE clinics SET clinic_pass = :password, updated_at = NOW() WHERE clinic_id = :id");
-            $updateStmt->bindParam(':password', $hashedPassword);
-            $updateStmt->bindParam(':id', $_SESSION['clinic_id'], PDO::PARAM_INT);
-            
-        } else { // doctor
-            $stmt = $pdo->prepare("SELECT doc_pass FROM doctor WHERE id = :id");
+            $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
+        } elseif (isset($_SESSION['logged_in']) && $_SESSION['user_type'] === 'doctor') {
+            $user_type = 'doctor';
+            $stmt = $pdo->prepare("SELECT * FROM doctor WHERE id = :id");
             $stmt->bindParam(':id', $_SESSION['doctor_id'], PDO::PARAM_INT);
             $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            $storedPassword = $result['doc_pass'];
-            
-            // Verify current password
-            $passwordMatch = false;
-            if (password_verify($currentPassword, $storedPassword)) {
-                $passwordMatch = true;
-            } elseif ($currentPassword === $storedPassword) {
-                $passwordMatch = true;
-            }
-            
-            if (!$passwordMatch) {
-                echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
-                return;
-            }
-            
-            // Update password
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $updateStmt = $pdo->prepare("UPDATE doctor SET doc_pass = :password WHERE id = :id");
-            $updateStmt->bindParam(':password', $hashedPassword);
-            $updateStmt->bindParam(':id', $_SESSION['doctor_id'], PDO::PARAM_INT);
-        }
-        
-        if ($updateStmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to update password']);
+            $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
         }
         
     } catch (PDOException $e) {
-        error_log("Password change error: " . $e->getMessage());
-        echo json_encode(['success' => false, 'message' => 'Database error occurred']);
+        error_log("Database error: " . $e->getMessage());
+        $error_message = "Database connection failed";
     }
-}
 
-function handleImageUpload($pdo, $user_type) {
-    if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['success' => false, 'message' => 'No image uploaded or upload error']);
-        return;
+    // Handle AJAX requests
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        
+        $action = $_POST['action'] ?? '';
+        
+        if ($action === 'changePassword') {
+            handlePasswordChange($pdo, $user_type);
+        } elseif ($action === 'updateImage') {
+            handleImageUpload($pdo, $user_type);
+        }
+        
+        exit;
     }
-    
-    $file = $_FILES['image'];
-    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    $maxSize = 5 * 1024 * 1024; // 5MB
-    
-    // Validate file type
-    if (!in_array($file['type'], $allowedTypes)) {
-        echo json_encode(['success' => false, 'message' => 'Invalid file type. Only JPEG, PNG, and GIF allowed']);
-        return;
-    }
-    
-    // Validate file size
-    if ($file['size'] > $maxSize) {
-        echo json_encode(['success' => false, 'message' => 'File too large. Maximum size is 5MB']);
-        return;
-    }
-    
-    // Create upload directory
-    $uploadDir = $user_type === 'clinic' ? 'uploads/clinics/' : 'uploads/doctors/';
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
-    }
-    
-    // Generate unique filename
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = $user_type . '_' . uniqid() . '.' . $extension;
-    $filepath = $uploadDir . $filename;
-    
-    // Move uploaded file
-    if (move_uploaded_file($file['tmp_name'], $filepath)) {
+
+    function handlePasswordChange($pdo, $user_type) {
+        $currentPassword = trim($_POST['currentPassword'] ?? '');
+        $newPassword = trim($_POST['newPassword'] ?? '');
+        
+        // Validation
+        if (empty($currentPassword) || empty($newPassword)) {
+            echo json_encode(['success' => false, 'message' => 'All fields are required']);
+            return;
+        }
+        
+        if (strlen($newPassword) < 6) {
+            echo json_encode(['success' => false, 'message' => 'New password must be at least 6 characters']);
+            return;
+        }
+        
         try {
-            // Update database
             if ($user_type === 'clinic') {
-                $stmt = $pdo->prepare("UPDATE clinics SET profile_image = :image, updated_at = NOW() WHERE clinic_id = :id");
-                $stmt->bindParam(':image', $filepath);
+                $stmt = $pdo->prepare("SELECT clinic_pass FROM clinics WHERE clinic_id = :id");
                 $stmt->bindParam(':id', $_SESSION['clinic_id'], PDO::PARAM_INT);
-            } else {
-                $stmt = $pdo->prepare("UPDATE doctor SET doc_img = :image WHERE id = :id");
-                $stmt->bindParam(':image', $filepath);
+                $stmt->execute();
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $storedPassword = $result['clinic_pass'];
+                
+                // Verify current password
+                $passwordMatch = false;
+                if (password_verify($currentPassword, $storedPassword)) {
+                    $passwordMatch = true;
+                } elseif ($currentPassword === $storedPassword) {
+                    $passwordMatch = true;
+                }
+                
+                if (!$passwordMatch) {
+                    echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+                    return;
+                }
+                
+                // Update password
+                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+                $updateStmt = $pdo->prepare("UPDATE clinics SET clinic_pass = :password, updated_at = NOW() WHERE clinic_id = :id");
+                $updateStmt->bindParam(':password', $hashedPassword);
+                $updateStmt->bindParam(':id', $_SESSION['clinic_id'], PDO::PARAM_INT);
+                
+            } else { // doctor
+                $stmt = $pdo->prepare("SELECT doc_pass FROM doctor WHERE id = :id");
                 $stmt->bindParam(':id', $_SESSION['doctor_id'], PDO::PARAM_INT);
+                $stmt->execute();
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $storedPassword = $result['doc_pass'];
+                
+                // Verify current password
+                $passwordMatch = false;
+                if (password_verify($currentPassword, $storedPassword)) {
+                    $passwordMatch = true;
+                } elseif ($currentPassword === $storedPassword) {
+                    $passwordMatch = true;
+                }
+                
+                if (!$passwordMatch) {
+                    echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+                    return;
+                }
+                
+                // Update password
+                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+                $updateStmt = $pdo->prepare("UPDATE doctor SET doc_pass = :password WHERE id = :id");
+                $updateStmt->bindParam(':password', $hashedPassword);
+                $updateStmt->bindParam(':id', $_SESSION['doctor_id'], PDO::PARAM_INT);
             }
             
-            if ($stmt->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Profile image updated successfully']);
+            if ($updateStmt->execute()) {
+                echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to update database']);
+                echo json_encode(['success' => false, 'message' => 'Failed to update password']);
             }
             
         } catch (PDOException $e) {
-            error_log("Image upload database error: " . $e->getMessage());
+            error_log("Password change error: " . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Database error occurred']);
         }
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
     }
-}
 
-// Helper function to get display data based on user type
-function getDisplayData($user_data, $user_type) {
-    if ($user_type === 'clinic') {
-        return [
-            'name' => $user_data['clinic_name'] ?? 'Clinic Name',
-            'email' => $user_data['clinic_email'] ?? 'email@example.com',
-            'phone' => $user_data['contact_number'] ?? 'Phone not available',
-            'location' => $user_data['location'] ?? 'Location not specified',
-            'timing' => $user_data['available_timing'] ?? 'Timing not specified',
-            'about' => $user_data['about'] ?? 'About information not available',
-            'image' => $user_data['profile_image'] ?? null
-        ];
-    } else {
-        return [
-            'name' => 'Dr. ' . ($user_data['doc_name'] ?? 'Doctor Name'),
-            'email' => $user_data['doc_email'] ?? 'email@example.com',
-            'phone' => $user_data['doc_phone'] ?? 'Phone not available',
-            'location' => $user_data['doc_location'] ?? 'Location not specified',
-            'timing' => $user_data['doc_timing'] ?? 'Timing not specified',
-            'about' => $user_data['doc_about'] ?? 'About information not available',
-            'image' => $user_data['doc_img'] ?? null
-        ];
+    function handleImageUpload($pdo, $user_type) {
+        if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(['success' => false, 'message' => 'No image uploaded or upload error']);
+            return;
+        }
+        
+        $file = $_FILES['image'];
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        $maxSize = 5 * 1024 * 1024; // 5MB
+        
+        // Validate file type
+        if (!in_array($file['type'], $allowedTypes)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid file type. Only JPEG, PNG, and GIF allowed']);
+            return;
+        }
+        
+        // Validate file size
+        if ($file['size'] > $maxSize) {
+            echo json_encode(['success' => false, 'message' => 'File too large. Maximum size is 5MB']);
+            return;
+        }
+        
+        // Create upload directory
+        $uploadDir = $user_type === 'clinic' ? 'uploads/clinics/' : 'uploads/doctors/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        
+        // Generate unique filename
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = $user_type . '_' . uniqid() . '.' . $extension;
+        $filepath = $uploadDir . $filename;
+        
+        // Move uploaded file
+        if (move_uploaded_file($file['tmp_name'], $filepath)) {
+            try {
+                // Update database
+                if ($user_type === 'clinic') {
+                    $stmt = $pdo->prepare("UPDATE clinics SET profile_image = :image, updated_at = NOW() WHERE clinic_id = :id");
+                    $stmt->bindParam(':image', $filepath);
+                    $stmt->bindParam(':id', $_SESSION['clinic_id'], PDO::PARAM_INT);
+                } else {
+                    $stmt = $pdo->prepare("UPDATE doctor SET doc_img = :image WHERE id = :id");
+                    $stmt->bindParam(':image', $filepath);
+                    $stmt->bindParam(':id', $_SESSION['doctor_id'], PDO::PARAM_INT);
+                }
+                
+                if ($stmt->execute()) {
+                    echo json_encode(['success' => true, 'message' => 'Profile image updated successfully']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to update database']);
+                }
+                
+            } catch (PDOException $e) {
+                error_log("Image upload database error: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Database error occurred']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
+        }
     }
-}
 
-$display_data = getDisplayData($user_data, $user_type);
+    // Helper function to get display data based on user type
+    function getDisplayData($user_data, $user_type) {
+        if ($user_type === 'clinic') {
+            return [
+                'name' => $user_data['clinic_name'] ?? 'Clinic Name',
+                'email' => $user_data['clinic_email'] ?? 'email@example.com',
+                'phone' => $user_data['contact_number'] ?? 'Phone not available',
+                'location' => $user_data['location'] ?? 'Location not specified',
+                'timing' => $user_data['available_timing'] ?? 'Timing not specified',
+                'about' => $user_data['about'] ?? 'About information not available',
+                'image' => $user_data['profile_image'] ?? null
+            ];
+        } else {
+            return [
+                'name' => 'Dr. ' . ($user_data['doc_name'] ?? 'Doctor Name'),
+                'email' => $user_data['doc_email'] ?? 'email@example.com',
+                'phone' => $user_data['doc_phone'] ?? 'Phone not available',
+                'location' => $user_data['doc_location'] ?? 'Location not specified',
+                'timing' => $user_data['doc_timing'] ?? 'Timing not specified',
+                'about' => $user_data['doc_about'] ?? 'About information not available',
+                'image' => $user_data['doc_img'] ?? null
+            ];
+        }
+    }
+
+    $display_data = getDisplayData($user_data, $user_type);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -420,10 +420,10 @@ $display_data = getDisplayData($user_data, $user_type);
         </style>
     </head>
     <body>
-        <?php include './top-header.php'; ?>
+        <?php include './include/top-header.php'; ?>
 
         <div class="container">
-            <?php include './sidebar.php'; ?>
+            <?php include './include/sidebar.php'; ?>
             <!-- Main Content -->
             <main class="main-content">
                 <div id="settings-section" class="content-section active">

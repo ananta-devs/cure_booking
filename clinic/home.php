@@ -12,12 +12,12 @@
     </head>
     <body>
         <?php
-            include './top-header.php';
+            include './include/top-header.php';
         ?>
 
         <div class="container">
             <?php
-                include './sidebar.php';
+                include './include/sidebar.php';
             ?>
             <!-- Main Content -->
             <main class="main-content">

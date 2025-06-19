@@ -687,59 +687,7 @@
                 $check_stmt->close();
                 exit();
 
-            // case 'signin':
-            //     header('Content-Type: application/json');
-                
-            //     $email = sanitizeInput($_POST['email'] ?? '');
-            //     $password = $_POST['password'] ?? '';
-                
-            //     if (empty($email) || empty($password)) {
-            //         echo json_encode(['success' => false, 'message' => 'Email and password are required']);
-            //         exit;
-            //     }
-
-            //     if (!validateEmail($email)) {
-            //         echo json_encode(['success' => false, 'message' => 'Invalid email format']);
-            //         exit;
-            //     }
-                
-            //     $signin_query = "SELECT id, name, email, password, is_verified FROM users WHERE email = ?";
-            //     $signin_stmt = $conn->prepare($signin_query);
-            //     $signin_stmt->bind_param("s", $email);
-            //     $signin_stmt->execute();
-            //     $signin_result = $signin_stmt->get_result();
-                
-            //     if ($signin_result->num_rows === 1) {
-            //         $user = $signin_result->fetch_assoc();
-                    
-            //         if (password_verify($password, $user['password'])) {
-            //             if ($user['is_verified'] == 0) {
-            //                 echo json_encode(['success' => false, 'message' => 'Please verify your email before signing in']);
-            //             } else {
-            //                 $_SESSION['logged_in'] = true;
-            //                 $_SESSION['user_id'] = $user['id'];
-            //                 $_SESSION['user_name'] = $user['name'];
-            //                 $_SESSION['user_email'] = $user['email'];
-                            
-            //                 echo json_encode([
-            //                     'success' => true, 
-            //                     'message' => 'Welcome back, ' . $user['name'] . '!',
-            //                     'user' => [
-            //                         'id' => $user['id'],
-            //                         'name' => $user['name'],
-            //                         'email' => $user['email']
-            //                     ]
-            //                 ]);
-            //             }
-            //         } else {
-            //             echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
-            //         }
-            //     } else {
-            //         echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
-            //     }
-                
-            //     $signin_stmt->close();
-            //     exit();
+            
 
             case 'update_profile':
                 // Check if user is logged in

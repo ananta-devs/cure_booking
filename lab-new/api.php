@@ -17,7 +17,7 @@ if ($conn->connect_error) {
 }
 
 $conn->set_charset("utf8");
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
+$action = $_REQUEST['action'] ?? '';
 
 try {
     switch ($action) {
@@ -34,7 +34,7 @@ try {
             getLabOrders($conn);
             break;
         default:
-            echo json_encode(['status' => 'error', 'message' => 'Invalid action parameter']);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
             break;
     }
 } catch (Exception $e) {
@@ -45,36 +45,28 @@ try {
 }
 
 function getClinics($conn) {
-    try {
-        // Fixed: Use correct column names from clinics table
-        $stmt = $conn->prepare("SELECT clinic_id, clinic_name, location, contact_number, clinic_email FROM clinics WHERE status = 'active' ORDER BY clinic_name ASC");
+    $stmt = $conn->prepare("SELECT clinic_id, clinic_name, location, contact_number, clinic_email 
+                           FROM clinics WHERE status = 'active' ORDER BY clinic_name");
     
-        if (!$stmt->execute()) {
-            throw new Exception("Database query failed: " . $stmt->error);
-        }
-
-        $result = $stmt->get_result();
-        $clinics = [];
-        
-        while ($row = $result->fetch_assoc()) {
-            $clinics[] = [
-                'id' => (int)$row['clinic_id'],
-                'name' => trim($row['clinic_name'] ?? ''),
-                'location' => trim($row['location'] ?? ''),
-                'phone' => trim($row['contact_number'] ?? ''),
-                'email' => trim($row['clinic_email'] ?? '')
-            ];
-        }
-
-        echo json_encode([
-            'status' => 'success',
-            'clinics' => $clinics
-        ]);
-
-        $stmt->close();
-    } catch (Exception $e) {
-        throw new Exception("Error fetching clinics: " . $e->getMessage());
+    if (!$stmt->execute()) {
+        throw new Exception("Database query failed: " . $stmt->error);
     }
+
+    $result = $stmt->get_result();
+    $clinics = [];
+    
+    while ($row = $result->fetch_assoc()) {
+        $clinics[] = [
+            'id' => (int)$row['clinic_id'],
+            'name' => trim($row['clinic_name']),
+            'location' => trim($row['location']),
+            'phone' => trim($row['contact_number']),
+            'email' => trim($row['clinic_email'])
+        ];
+    }
+
+    echo json_encode(['status' => 'success', 'clinics' => $clinics]);
+    $stmt->close();
 }
 
 function getLabTests($conn) {
@@ -94,7 +86,7 @@ function getLabTests($conn) {
                                 END as search_rank
                                 FROM lab_tests 
                                 WHERE name LIKE ? OR sample_type LIKE ? OR description LIKE ?
-                                ORDER BY search_rank ASC, name ASC
+                                ORDER BY search_rank, name
                                 LIMIT ? OFFSET ?");
         
         $exactMatch = $search;
@@ -105,12 +97,16 @@ function getLabTests($conn) {
             $exactMatch, $startsWith, $searchParam, $searchParam,
             $searchParam, $searchParam, $searchParam, 
             $limit, $offset);
+            
+        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM lab_tests 
+                                    WHERE name LIKE ? OR sample_type LIKE ? OR description LIKE ?");
+        $countStmt->bind_param("sss", $searchParam, $searchParam, $searchParam);
     } else {
         $stmt = $conn->prepare("SELECT id, name, sample_type, price, description 
-                                FROM lab_tests 
-                                ORDER BY name ASC
-                                LIMIT ? OFFSET ?");
+                                FROM lab_tests ORDER BY name LIMIT ? OFFSET ?");
         $stmt->bind_param("ii", $limit, $offset);
+        
+        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM lab_tests");
     }
 
     if (!$stmt->execute()) {
@@ -123,23 +119,13 @@ function getLabTests($conn) {
     while ($row = $result->fetch_assoc()) {
         $labTests[] = [
             'id' => (int)$row['id'],
-            'name' => trim($row['name'] ?? ''),
+            'name' => trim($row['name']),
             'sample' => trim($row['sample_type'] ?? 'N/A'),
-            'price' => $row['price'] ? number_format((float)$row['price'], 2, '.', '') : '0.00',
+            'price' => number_format((float)($row['price'] ?? 0), 2, '.', ''),
             'description' => trim($row['description'] ?? 'No description available')
         ];
     }
 
-    // Get total count
-    if (!empty($search)) {
-        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM lab_tests 
-                                    WHERE name LIKE ? OR sample_type LIKE ? OR description LIKE ?");
-        $searchParam = "%" . $search . "%";
-        $countStmt->bind_param("sss", $searchParam, $searchParam, $searchParam);
-    } else {
-        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM lab_tests");
-    }
-    
     $countStmt->execute();
     $totalCount = $countStmt->get_result()->fetch_assoc()['total'];
 
@@ -160,197 +146,13 @@ function getLabTests($conn) {
     $countStmt->close();
 }
 
-// function saveLabOrder($conn) {
-//     if (!isset($_SESSION['user_id']) && !isset($_SESSION['username']) && !isset($_SESSION['logged_in'])) {
-//         throw new Exception('User not logged in. Please login to book tests.');
-//     }
-
-//     $bookedByEmail = $_SESSION['email'] ?? $_SESSION['username'] ?? '';
-//     $bookedByName = $_SESSION['name'] ?? $_SESSION['full_name'] ?? $_SESSION['username'] ?? '';
-
-//     $conn->autocommit(false);
-
-//     if ($_SERVER["REQUEST_METHOD"] != "POST") {
-//         throw new Exception('Invalid request method');
-//     }
-
-//     $name = $conn->real_escape_string(trim($_POST['name'] ?? ''));
-//     $phone = $conn->real_escape_string(trim($_POST['phone'] ?? ''));
-//     $email = $conn->real_escape_string(trim($_POST['email'] ?? ''));
-//     $address = $conn->real_escape_string(trim($_POST['address'] ?? ''));
-//     $clinicId = intval($_POST['clinic_id'] ?? 0); // Changed to clinic_id
-//     $date = $conn->real_escape_string(trim($_POST['date'] ?? ''));
-//     $time = $conn->real_escape_string(trim($_POST['time'] ?? ''));
-//     $cartData = $_POST['cart'] ?? '';
-//     $totalAmount = floatval($_POST['totalAmount'] ?? 0);
-
-//     if (empty($name) || empty($phone) || empty($email) || empty($address) || 
-//         empty($date) || empty($time)) {
-//         throw new Exception('All customer details are required');
-//     }
-
-//     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-//         throw new Exception('Invalid email format');
-//     }
-
-//     if (!preg_match('/^[0-9+\-\s()]{10,15}$/', $phone)) {
-//         throw new Exception('Invalid phone number format');
-//     }
-
-//     // Validate clinic if provided and get clinic details
-//     $clinicName = null;
-//     if ($clinicId > 0) {
-//         $clinicStmt = $conn->prepare("SELECT clinic_id, clinic_name FROM clinics WHERE clinic_id = ? AND status = 'active'");
-//         $clinicStmt->bind_param("i", $clinicId);
-//         $clinicStmt->execute();
-//         $clinicResult = $clinicStmt->get_result();
-        
-//         if ($clinicResult->num_rows === 0) {
-//             $clinicStmt->close();
-//             throw new Exception('Selected clinic is not valid or inactive');
-//         }
-        
-//         $clinicData = $clinicResult->fetch_assoc();
-//         $clinicName = $clinicData['clinic_name'];
-//         $clinicStmt->close();
-//     }
-
-//     $cart = is_string($cartData) ? json_decode($cartData, true) : $cartData;
-    
-//     if (json_last_error() !== JSON_ERROR_NONE || empty($cart)) {
-//         throw new Exception('Invalid or empty cart data');
-//     }
-
-//     $selectedDate = new DateTime($date);
-//     $today = new DateTime();
-//     $today->setTime(0, 0, 0);
-    
-//     if ($selectedDate < $today) {
-//         throw new Exception('Cannot book for past dates');
-//     }
-
-//     $calculatedTotal = 0;
-//     $validatedCart = [];
-    
-//     foreach ($cart as $index => $item) {
-//         if (!isset($item['id']) || !isset($item['name']) || !isset($item['price'])) {
-//             throw new Exception("Invalid item data at position " . ($index + 1));
-//         }
-
-//         $testId = intval($item['id']);
-//         $testName = trim($item['name']);
-//         $testPrice = floatval($item['price']);
-
-//         if (empty($testName) || $testPrice <= 0 || $testId <= 0) {
-//             throw new Exception("Invalid item data: $testName (ID: $testId, Price: $testPrice)");
-//         }
-
-//         $verifyStmt = $conn->prepare("SELECT name, price, sample_type FROM lab_tests WHERE id = ?");
-//         $verifyStmt->bind_param("i", $testId);
-//         $verifyStmt->execute();
-//         $verifyResult = $verifyStmt->get_result();
-        
-//         if ($verifyResult->num_rows === 0) {
-//             $verifyStmt->close();
-//             throw new Exception("Test with ID $testId not found in database");
-//         }
-        
-//         $dbTest = $verifyResult->fetch_assoc();
-//         $verifyStmt->close();
-
-//         $testPrice = floatval($dbTest['price']);
-//         $calculatedTotal += $testPrice;
-
-//         $validatedCart[] = [
-//             'id' => $testId,
-//             'name' => $dbTest['name'],
-//             'price' => $testPrice,
-//             'sample_type' => $dbTest['sample_type'] ?? 'N/A'
-//         ];
-//     }
-
-//     if (abs($calculatedTotal - $totalAmount) > 0.01) {
-//         throw new Exception("Total amount mismatch. Calculated: ₹$calculatedTotal, Received: ₹$totalAmount");
-//     }
-
-//     $bookingId = 'LB-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
-//     $bookingTime = date('Y-m-d H:i:s');
-
-//     // Modified: Insert clinic_id and clinic_name
-//     $stmt = $conn->prepare("INSERT INTO lab_orders (
-//                 booking_id, customer_name, phone, email, address, clinic_id, clinic_name,
-//                 sample_collection_date, time_slot, total_amount, created_at, status,
-//                 booked_by_email, booked_by_name
-//             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)");
-
-//     $stmt->bind_param("sssssisssdsss", $bookingId, $name, $phone, $email, $address, 
-//                      $clinicId, $clinicName, $date, $time, $calculatedTotal, $bookingTime, 
-//                      $bookedByEmail, $bookedByName);
-
-//     if (!$stmt->execute()) {
-//         throw new Exception("Error creating lab order: " . $stmt->error);
-//     }
-
-//     $orderId = $conn->insert_id;
-//     $stmt->close();
-
-//     $itemStmt = $conn->prepare("INSERT INTO lab_order_items (
-//                     order_id, test_name, test_price, sample_type
-//                 ) VALUES (?, ?, ?, ?)");
-
-//     foreach ($validatedCart as $item) {
-//         $itemStmt->bind_param("isds", 
-//             $orderId, 
-//             $item['name'], 
-//             $item['price'], 
-//             $item['sample_type']
-//         );
-
-//         if (!$itemStmt->execute()) {
-//             throw new Exception("Error saving order item: " . $itemStmt->error);
-//         }
-//     }
-
-//     $itemStmt->close();
-//     $conn->commit();
-//     $conn->autocommit(true);
-
-//     echo json_encode([
-//         'status' => 'success',
-//         'message' => 'Lab tests booking confirmed! Your booking ID is: ' . $bookingId,
-//         'bookingId' => $bookingId,
-//         'totalAmount' => number_format($calculatedTotal, 2, '.', ''),
-//         'itemsCount' => count($validatedCart),
-//         'bookedBy' => $bookedByName,
-//         'clinic' => $clinicName ?: 'Home Collection'
-//     ]);
-// }
-
 function saveLabOrder($conn) {
     if (!isset($_SESSION['user_id']) && !isset($_SESSION['username']) && !isset($_SESSION['logged_in'])) {
         throw new Exception('User not logged in. Please login to book tests.');
     }
 
-    // Debug: Check what session variables are available
-    error_log("Session variables: " . print_r($_SESSION, true));
-
-    // Try multiple possible session variable names for email
-    $bookedByEmail = $_SESSION['user_email'] ?? $_SESSION['email'] ?? $_SESSION['username'] ?? '';
-    
-    // Try multiple possible session variable names for name
-    $bookedByName = $_SESSION['user_name'] ?? $_SESSION['name'] ?? $_SESSION['full_name'] ?? $_SESSION['username'] ?? '';
-
-    // If still empty, try to get from form data or set a default
-    if (empty($bookedByEmail)) {
-        $bookedByEmail = $_POST['email'] ?? 'unknown@example.com';
-    }
-    
-    if (empty($bookedByName)) {
-        $bookedByName = $_POST['name'] ?? 'Unknown User';
-    }
-
-    error_log("Booked by Email: " . $bookedByEmail);
-    error_log("Booked by Name: " . $bookedByName);
+    $bookedByEmail = $_SESSION['user_email'] ?? $_SESSION['email'] ?? $_SESSION['username'] ?? $_POST['email'] ?? 'unknown@example.com';
+    $bookedByName = $_SESSION['user_name'] ?? $_SESSION['name'] ?? $_SESSION['full_name'] ?? $_SESSION['username'] ?? $_POST['name'] ?? 'Unknown User';
 
     $conn->autocommit(false);
 
@@ -358,18 +160,18 @@ function saveLabOrder($conn) {
         throw new Exception('Invalid request method');
     }
 
-    $name = $conn->real_escape_string(trim($_POST['name'] ?? ''));
-    $phone = $conn->real_escape_string(trim($_POST['phone'] ?? ''));
-    $email = $conn->real_escape_string(trim($_POST['email'] ?? ''));
-    $address = $conn->real_escape_string(trim($_POST['address'] ?? ''));
-    $clinicId = intval($_POST['clinic_id'] ?? 0);
-    $date = $conn->real_escape_string(trim($_POST['date'] ?? ''));
-    $time = $conn->real_escape_string(trim($_POST['time'] ?? ''));
+    $name = trim($_POST['name'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $clinicId = (int)($_POST['clinic_id'] ?? 0);
+    $date = trim($_POST['date'] ?? '');
+    $time = trim($_POST['time'] ?? '');
     $cartData = $_POST['cart'] ?? '';
-    $totalAmount = floatval($_POST['totalAmount'] ?? 0);
+    $totalAmount = (float)($_POST['totalAmount'] ?? 0);
 
-    if (empty($name) || empty($phone) || empty($email) || empty($address) || 
-        empty($date) || empty($time)) {
+    // Validate required fields
+    if (empty($name) || empty($phone) || empty($email) || empty($address) || empty($date) || empty($time)) {
         throw new Exception('All customer details are required');
     }
 
@@ -381,21 +183,19 @@ function saveLabOrder($conn) {
         throw new Exception('Invalid phone number format');
     }
 
-    // Validate clinic if provided and get clinic details
+    // Validate clinic and get clinic name
     $clinicName = null;
     if ($clinicId > 0) {
-        $clinicStmt = $conn->prepare("SELECT clinic_id, clinic_name FROM clinics WHERE clinic_id = ? AND status = 'active'");
+        $clinicStmt = $conn->prepare("SELECT clinic_name FROM clinics WHERE clinic_id = ? AND status = 'active'");
         $clinicStmt->bind_param("i", $clinicId);
         $clinicStmt->execute();
         $clinicResult = $clinicStmt->get_result();
         
         if ($clinicResult->num_rows === 0) {
-            $clinicStmt->close();
             throw new Exception('Selected clinic is not valid or inactive');
         }
         
-        $clinicData = $clinicResult->fetch_assoc();
-        $clinicName = $clinicData['clinic_name'];
+        $clinicName = $clinicResult->fetch_assoc()['clinic_name'];
         $clinicStmt->close();
     }
 
@@ -405,6 +205,7 @@ function saveLabOrder($conn) {
         throw new Exception('Invalid or empty cart data');
     }
 
+    // Validate date
     $selectedDate = new DateTime($date);
     $today = new DateTime();
     $today->setTime(0, 0, 0);
@@ -413,6 +214,7 @@ function saveLabOrder($conn) {
         throw new Exception('Cannot book for past dates');
     }
 
+    // Validate cart items and calculate total
     $calculatedTotal = 0;
     $validatedCart = [];
     
@@ -421,12 +223,11 @@ function saveLabOrder($conn) {
             throw new Exception("Invalid item data at position " . ($index + 1));
         }
 
-        $testId = intval($item['id']);
+        $testId = (int)$item['id'];
         $testName = trim($item['name']);
-        $testPrice = floatval($item['price']);
 
-        if (empty($testName) || $testPrice <= 0 || $testId <= 0) {
-            throw new Exception("Invalid item data: $testName (ID: $testId, Price: $testPrice)");
+        if (empty($testName) || $testId <= 0) {
+            throw new Exception("Invalid item data: $testName (ID: $testId)");
         }
 
         $verifyStmt = $conn->prepare("SELECT name, price, sample_type FROM lab_tests WHERE id = ?");
@@ -435,14 +236,13 @@ function saveLabOrder($conn) {
         $verifyResult = $verifyStmt->get_result();
         
         if ($verifyResult->num_rows === 0) {
-            $verifyStmt->close();
-            throw new Exception("Test with ID $testId not found in database");
+            throw new Exception("Test with ID $testId not found");
         }
         
         $dbTest = $verifyResult->fetch_assoc();
         $verifyStmt->close();
 
-        $testPrice = floatval($dbTest['price']);
+        $testPrice = (float)$dbTest['price'];
         $calculatedTotal += $testPrice;
 
         $validatedCart[] = [
@@ -460,33 +260,17 @@ function saveLabOrder($conn) {
     $bookingId = 'LB-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
     $bookingTime = date('Y-m-d H:i:s');
 
-    // Insert with proper variable binding
+    // Insert order
     $stmt = $conn->prepare("INSERT INTO lab_orders (
                 booking_id, customer_name, phone, email, address, clinic_id, clinic_name,
                 sample_collection_date, time_slot, total_amount, created_at, status,
                 booked_by_email, booked_by_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?)");
 
-    if (!$stmt) {
-        throw new Exception("Prepare failed: " . $conn->error);
-    }
-
-    // Make sure we're binding the right number of parameters (13 parameters)
     $stmt->bind_param("sssssisssdsss", 
-        $bookingId,           // 1
-        $name,                // 2
-        $phone,               // 3
-        $email,               // 4
-        $address,             // 5
-        $clinicId,            // 6
-        $clinicName,          // 7
-        $date,                // 8
-        $time,                // 9
-        $calculatedTotal,     // 10
-        $bookingTime,         // 11
-        $bookedByEmail,       // 12
-        $bookedByName         // 13
-    );
+        $bookingId, $name, $phone, $email, $address, 
+        $clinicId, $clinicName, $date, $time, $calculatedTotal, $bookingTime, 
+        $bookedByEmail, $bookedByName);
 
     if (!$stmt->execute()) {
         throw new Exception("Error creating lab order: " . $stmt->error);
@@ -495,18 +279,12 @@ function saveLabOrder($conn) {
     $orderId = $conn->insert_id;
     $stmt->close();
 
-    $itemStmt = $conn->prepare("INSERT INTO lab_order_items (
-                    order_id, test_name, test_price, sample_type
-                ) VALUES (?, ?, ?, ?)");
+    // Insert order items
+    $itemStmt = $conn->prepare("INSERT INTO lab_order_items 
+                               (order_id, test_name, test_price, sample_type) VALUES (?, ?, ?, ?)");
 
     foreach ($validatedCart as $item) {
-        $itemStmt->bind_param("isds", 
-            $orderId, 
-            $item['name'], 
-            $item['price'], 
-            $item['sample_type']
-        );
-
+        $itemStmt->bind_param("isds", $orderId, $item['name'], $item['price'], $item['sample_type']);
         if (!$itemStmt->execute()) {
             throw new Exception("Error saving order item: " . $itemStmt->error);
         }
@@ -515,9 +293,6 @@ function saveLabOrder($conn) {
     $itemStmt->close();
     $conn->commit();
     $conn->autocommit(true);
-
-    // Log successful booking for debugging
-    error_log("Booking successful - ID: $bookingId, Email: $bookedByEmail, Name: $bookedByName");
 
     echo json_encode([
         'status' => 'success',
@@ -536,45 +311,31 @@ function getLabOrders($conn) {
     $offset = ($page - 1) * $limit;
     
     $filterByUser = isset($_GET['user_orders']) && $_GET['user_orders'] === 'true';
-    $userId = $_SESSION['user_id'] ?? 0;
-    
-    // In getLabOrders function, change this line:
     $userEmail = $_SESSION['user_email'] ?? $_SESSION['email'] ?? $_SESSION['username'] ?? '';
-    $stmt->bind_param("sii", $userEmail, $limit, $offset);
 
-    if ($filterByUser && $userId > 0) {
-        $stmt = $conn->prepare("SELECT 
-                                o.id, o.booking_id, o.customer_name, o.phone, o.email, 
-                                o.address, o.clinic_id, o.clinic_name, o.sample_collection_date, o.time_slot, 
-                                o.total_amount, o.created_at, o.status,
-                                o.booked_by_email, o.booked_by_name,
-                                GROUP_CONCAT(
-                                    CONCAT(oi.test_name, ' (Price: ₹', oi.test_price, ')')
-                                    SEPARATOR '; '
-                                ) as tests
-                            FROM lab_orders o
-                            LEFT JOIN lab_order_items oi ON o.id = oi.order_id
-                            WHERE o.booked_by_email = ?
-                            GROUP BY o.id
-                            ORDER BY o.created_at DESC
-                            LIMIT ? OFFSET ?");
-        $stmt->bind_param("sii", $_SESSION['email'], $limit, $offset);
+    $baseQuery = "SELECT 
+                    o.id, o.booking_id, o.customer_name, o.phone, o.email, 
+                    o.address, o.clinic_id, o.clinic_name, o.sample_collection_date, o.time_slot, 
+                    o.total_amount, o.created_at, o.status, o.booked_by_email, o.booked_by_name,
+                    GROUP_CONCAT(
+                        CONCAT(oi.test_name, ' (₹', oi.test_price, ')')
+                        SEPARATOR '; '
+                    ) as tests
+                  FROM lab_orders o
+                  LEFT JOIN lab_order_items oi ON o.id = oi.order_id";
+
+    if ($filterByUser && $userEmail) {
+        $stmt = $conn->prepare($baseQuery . " WHERE o.booked_by_email = ? 
+                               GROUP BY o.id ORDER BY o.created_at DESC LIMIT ? OFFSET ?");
+        $stmt->bind_param("sii", $userEmail, $limit, $offset);
+        
+        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM lab_orders WHERE booked_by_email = ?");
+        $countStmt->bind_param("s", $userEmail);
     } else {
-        $stmt = $conn->prepare("SELECT 
-                                o.id, o.booking_id, o.customer_name, o.phone, o.email, 
-                                o.address, o.clinic_id, o.clinic_name, o.sample_collection_date, o.time_slot, 
-                                o.total_amount, o.created_at, o.status,
-                                o.booked_by_email, o.booked_by_name,
-                                GROUP_CONCAT(
-                                    CONCAT(oi.test_name, ' (Price: ₹', oi.test_price, ')')
-                                    SEPARATOR '; '
-                                ) as tests
-                            FROM lab_orders o
-                            LEFT JOIN lab_order_items oi ON o.id = oi.order_id
-                            GROUP BY o.id
-                            ORDER BY o.created_at DESC
-                            LIMIT ? OFFSET ?");
+        $stmt = $conn->prepare($baseQuery . " GROUP BY o.id ORDER BY o.created_at DESC LIMIT ? OFFSET ?");
         $stmt->bind_param("ii", $limit, $offset);
+        
+        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM lab_orders");
     }
     
     $stmt->execute();
@@ -584,13 +345,6 @@ function getLabOrders($conn) {
     while ($row = $result->fetch_assoc()) {
         $row['total_amount'] = number_format((float)$row['total_amount'], 2, '.', '');
         $orders[] = $row;
-    }
-    
-    if ($filterByUser && $userId > 0) {
-        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM lab_orders WHERE booked_by_email = ?");
-        $countStmt->bind_param("s", $_SESSION['email']);
-    } else {
-        $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM lab_orders");
     }
     
     $countStmt->execute();

@@ -1,244 +1,188 @@
 <?php
-session_start();
+    session_start();
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id']) && !isset($_SESSION['email'])) {
-    header("Location: login.php");
-    exit();
-}
-
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cure_booking";
-
-try {
-    $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
-}
-
-// Get user information
-$user_email = $_SESSION['email'] ?? '';
-$user_id = $_SESSION['user_id'] ?? 0;
-
-// UPDATED: Get user's lab orders with items - now includes orders booked by this user for others
-$stmt = $pdo->prepare("
-    SELECT 
-        lo.id,
-        lo.booking_id,
-        lo.customer_name,
-        lo.phone,
-        lo.email,
-        lo.address,
-        lo.sample_collection_date,
-        lo.time_slot,
-        lo.total_amount,
-        lo.status,
-        lo.created_at,
-        lo.booked_by_user_id,
-        'lab' as order_type,
-        GROUP_CONCAT(
-            CONCAT(loi.test_name, ' (₹', loi.test_price, ')')
-            SEPARATOR ', '
-        ) as item_details,
-        CASE 
-            WHEN lo.email = ? THEN 'self'
-            ELSE 'other'
-        END as booking_for
-    FROM lab_orders lo
-    LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-    WHERE (lo.booked_by_user_id = ? AND lo.booked_by_user_id IS NOT NULL) 
-       OR lo.email = ?
-    GROUP BY lo.id
-    ORDER BY lo.created_at DESC
-");
-
-$stmt->execute([$user_email, $user_id, $user_email]);
-$lab_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Get user's medicine orders with items
-$medicine_stmt = $pdo->prepare("
-    SELECT 
-        mo.id,
-        mo.order_number,
-        mo.name as customer_name,
-        mo.phone,
-        mo.email,
-        mo.address,
-        mo.total_amount,
-        mo.status,
-        mo.order_date,
-        mo.created_at,
-        mo.updated_at,
-        mo.booked_by_user_id,
-        'medicine' as order_type,
-        COALESCE(
-            GROUP_CONCAT(
-                CONCAT(moi.medicine_name, ' (₹', moi.medicine_price, ' × ', moi.quantity, ')')
-                SEPARATOR ', '
-            ),
-            'Order details not available'
-        ) as item_details,
-        CASE 
-            WHEN mo.email = ? THEN 'self'
-            ELSE 'other'
-        END as booking_for
-    FROM medicine_orders mo
-    LEFT JOIN medicine_order_items moi ON mo.id = moi.order_id
-    WHERE (mo.booked_by_user_id = ? AND mo.booked_by_user_id IS NOT NULL) 
-       OR mo.email = ?
-    GROUP BY mo.id
-    ORDER BY mo.created_at DESC
-");
-
-$medicine_stmt->execute([$user_id, $user_id, $user_email]);
-$medicine_orders = $medicine_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Combine all orders
-$all_orders = array_merge($lab_orders, $medicine_orders);
-
-// Sort all orders by creation date (newest first)
-usort($all_orders, function($a, $b) {
-    return strtotime($b['created_at']) - strtotime($a['created_at']);
-});
-
-// Status color mapping for lab orders - UPDATED to include Upload Done
-function getLabStatusColor($status) {
-    switch($status) {
-        case 'Pending':
-            return '#ff9800';
-        case 'Confirmed':
-            return '#2196f3';
-        case 'Sample Collected':
-            return '#9c27b0';
-        case 'In Progress':
-            return '#607d8b';
-        case 'Upload Done':
-            return '#4caf50';
-        case 'Completed':
-            return '#4caf50';
-        case 'Cancelled':
-            return '#f44336';
-        default:
-            return '#757575';
+    // Check if user is logged in
+    if (!isset($_SESSION['user_id']) && !isset($_SESSION['email'])) {
+        header("Location: login.php");
+        exit();
     }
-}
 
-// Status color mapping for medicine orders
-function getMedicineStatusColor($status) {
-    switch(strtolower($status)) {
-        case 'pending':
-            return '#ff9800';
-        case 'confirmed':
-            return '#2196f3';
-        case 'shipped':
-            return '#9c27b0';
-        case 'delivered':
-            return '#4caf50';
-        case 'cancelled':
-            return '#f44336';
-        default:
-            return '#757575';
+    // Database connection
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "cure_booking";
+
+    try {
+        $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch(PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
     }
-}
 
-// Status icon mapping for lab orders - UPDATED to include Upload Done
-function getLabStatusIcon($status) {
-    switch($status) {
-        case 'Pending':
-            return '⏳';
-        case 'Confirmed':
-            return '✅';
-        case 'Sample Collected':
-            return '🩸';
-        case 'In Progress':
-            return '🔬';
-        case 'Upload Done':
-            return '📊';
-        case 'Completed':
-            return '✅';
-        case 'Cancelled':
-            return '❌';
-        default:
-            return '📋';
-    }
-}
+    $user_email = $_SESSION['email'] ?? '';
+    $user_id = $_SESSION['user_id'] ?? 0;
 
-// Status icon mapping for medicine orders
-function getMedicineStatusIcon($status) {
-    switch(strtolower($status)) {
-        case 'pending':
-            return '⏳';
-        case 'confirmed':
-            return '✅';
-        case 'shipped':
-            return '🚚';
-        case 'delivered':
-            return '📦';
-        case 'cancelled':
-            return '❌';
-        default:
-            return '💊';
-    }
-}
+    // Debug: Show current session info
+    echo "<!-- DEBUG: Session Email: " . $user_email . " -->";
+    echo "<!-- DEBUG: Session User ID: " . $user_id . " -->";
 
-// Get appropriate status color
-function getStatusColor($status, $type) {
-    return $type === 'lab' ? getLabStatusColor($status) : getMedicineStatusColor($status);
-}
-
-// Get appropriate status icon
-function getStatusIcon($status, $type) {
-    return $type === 'lab' ? getLabStatusIcon($status) : getMedicineStatusIcon($status);
-}
-
-// FIXED: Function to check if lab report is available for download - now checks for Upload Done
-function isLabReportAvailable($status) {
-    return in_array($status, ['Upload Done']);
-}
-
-// Function to check if receipt is available for download
-function isReceiptAvailable($status, $type) {
-    if ($type === 'lab') {
-         return in_array($status, ['Upload Done','Sample Collected']);
-    } elseif ($type === 'medicine') {
-        return strtolower($status) === 'delivered';
-    }
-    return false;
-}
-
-// Function to get short item preview (first few items)
-function getShortItemPreview($item_details, $maxLength = 80) {
-    if (empty($item_details)) {
-        return 'No items available';
-    }
+    // Get ALL lab orders with items (for testing)
+    $stmt = $pdo->prepare("
+        SELECT 
+            lo.id, lo.booking_id, lo.customer_name, lo.phone, lo.email, lo.address,
+            lo.sample_collection_date, lo.time_slot, lo.total_amount, lo.status, lo.created_at,
+            lo.booked_by_email, lo.booked_by_name,
+            'lab' as order_type,
+            GROUP_CONCAT(CONCAT(loi.test_name, ' (₹', loi.test_price, ')') SEPARATOR ', ') as item_details,
+            CASE WHEN lo.email = ? THEN 'self' ELSE 'other' END as booking_for
+        FROM lab_orders lo
+        LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
+        GROUP BY lo.id
+        ORDER BY lo.created_at DESC
+    ");
+    $stmt->execute([$user_email]);
+    $lab_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Split items by comma and take first few
-    $items = explode(', ', $item_details);
-    $preview = '';
-    $itemCount = 0;
-    
-    foreach ($items as $item) {
-        if (strlen($preview . $item) > $maxLength && $itemCount > 0) {
-            $remaining = count($items) - $itemCount;
-            if ($remaining > 0) {
-                $preview .= "... +{$remaining} more";
-            }
-            break;
+    echo "<!-- DEBUG: Total lab orders in DB: " . count($lab_orders) . " -->";
+
+    // Get ALL medicine orders with items (for testing)
+    $medicine_orders = [];
+    try {
+        $medicine_stmt = $pdo->prepare("
+            SELECT 
+                mo.id, mo.order_number, mo.name as customer_name, mo.phone, mo.email, mo.address,
+                mo.total_amount, mo.status, mo.order_date, mo.created_at,
+                mo.booked_by_email, mo.booked_by_name,
+                'medicine' as order_type,
+                COALESCE(GROUP_CONCAT(CONCAT(moi.medicine_name, ' (₹', moi.medicine_price, ' × ', moi.quantity, ')') SEPARATOR ', '), 'Order details not available') as item_details,
+                CASE WHEN mo.email = ? THEN 'self' ELSE 'other' END as booking_for
+            FROM medicine_orders mo
+            LEFT JOIN medicine_order_items moi ON mo.id = moi.order_id
+            GROUP BY mo.id
+            ORDER BY mo.created_at DESC
+        ");
+        $medicine_stmt->execute([$user_email]);
+        $medicine_orders = $medicine_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo "<!-- DEBUG: Total medicine orders in DB: " . count($medicine_orders) . " -->";
+    } catch(PDOException $e) {
+        error_log("Medicine orders error: " . $e->getMessage());
+        echo "<!-- DEBUG: Medicine orders error: " . $e->getMessage() . " -->";
+        $medicine_orders = [];
+    }
+
+    // Now filter for current user
+    $user_lab_orders = array_filter($lab_orders, function($order) use ($user_email) {
+        return $order['email'] === $user_email || $order['booked_by_email'] === $user_email;
+    });
+
+    $user_medicine_orders = array_filter($medicine_orders, function($order) use ($user_email) {
+        return $order['email'] === $user_email || $order['booked_by_email'] === $user_email;
+    });
+
+    echo "<!-- DEBUG: User's lab orders: " . count($user_lab_orders) . " -->";
+    echo "<!-- DEBUG: User's medicine orders: " . count($user_medicine_orders) . " -->";
+
+    // Show what emails exist in the database
+    $all_emails = [];
+    foreach ($lab_orders as $order) {
+        if (!empty($order['email'])) $all_emails[] = $order['email'];
+        if (!empty($order['booked_by_email'])) $all_emails[] = $order['booked_by_email'];
+    }
+    foreach ($medicine_orders as $order) {
+        if (!empty($order['email'])) $all_emails[] = $order['email'];
+        if (!empty($order['booked_by_email'])) $all_emails[] = $order['booked_by_email'];
+    }
+    $all_emails = array_unique($all_emails);
+    echo "<!-- DEBUG: All emails in DB: " . implode(', ', $all_emails) . " -->";
+
+    // Combine and sort all user orders
+    $all_orders = array_merge($user_lab_orders, $user_medicine_orders);
+    usort($all_orders, function($a, $b) {
+        return strtotime($b['created_at']) - strtotime($a['created_at']);
+    });
+
+    // For testing: Show ALL orders if no user orders found
+    if (empty($all_orders)) {
+        echo "<!-- DEBUG: No user orders found, showing all orders for testing -->";
+        $all_orders = array_merge($lab_orders, $medicine_orders);
+        usort($all_orders, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+    }
+
+    // Status configurations
+    $status_config = [
+        'lab' => [
+            'colors' => [
+                'Pending' => '#ff9800', 'Confirmed' => '#2196f3', 'Sample Collected' => '#9c27b0',
+                'In Progress' => '#607d8b', 'Upload Done' => '#4caf50', 'Completed' => '#4caf50',
+                'Cancelled' => '#f44336'
+            ],
+            'icons' => [
+                'Pending' => '⏳', 'Confirmed' => '✅', 'Sample Collected' => '🩸',
+                'In Progress' => '🔬', 'Upload Done' => '📊', 'Completed' => '✅',
+                'Cancelled' => '❌'
+            ]
+        ],
+        'medicine' => [
+            'colors' => [
+                'pending' => '#ff9800', 'confirmed' => '#2196f3', 'shipped' => '#9c27b0',
+                'delivered' => '#4caf50', 'cancelled' => '#f44336'
+            ],
+            'icons' => [
+                'pending' => '⏳', 'confirmed' => '✅', 'shipped' => '🚚',
+                'delivered' => '📦', 'cancelled' => '❌'
+            ]
+        ]
+    ];
+
+    // Helper functions
+    function getStatusColor($status, $type) {
+        global $status_config;
+        $key = $type === 'medicine' ? strtolower($status) : $status;
+        return $status_config[$type]['colors'][$key] ?? '#757575';
+    }
+
+    function getStatusIcon($status, $type) {
+        global $status_config;
+        $key = $type === 'medicine' ? strtolower($status) : $status;
+        return $status_config[$type]['icons'][$key] ?? ($type === 'lab' ? '📋' : '💊');
+    }
+
+    function isLabReportAvailable($status) {
+        return $status === 'Upload Done';
+    }
+
+    function isReceiptAvailable($status, $type) {
+        if ($type === 'lab') {
+            return in_array($status, ['Upload Done', 'Sample Collected', 'Completed']);
+        }
+        return in_array(strtolower($status), ['confirmed', 'shipped', 'delivered']);
+    }
+
+    function getShortItemPreview($item_details, $maxLength = 80) {
+        if (empty($item_details) || $item_details === 'Order details not available') {
+            return 'No items available';
         }
         
-        if ($itemCount > 0) {
-            $preview .= ', ';
+        $items = explode(', ', $item_details);
+        $preview = '';
+        $itemCount = 0;
+        
+        foreach ($items as $item) {
+            if (strlen($preview . $item) > $maxLength && $itemCount > 0) {
+                $remaining = count($items) - $itemCount;
+                if ($remaining > 0) $preview .= "... +{$remaining} more";
+                break;
+            }
+            if ($itemCount > 0) $preview .= ', ';
+            $preview .= $item;
+            $itemCount++;
         }
-        $preview .= $item;
-        $itemCount++;
+        return $preview;
     }
-    
-    return $preview;
-}
 ?>
 
 <!DOCTYPE html>
@@ -246,480 +190,17 @@ function getShortItemPreview($item_details, $maxLength = 80) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders - CureBooking</title>
+    <title>My Orders - CureBooking (Test Version)</title>
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f5f5f5;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .page-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .page-header h1 {
-            color: #512da8;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .page-header p {
-            color: #666;
-            font-size: 16px;
-        }
-
-        .order-type-filter {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .filter-btn {
-            padding: 0.5rem 1.5rem;
-            border: 2px solid #512da8;
-            background: white;
-            color: #512da8;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .filter-btn.active,
-        .filter-btn:hover {
-            background: #512da8;
-            color: white;
-        }
-
-        /* Updated Order Cards */
-        .order-card {
-            background: white;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            overflow: hidden;
-        }
-
-        .order-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .order-card.lab-order {
-            border-left: 4px solid #512da8;
-        }
-
-        .order-card.medicine-order {
-            border-left: 4px solid #e74c3c;
-        }
-
-        /* Updated Header Layout */
-        .order-header {
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            background: #fafafa;
-            border-bottom: 1px solid #eee;
-        }
-
-        .order-icon {
-            font-size: 1.5rem;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .order-icon.lab {
-            background: linear-gradient(135deg, #74b9ff, #0984e3);
-        }
-
-        .order-icon.medicine {
-            background: linear-gradient(135deg, #fd79a8, #e84393);
-        }
-
-        .order-main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-width: 0; /* Allows text to wrap properly */
-        }
-
-        .order-title-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 16px;
-        }
-
-        .order-basic-info h3 {
-            font-size: 1.2rem;
-            color: #333;
-            margin-bottom: 4px;
-        }
-
-        .order-id {
-            font-size: 0.9rem;
-            color: #666;
-            font-weight: 500;
-        }
-
-        .order-amount {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #27ae60;
-            text-align: right;
-            flex-shrink: 0;
-        }
-
-        .items-preview {
-            font-size: 0.85rem;
-            color: #555;
-            line-height: 1.4;
-            margin: 4px 0;
-        }
-
-        .status-and-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            gap: 8px;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            color: white;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .more-details-btn {
-            background: none;
-            border: 1px solid #ddd;
-            color: #666;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-
-        .more-details-btn:hover {
-            background: #f0f0f0;
-            border-color: #bbb;
-        }
-
-        .more-details-btn.active {
-            background: #512da8;
-            color: white;
-            border-color: #512da8;
-        }
-
-        .download-receipt-btn {
-            background: #27ae60;
-            border: none;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-
-        .download-receipt-btn:hover {
-            background: #219a52;
-            transform: translateY(-1px);
-        }
-
-        /* Disabled receipt button styling */
-        .download-receipt-btn.disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .download-receipt-btn.disabled:hover {
-            background: #bdc3c7;
-            transform: none;
-        }
-
-        /* Lab Report Download Button */
-        .download-report-btn {
-            background: #3498db;
-            border: none;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-
-        .download-report-btn:hover {
-            background: #2980b9;
-            transform: translateY(-1px);
-        }
-
-        .download-report-btn.disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .download-report-btn.disabled:hover {
-            background: #bdc3c7;
-            transform: none;
-        }
-
-        /* Report Status Indicator */
-        .report-status {
-            font-size: 0.75rem;
-            color: #666;
-            margin-top: 4px;
-            font-style: italic;
-        }
-
-        .report-status.available {
-            color: #27ae60;
-        }
-
-        .report-status.pending {
-            color: #f39c12;
-        }
-
-        /* Receipt Status Indicator */
-        .receipt-status {
-            font-size: 0.75rem;
-            color: #666;
-            margin-top: 4px;
-            font-style: italic;
-        }
-
-        .receipt-status.available {
-            color: #27ae60;
-        }
-
-        .receipt-status.pending {
-            color: #f39c12;
-        }
-
-        /* Expandable Details */
-        .order-details {
-            padding: 0 20px;
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .order-details.expanded {
-            max-height: 1000px;
-            padding: 20px;
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .detail-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 2px 0;
-        }
-
-        .detail-label {
-            font-weight: 600;
-            color: #333;
-            min-width: 100px;
-            font-size: 0.9rem;
-        }
-
-        .detail-value {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .items-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 16px;
-        }
-
-        .items-title {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .items-list {
-            color: #666;
-            line-height: 1.5;
-            font-size: 0.9rem;
-        }
-
-        .notes-section {
-            margin-top: 16px;
-            padding: 12px;
-            background: #fff3cd;
-            border-radius: 8px;
-            border-left: 4px solid #ffc107;
-        }
-
-        .notes-section h5 {
-            color: #856404;
-            margin-bottom: 4px;
-            font-size: 0.9rem;
-        }
-
-        .notes-section p {
-            color: #856404;
-            margin: 0;
-            font-size: 0.85rem;
-        }
-
-        .no-orders {
-            text-align: center;
-            padding: 3rem;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .no-orders h3 {
-            color: #666;
-            margin-bottom: 0.5rem;
-        }
-
-        .no-orders p {
-            color: #999;
-        }
-
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #74b9ff;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
-            text-decoration: none;
-            margin: 0.5rem;
-            transition: background 0.3s ease;
-        }
-
-        .back-btn:hover {
-            background: #0984e3;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-
-            .order-header {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 16px;
-            }
-
-            .order-title-row {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .order-amount {
-                text-align: left;
-            }
-
-            .status-and-details {
-                flex-direction: column;
-                gap: 12px;
-                align-items: stretch;
-            }
-
-            .action-buttons {
-                justify-content: space-between;
-            }
-
-            .details-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .detail-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .detail-label {
-                min-width: auto;
-            }
-
-            .order-type-filter {
-                flex-direction: column;
-                align-items: center;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="order.css">
 </head>
 <body>
     <?php include '../include/header.php'; ?>
     <div class="container">
         <div class="page-header">
-            <h1>My Orders</h1>
+            <h1>My Orders (Test Version)</h1>
             <p>Track your lab tests and medicine orders</p>
+            <p><small>Session Email: <?php echo htmlspecialchars($user_email); ?></small></p>
         </div>
 
         <div class="order-type-filter">
@@ -739,15 +220,14 @@ function getShortItemPreview($item_details, $maxLength = 80) {
                         <div class="order-main-content">
                             <div class="order-title-row">
                                 <div class="order-basic-info">
-                                    <h3>
-                                        <?php if ($order['order_type'] === 'lab'): ?>
-                                            Lab Tests
-                                        <?php else: ?>
-                                            Medicines
-                                        <?php endif; ?>
-                                    </h3>
+                                    <h3><?php echo $order['order_type'] === 'lab' ? 'Lab Tests' : 'Medicines'; ?></h3>
+                                    <?php if ($order['order_type'] === 'lab' && !empty($order['booking_id'])): ?>
+                                        <div class="booking-id">ID: <?php echo htmlspecialchars($order['booking_id']); ?></div>
+                                    <?php elseif ($order['order_type'] === 'medicine' && !empty($order['order_number'])): ?>
+                                        <div class="booking-id">Order: <?php echo htmlspecialchars($order['order_number']); ?></div>
+                                    <?php endif; ?>
+                                    <small style="color: #666;">Customer: <?php echo htmlspecialchars($order['email']); ?></small>
                                 </div>
-                                
                                 <div class="order-amount">₹<?php echo number_format($order['total_amount'], 0); ?></div>
                             </div>
                             
@@ -761,45 +241,8 @@ function getShortItemPreview($item_details, $maxLength = 80) {
                                     <?php echo htmlspecialchars(ucfirst($order['status'])); ?>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="more-details-btn" onclick="toggleDetails(<?php echo $index; ?>)">
-                                        More Details
-                                    </button>
-                                    
-                                    <!-- Conditional Receipt Download -->
-                                    <?php if (isReceiptAvailable($order['status'], $order['order_type'])): ?>
-                                        <a href="view-receipt.php?order_id=<?php echo $order['id']; ?>&type=<?php echo $order['order_type']; ?>" 
-                                           class="download-receipt-btn">
-                                            📄 Receipt
-                                        </a>
-                                    <?php else: ?>
-                                        <button class="download-receipt-btn disabled" disabled 
-                                                title="Receipt will be available when <?php echo $order['order_type'] === 'lab' ? 'sample is collected' : 'order is shipped'; ?>">
-                                            📄 Receipt
-                                        </button>
-                                    <?php endif; ?>
-                                    
-                                    <!-- Lab Report Download (only for lab orders) -->
-                                    <?php if ($order['order_type'] === 'lab'): ?>
-                                        <?php if (isLabReportAvailable($order['status'])): ?>
-                                            <a href="view-lab-report.php?order_id=<?php echo $order['id']; ?>" 
-                                               class="download-report-btn" target="_blank" 
-                                               title="View lab report">
-                                                🔬 View Report
-                                            </a>
-                                            <a href="view-lab-report.php?order_id=<?php echo $order['id']; ?>&action=download" 
-                                               class="download-report-btn" 
-                                               title="Download lab report">
-                                                📥 Download
-                                            </a>
-                                        <?php else: ?>
-                                            <button class="download-report-btn disabled" disabled 
-                                                    title="Lab report will be available when results are uploaded">
-                                                🔬 Lab Report
-                                            </button>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
+                                    <button class="more-details-btn" onclick="toggleDetails(<?php echo $index; ?>)">More Details</button>
                                 </div>
-                                
                             </div>
                         </div>
                     </div>
@@ -820,9 +263,7 @@ function getShortItemPreview($item_details, $maxLength = 80) {
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">📅 Order Date:</span>
-                                <span class="detail-value">
-                                    <?php echo date('d M Y, g:i A', strtotime($order['created_at'])); ?>
-                                </span>
+                                <span class="detail-value"><?php echo date('d M Y, g:i A', strtotime($order['created_at'])); ?></span>
                             </div>
                             
                             <?php if ($order['order_type'] === 'lab'): ?>
@@ -842,21 +283,14 @@ function getShortItemPreview($item_details, $maxLength = 80) {
                             <span class="detail-value"><?php echo htmlspecialchars($order['address']); ?></span>
                         </div>
 
-                        <?php if ($order['item_details']): ?>
+                        <?php if ($order['item_details'] && $order['item_details'] !== 'Order details not available'): ?>
                             <div class="items-section">
                                 <div class="items-title">
-                                    <?php if ($order['order_type'] === 'lab'): ?>
-                                        🧪 All Ordered Tests:
-                                    <?php else: ?>
-                                        💊 All Ordered Medicines:
-                                    <?php endif; ?>
+                                    <?php echo $order['order_type'] === 'lab' ? '🧪 All Ordered Tests:' : '💊 All Ordered Medicines:'; ?>
                                 </div>
-                                <div class="items-list">
-                                    <?php echo htmlspecialchars($order['item_details']); ?>
-                                </div>
+                                <div class="items-list"><?php echo htmlspecialchars($order['item_details']); ?></div>
                             </div>
                         <?php endif; ?>
-
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -864,37 +298,19 @@ function getShortItemPreview($item_details, $maxLength = 80) {
             <div class="no-orders">
                 <div style="font-size: 4rem; margin-bottom: 1rem;">📋</div>
                 <h3>No Orders Found</h3>
-                <p>You haven't placed any orders yet. Start by exploring our services!</p>
-                <br>
-                <a href="http://localhost/sample-final/frontend/lab-new/lab.php" class="back-btn">
-                    🧪 Browse Lab Tests
-                </a>
-                <a href="http://localhost/sample-final/frontend/medicine/medicine.php" class="back-btn" style="background: #e74c3c;">
-                    💊 Browse Medicines
-                </a>
+                <p>Current session email: <?php echo htmlspecialchars($user_email); ?></p>
+                <p>Check the browser console for debug information.</p>
             </div>
         <?php endif; ?>
     </div>
 
     <script>
         function filterOrders(type) {
-            // Update active button
-            const buttons = document.querySelectorAll('.filter-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
-            // Show/hide orders
-            const orders = document.querySelectorAll('.order-card');
-            orders.forEach(order => {
-                if (type === 'all') {
-                    order.classList.remove('hidden');
-                } else {
-                    if (order.dataset.type === type) {
-                        order.classList.remove('hidden');
-                    } else {
-                        order.classList.add('hidden');
-                    }
-                }
+            document.querySelectorAll('.order-card').forEach(order => {
+                order.classList.toggle('hidden', type !== 'all' && order.dataset.type !== type);
             });
         }
 

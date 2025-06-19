@@ -1,114 +1,114 @@
 <?php
-session_start();
+    session_start();
 
-// Check if clinic is logged in
-if (!isset($_SESSION['clinic_id'])) {
-    header("Location: login.php");
-    exit();
-}
-
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cure_booking";
-
-try {
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    if ($conn->connect_error) {
-        throw new Exception("Connection failed: " . $conn->connect_error);
+    // Check if clinic is logged in
+    if (!isset($_SESSION['clinic_id'])) {
+        header("Location: login.php");
+        exit();
     }
-    $conn->set_charset("utf8");
-} catch (Exception $e) {
-    die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
-}
 
-$clinic_id = (int)$_SESSION['clinic_id'];
-$clinic_name = $_SESSION['clinic_name'] ?? 'Unknown Clinic';
+    // Database connection
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "cure_booking";
 
-// Get booking ID from URL
-$booking_id = isset($_GET['booking_id']) ? (int)$_GET['booking_id'] : 0;
-
-if (!$booking_id) {
-    $_SESSION['error'] = "Invalid booking ID.";
-    header("Location: lab-bookings.php");
-    exit();
-}
-
-// Get booking details
-$booking_sql = "SELECT * FROM lab_orders WHERE id = ? AND clinic_id = ?";
-$booking_stmt = $conn->prepare($booking_sql);
-$booking_stmt->bind_param("ii", $booking_id, $clinic_id);
-$booking_stmt->execute();
-$booking_result = $booking_stmt->get_result();
-
-if ($booking_result->num_rows === 0) {
-    $_SESSION['error'] = "Booking not found or access denied.";
-    header("Location: lab-bookings.php");
-    exit();
-}
-
-$booking = $booking_result->fetch_assoc();
-
-// Handle file upload
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['report_file'])) {
-    $upload_dir = 'uploads/reports/';
-    
-    // Create directory if it doesn't exist
-    if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0755, true);
+    try {
+        $conn = new mysqli($servername, $username, $password, $dbname);
+        if ($conn->connect_error) {
+            throw new Exception("Connection failed: " . $conn->connect_error);
+        }
+        $conn->set_charset("utf8");
+    } catch (Exception $e) {
+        die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
     }
-    
-    $file = $_FILES['report_file'];
-    $file_name = $file['name'];
-    $file_tmp = $file['tmp_name'];
-    $file_size = $file['size'];
-    $file_error = $file['error'];
-    
-    // Validate file
-    if ($file_error !== UPLOAD_ERR_OK) {
-        $_SESSION['error'] = "File upload error.";
-    } else {
-        $allowed_extensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
-        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+
+    $clinic_id = (int)$_SESSION['clinic_id'];
+    $clinic_name = $_SESSION['clinic_name'] ?? 'Unknown Clinic';
+
+    // Get booking ID from URL
+    $booking_id = isset($_GET['booking_id']) ? (int)$_GET['booking_id'] : 0;
+
+    if (!$booking_id) {
+        $_SESSION['error'] = "Invalid booking ID.";
+        header("Location: lab-bookings.php");
+        exit();
+    }
+
+    // Get booking details
+    $booking_sql = "SELECT * FROM lab_orders WHERE id = ? AND clinic_id = ?";
+    $booking_stmt = $conn->prepare($booking_sql);
+    $booking_stmt->bind_param("ii", $booking_id, $clinic_id);
+    $booking_stmt->execute();
+    $booking_result = $booking_stmt->get_result();
+
+    if ($booking_result->num_rows === 0) {
+        $_SESSION['error'] = "Booking not found or access denied.";
+        header("Location: lab-bookings.php");
+        exit();
+    }
+
+    $booking = $booking_result->fetch_assoc();
+
+    // Handle file upload
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['report_file'])) {
+        $upload_dir = 'uploads/reports/';
         
-        if (!in_array($file_extension, $allowed_extensions)) {
-            $_SESSION['error'] = "Invalid file type. Allowed: PDF, DOC, DOCX, JPG, JPEG, PNG";
-        } elseif ($file_size > 10 * 1024 * 1024) { // 10MB limit
-            $_SESSION['error'] = "File size too large. Maximum 10MB allowed.";
+        // Create directory if it doesn't exist
+        if (!file_exists($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        
+        $file = $_FILES['report_file'];
+        $file_name = $file['name'];
+        $file_tmp = $file['tmp_name'];
+        $file_size = $file['size'];
+        $file_error = $file['error'];
+        
+        // Validate file
+        if ($file_error !== UPLOAD_ERR_OK) {
+            $_SESSION['error'] = "File upload error.";
         } else {
-            // Generate unique filename
-            $new_filename = $booking['booking_id'] . '_' . time() . '.' . $file_extension;
-            $upload_path = $upload_dir . $new_filename;
+            $allowed_extensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+            $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
             
-            if (move_uploaded_file($file_tmp, $upload_path)) {
-                // Update database
-                $update_sql = "UPDATE lab_orders SET 
-                              report_file = ?, 
-                              report_uploaded_at = CURRENT_TIMESTAMP, 
-                              status = 'Upload Done',
-                              updated_at = CURRENT_TIMESTAMP 
-                              WHERE id = ? AND clinic_id = ?";
-                
-                $update_stmt = $conn->prepare($update_sql);
-                $update_stmt->bind_param("sii", $new_filename, $booking_id, $clinic_id);
-                
-                if ($update_stmt->execute()) {
-                    $_SESSION['success'] = "Report uploaded successfully and status updated to 'Upload Done'.";
-                    header("Location: lab-bookings.php");
-                    exit();
-                } else {
-                    $_SESSION['error'] = "Failed to update database.";
-                    unlink($upload_path); // Delete uploaded file
-                }
+            if (!in_array($file_extension, $allowed_extensions)) {
+                $_SESSION['error'] = "Invalid file type. Allowed: PDF, DOC, DOCX, JPG, JPEG, PNG";
+            } elseif ($file_size > 10 * 1024 * 1024) { // 10MB limit
+                $_SESSION['error'] = "File size too large. Maximum 10MB allowed.";
             } else {
-                $_SESSION['error'] = "Failed to upload file.";
+                // Generate unique filename
+                $new_filename = $booking['booking_id'] . '_' . time() . '.' . $file_extension;
+                $upload_path = $upload_dir . $new_filename;
+                
+                if (move_uploaded_file($file_tmp, $upload_path)) {
+                    // Update database
+                    $update_sql = "UPDATE lab_orders SET 
+                                report_file = ?, 
+                                report_uploaded_at = CURRENT_TIMESTAMP, 
+                                status = 'Upload Done',
+                                updated_at = CURRENT_TIMESTAMP 
+                                WHERE id = ? AND clinic_id = ?";
+                    
+                    $update_stmt = $conn->prepare($update_sql);
+                    $update_stmt->bind_param("sii", $new_filename, $booking_id, $clinic_id);
+                    
+                    if ($update_stmt->execute()) {
+                        $_SESSION['success'] = "Report uploaded successfully and status updated to 'Upload Done'.";
+                        header("Location: lab-bookings.php");
+                        exit();
+                    } else {
+                        $_SESSION['error'] = "Failed to update database.";
+                        unlink($upload_path); // Delete uploaded file
+                    }
+                } else {
+                    $_SESSION['error'] = "Failed to upload file.";
+                }
             }
         }
     }
-}
 
-include './top-header.php';
+    include './include/top-header.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -360,7 +360,7 @@ include './top-header.php';
 </head>
 <body>
     <div class="container">
-        <?php include './sidebar.php'; ?>
+        <?php include './include/sidebar.php'; ?>
         
         <main class="main-content">
             <div class="upload-container">
@@ -385,7 +385,7 @@ include './top-header.php';
                     <?php endif; ?>
                     
                     <!-- Booking Information -->
-                    <div class="booking-info">
+                    <!-- <div class="booking-info">
                         <h3><i class="fa fa-info-circle"></i> Booking Information</h3>
                         <div class="info-grid">
                             <div class="info-item">
@@ -417,7 +417,7 @@ include './top-header.php';
                                 <span class="info-value">₹<?php echo number_format($booking['total_amount'], 2); ?></span>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
                     
                     <!-- Upload Form -->
                     <form method="POST" enctype="multipart/form-data" id="uploadForm">

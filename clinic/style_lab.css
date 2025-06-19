@@ -419,3 +419,45 @@
         grid-template-columns: 1fr;
     }
 }
+
+.upload-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.upload-btn:hover {
+    background: #218838;
+    color: white;
+}
+
+.upload-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.status-upload-done {
+    background: #17a2b8;
+    color: white;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    min-width: 35px;
+}

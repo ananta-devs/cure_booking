@@ -13,61 +13,51 @@
             padding-top: 20px;
             border-top: 1px solid #e0e0e0;
         }
-
         .doctor-clinics-section h3 {
             color: #2c3e50;
             font-size: 1.1rem;
             margin-bottom: 15px;
             font-weight: 600;
         }
-
         .clinics-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
-
         .clinic-item {
             background-color: #f8f9fa;
             padding: 12px 15px;
             border-radius: 6px;
             border-left: 3px solid #007bff;
         }
-
         .clinic-name {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-bottom: 5px;
         }
-
         .clinic-name i {
             color: #007bff;
             font-size: 0.9rem;
         }
-
         .clinic-name strong {
             color: #2c3e50;
             font-size: 0.95rem;
         }
-
         .clinic-location {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-left: 20px;
         }
-
         .clinic-location i {
             color: #6c757d;
             font-size: 0.8rem;
         }
-
         .clinic-location span {
             color: #6c757d;
             font-size: 0.85rem;
         }
-
         .clinic-availability {
             display: flex;
             align-items: center;
@@ -75,22 +65,18 @@
             margin-left: 20px;
             margin-top: 5px;
         }
-
         .clinic-availability i {
             color: #28a745;
             font-size: 0.8rem;
         }
-
         .clinic-availability span {
             color: #495057;
             font-size: 0.85rem;
         }
-
         .clinic-availability strong {
             color: #2c3e50;
             font-weight: 600;
         }
-
         .doctor-clinics-section .clinic-item:only-child .clinic-availability {
             margin-left: 0;
             justify-content: center;
@@ -99,34 +85,27 @@
             border-radius: 6px;
             border-left: 3px solid #28a745;
         }
-
         @media (max-width: 768px) {
             .clinic-availability {
                 margin-left: 15px;
                 margin-top: 8px;
             }
-            
             .clinic-availability span {
                 font-size: 0.8rem;
             }
-            
             .doctor-clinics-section .clinic-item:only-child .clinic-availability {
                 margin-left: 0;
                 padding: 8px;
             }
-
             .clinic-item {
                 padding: 10px 12px;
             }
-            
             .clinic-name strong {
                 font-size: 0.9rem;
             }
-            
             .clinic-location {
                 margin-left: 15px;
             }
-            
             .clinic-location span {
                 font-size: 0.8rem;
             }
@@ -134,9 +113,19 @@
     </style>
 </head>
 <body>
-    <?php include '../include/header.php'; ?>
-    <?php include '../styles.php'; ?>
-    
+    <?php 
+        session_start();
+        $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
+        include '../include/header.php'; 
+        include '../styles.php'; 
+    ?>
+
+    <script>
+        // Pass login status to JavaScript
+        const USER_LOGGED_IN = <?php echo $isLoggedIn ? 'true' : 'false'; ?>;
+        const LOGIN_URL = '../user/login.php'; // Adjust path as needed;
+    </script>
+
     <section class="hero">
         <div class="container">
             <h1>Find the Right Doctor for Your Needs</h1>
@@ -146,10 +135,8 @@
                     <option value="">All Specializations</option>
                     <?php
                         $conn = new mysqli("localhost", "root", "", "cure_booking");
-                        
                         if (!$conn->connect_error) {
                             $result = $conn->query("SELECT DISTINCT doc_specia FROM doctor ORDER BY doc_specia");
-                            
                             if ($result && $result->num_rows > 0) {
                                 while($row = $result->fetch_assoc()) {
                                     echo '<option value="' . htmlspecialchars($row['doc_specia']) . '">' . htmlspecialchars($row['doc_specia']) . '</option>';
@@ -253,12 +240,8 @@
             });
 
             elements.bookingForm.addEventListener('submit', handleBookingSubmit);
-            
-            const clinicSelect = document.querySelector('#clinic');
-            const dateInput = document.querySelector('#date');
-            
-            if (clinicSelect) clinicSelect.addEventListener('change', loadTimeSlots);
-            if (dateInput) dateInput.addEventListener('change', loadTimeSlots);
+            document.querySelector('#clinic').addEventListener('change', loadTimeSlots);
+            document.querySelector('#date').addEventListener('change', loadTimeSlots);
         }
 
         function closeMainModal() {
@@ -271,21 +254,9 @@
             document.body.style.overflow = 'auto';
         }
 
-        async function checkLoginStatus() {
-            try {
-                const response = await fetch('api.php?action=check_login', {
-                    method: 'GET',
-                    credentials: 'same-origin'
-                });
-                
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                
-                const data = await response.json();
-                return data.logged_in === true;
-            } catch (error) {
-                console.error('Login check error:', error);
-                return false;
-            }
+        // Fixed login check function
+        function checkLoginStatus() {
+            return USER_LOGGED_IN;
         }
 
         async function fetchDoctors(filters = {}) {
@@ -388,32 +359,20 @@
             const bookBtn = card.querySelector('.book-btn');
             
             viewProfileBtn.addEventListener('click', () => openDoctorModal(doctor.id));
-            bookBtn.addEventListener('click', () => handleBookButtonClick(bookBtn, doctor.id));
+            bookBtn.addEventListener('click', () => handleBookButtonClick(doctor.id));
             
             return card;
         }
 
-        async function handleBookButtonClick(button, doctorId) {
-            const originalText = button.textContent;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-            button.disabled = true;
+        // Fixed book button click handler
+        function handleBookButtonClick(doctorId) {
+            console.log('Book button clicked. Login status:', USER_LOGGED_IN);
             
-            try {
-                const isLoggedIn = await checkLoginStatus();
-                
-                if (!isLoggedIn) {
-                    window.location.href = '../user/login.php';
-                    return;
-                }
-                
-                button.textContent = originalText;
-                button.disabled = false;
-                
-                openBookingForm(doctorId);
-            } catch (error) {
-                console.error('Login check failed:', error);
-                window.location.href = '../user/login.php';
+            if (!USER_LOGGED_IN) {
+                window.location.href = LOGIN_URL;
             }
+            
+            openBookingForm(doctorId);
         }
 
         async function openDoctorModal(doctorId) {
@@ -432,7 +391,6 @@
             
             try {
                 const availabilityData = await fetchDoctorAvailability(doctorId);
-                
                 const clinicNames = doctor.clinic_names ? doctor.clinic_names.split(', ') : [];
                 const clinicLocations = doctor.clinic_locations ? doctor.clinic_locations.split(', ') : [];
                 
@@ -446,7 +404,6 @@
                     
                     clinicNames.forEach((clinicName, index) => {
                         const clinicLocation = clinicLocations[index] || 'Location not specified';
-                        
                         let availabilityText = 'Please contact clinic for availability';
                         
                         if (availabilityData && availabilityData[clinicName]) {
@@ -484,25 +441,18 @@
                     });
                     
                     clinicInfoHTML += '</div></div>';
-                } else {
-                    let availabilityDays = [];
-                    if (doctor.availability && Array.isArray(doctor.availability)) {
-                        availabilityDays = doctor.availability;
-                    }
-                    
-                    if (availabilityDays.length > 0) {
-                        clinicInfoHTML = `
-                            <div class="doctor-clinics-section">
-                                <h3>Availability:</h3>
-                                <div class="clinic-item">
-                                    <div class="clinic-availability">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span><strong>Available Days:</strong> ${availabilityDays.join(', ')}</span>
-                                    </div>
+                } else if (doctor.availability && Array.isArray(doctor.availability) && doctor.availability.length > 0) {
+                    clinicInfoHTML = `
+                        <div class="doctor-clinics-section">
+                            <h3>Availability:</h3>
+                            <div class="clinic-item">
+                                <div class="clinic-availability">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span><strong>Available Days:</strong> ${doctor.availability.join(', ')}</span>
                                 </div>
                             </div>
-                        `;
-                    }
+                        </div>
+                    `;
                 }
                 
                 elements.modalDoctorDetails.innerHTML = `
@@ -558,7 +508,6 @@
                 
             } catch (error) {
                 console.error('Error loading doctor details:', error);
-                
                 const basicClinicInfo = createBasicClinicInfo(doctor);
                 
                 elements.modalDoctorDetails.innerHTML = `
@@ -601,7 +550,7 @@
                             </div>
                         </div>
                     </div>
-                                        
+                    
                     ${doctor.bio ? `
                         <div class="doctor-bio">
                             <h3>About Doctor</h3>
@@ -618,7 +567,6 @@
             try {
                 const response = await fetch(`api.php?action=get_doctor_availability&doctor_id=${doctorId}`);
                 if (!response.ok) throw new Error('Failed to fetch availability');
-                
                 const data = await response.json();
                 return data.success ? data.availability : null;
             } catch (error) {
@@ -684,7 +632,6 @@
 
         function openBookingForm(doctorId) {
             const doctor = currentDoctors.find(doc => doc.id == doctorId);
-            
             if (!doctor) return;
             
             selectedDoctorForBooking = doctor;
@@ -719,20 +666,16 @@
             }
             
             const timeSelect = document.querySelector('#time');
-            if (timeSelect) {
-                timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
-            }
+            timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
             
             const dateInput = document.querySelector('#date');
-            if (dateInput) {
-                const today = new Date();
-                const minDate = today.toISOString().split('T')[0];
-                dateInput.min = minDate;
-                
-                const maxDate = new Date();
-                maxDate.setMonth(maxDate.getMonth() + 3);
-                dateInput.max = maxDate.toISOString().split('T')[0];
-            }
+            const today = new Date();
+            const minDate = today.toISOString().split('T')[0];
+            dateInput.min = minDate;
+            
+            const maxDate = new Date();
+            maxDate.setMonth(maxDate.getMonth() + 3);
+            dateInput.max = maxDate.toISOString().split('T')[0];
             
             let doctorIdInput = document.querySelector('#doctor_id');
             if (!doctorIdInput) {
@@ -753,9 +696,7 @@
             const dateInput = document.querySelector('#date');
             const timeSelect = document.querySelector('#time');
             
-            if (!clinicSelect || !dateInput || !timeSelect || !selectedDoctorForBooking) {
-                return;
-            }
+            if (!clinicSelect || !dateInput || !timeSelect || !selectedDoctorForBooking) return;
             
             const selectedClinic = clinicSelect.value;
             const selectedDate = dateInput.value;
@@ -771,9 +712,7 @@
             try {
                 const response = await fetch(`api.php?action=get_time_slots&doctor_id=${selectedDoctorForBooking.id}&clinic_name=${encodeURIComponent(selectedClinic)}&date=${selectedDate}`);
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 
                 const data = await response.json();
                 
@@ -816,23 +755,16 @@
             
             try {
                 const formData = new FormData(elements.bookingForm);
-                
                 const response = await fetch('api.php?action=book_appointment', {
                     method: 'POST',
                     body: formData
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Show success message
-                    // showNotification('success', data.message);
-                    
-                    // Close booking modal
                     elements.bookingModal.style.display = 'none';
                     document.body.style.overflow = 'auto';
                     

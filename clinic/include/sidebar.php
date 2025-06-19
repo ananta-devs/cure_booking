@@ -1,48 +1,111 @@
-<!-- <aside class="sidebar" id="sidebar">
-    <div class="logo">
-        <h1>🏥 CureBooking</h1>
-    </div>
-            
-    <nav>
-        <ul class="nav-menu">
-            <li class="nav-item">
-                <a href="#" class="nav-link active" data-section="dashboard">
-                    <i class="fa fa-line-chart"></i>
-                    Dashboard
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link" data-section="doctors">
-                    <i class="fa fa-user"></i>
-                    Manage Doctors
-                </a>
-            </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-section="lab">
-                        <i class="fa fa-flask"></i>
-                        Lab Bookings
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-section="settings">
-                        <i class="fa fa-cog"></i>
-                        Settings
-                    </a>
-                </li>
-            </ul>
-                    
-            <div class="sign-out">
-                <ul class="nav-menu">
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" id="signOutBtn">
-                            <i class="fa fa-sign-out"></i>
-                                Sign Out
-                        </a>
-                    </li>
-                </ul>
-            </div>
-    </nav>
-</aside> -->
+<style>
+    /* Sidebar */
+    .sidebar {
+        width: 280px;
+        background: white;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 1000;
+        overflow-y: auto;
+    }
+
+    .logo {
+        border-bottom: 1px solid #e2e8f0;
+        flex-shrink: 0;
+    }
+
+    .logo h1 {
+        font-size: 1.5rem;
+        color: #2d3748;
+        padding: 20px;
+    }
+
+    .nav-menu {
+        list-style: none;
+        flex: 1;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        color: #4a5568;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .nav-link:hover {
+        background: #f7fafc;
+        color: #2d3748;
+    }
+
+    .nav-link.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .nav-link i {
+        margin-right: 0.75rem;
+    }
+
+    .sign-out {
+        margin-top: auto;
+        border-top: 1px solid #e2e8f0;
+        flex-shrink: 0;
+    }
+    /* Top Header */
+    .top-header {
+        background: white;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        position: fixed;
+        top: 0;
+        left: 280px;
+        right: 0;
+        z-index: 900;
+    }
+    .current-date {
+    text-align: right;
+    }
+
+    .current-date .date {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .current-date .time {
+        color: #718096;
+        font-size: 0.9rem;
+    }
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        
+        .sidebar {
+            left: -280px;
+            transition: left 0.3s ease;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .top-header {
+            left: 0;
+            padding: 0 1rem;
+        }
+    }
+</style>
 
 <!-- Sidebar -->
 <nav class="sidebar" id="sidebar">
@@ -188,16 +251,6 @@
             }
         });
     });
-
-    // Handle sign out
-    // signOutBtn.addEventListener("click", (e) => {
-    //     e.preventDefault();
-    //     if (confirm("Are you sure you want to sign out?")) {
-    //         alert(
-    //             "Signing out... (In a real application, this would redirect to login page)"
-    //         );
-    //     }
-    // });
 
     // Handle window resize
     window.addEventListener("resize", () => {
