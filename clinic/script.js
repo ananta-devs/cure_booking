@@ -13,28 +13,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize all event listeners
 function initializeEventListeners() {
-    // Navigation buttons
+    // Navigation
     document.getElementById('viewAppointmentsBtn')?.addEventListener('click', showAppointmentsSection);
     document.getElementById('allDoctorsBtn')?.addEventListener('click', showDoctorsSection);
 
-    // Form elements
+    // Forms
     document.getElementById('appointmentForm')?.addEventListener('submit', handleAppointmentSubmit);
-    document.getElementById('specialityType')?.addEventListener('change', () => handleSpecialtyChange());
-    document.getElementById('doctor')?.addEventListener('change', () => handleDoctorChange());
-    document.getElementById('preferredDate')?.addEventListener('change', () => handleDateChange());
     document.getElementById('cancelAppointmentBtn')?.addEventListener('click', cancelAppointmentForm);
     document.getElementById('filterBtn')?.addEventListener('click', filterAppointments);
 
-    // Update modal listeners
-    document.getElementById('updateSpecialityType')?.addEventListener('change', () => handleSpecialtyChange(true));
-    document.getElementById('updateDoctor')?.addEventListener('change', () => handleDoctorChange(true));
-    document.getElementById('updatePreferredDate')?.addEventListener('change', () => handleDateChange(true));
+    // Form field changes
+    ['specialityType', 'updateSpecialityType'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', (e) => 
+            handleSpecialtyChange(id.includes('update')));
+    });
+    
+    ['doctor', 'updateDoctor'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', (e) => 
+            handleDoctorChange(id.includes('update')));
+    });
+    
+    ['preferredDate', 'updatePreferredDate'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', (e) => 
+            handleDateChange(id.includes('update')));
+    });
 
-    // Modal close events
+    // Modal events
     document.addEventListener('click', handleModalClicks);
     document.addEventListener('keydown', (e) => e.key === 'Escape' && closeDoctorModal());
-
-    // Form validation
+    
     addFormValidation();
 }
 
@@ -43,8 +50,8 @@ function handleModalClicks(event) {
     const doctorModal = document.getElementById('doctorModal');
     const updateModal = document.getElementById('updateAppointmentModal');
     
-    if (doctorModal && event.target === doctorModal) closeDoctorModal();
-    if (updateModal && event.target === updateModal) closeUpdateModal();
+    if (event.target === doctorModal) closeDoctorModal();
+    if (event.target === updateModal) closeUpdateModal();
 }
 
 // Initialize date restrictions
@@ -72,16 +79,16 @@ function showDoctorsSection() {
     showSection('doctorsSection', 'appointmentsSection', 'allDoctorsBtn', 'viewAppointmentsBtn');
 }
 
-// Show/Hide appointment form
+// Form visibility
 function showAppointmentForm() {
     const form = document.getElementById('appointmentForm');
     const doctorsGrid = document.getElementById('doctorsGrid');
     
-    if (!form) return;
-    
-    form.style.display = 'block';
+    if (form) {
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth' });
+    }
     if (doctorsGrid) doctorsGrid.style.display = 'none';
-    form.scrollIntoView({ behavior: 'smooth' });
 }
 
 function hideAppointmentForm() {
@@ -102,15 +109,14 @@ function viewAppointment(appointmentId) {
     
     if (row) {
         const cells = row.cells;
-        const appointmentData = {
+        showAppointmentDetails({
             id: cells[0].textContent,
             patientName: cells[1].textContent,
             doctor: cells[2].textContent.split('\n')[0],
             date: cells[3].textContent,
             time: cells[4].textContent,
             status: cells[5].textContent.trim()
-        };
-        showAppointmentDetails(appointmentData);
+        });
     }
 }
 
@@ -118,22 +124,20 @@ function editAppointment(appointmentId) {
     currentEditAppointmentId = appointmentId;
     isEditMode = true;
     
-    fetchAppointmentDetails(appointmentId).then(appointmentData => {
-        if (appointmentData) {
-            const modalData = {
-                id: appointmentData.id,
-                patientName: appointmentData.patient_name,
-                doctor: appointmentData.doctor_name || appointmentData.doc_name,
-                specialty: appointmentData.doctor_specialization || appointmentData.doc_specia,
-                date: formatDateForDisplay(appointmentData.appointment_date),
-                time: formatTimeForDisplay(appointmentData.appointment_time),
-                status: appointmentData.status,
-                phone: appointmentData.patient_phone,
-                email: appointmentData.patient_email,
-                gender: appointmentData.gender
-            };
-            
-            populateUpdateModal(modalData);
+    fetchAppointmentDetails(appointmentId).then(data => {
+        if (data) {
+            populateUpdateModal({
+                id: data.id,
+                patientName: data.patient_name,
+                doctor: data.doctor_name || data.doc_name,
+                specialty: data.doctor_specialization || data.doc_specia,
+                date: formatDateForDisplay(data.appointment_date),
+                time: formatTimeForDisplay(data.appointment_time),
+                status: data.status,
+                phone: data.patient_phone,
+                email: data.patient_email,
+                gender: data.gender
+            });
             showUpdateModal();
         } else {
             showMessage('Error loading appointment details', 'error');
@@ -141,51 +145,45 @@ function editAppointment(appointmentId) {
     });
 }
 
-function populateUpdateModal(appointmentData) {
-    // Set all basic fields
-    document.getElementById('updateAppointmentId').value = appointmentData.id;
-    document.getElementById('updateFirstName').value = appointmentData.patientName;
-    document.getElementById('updatePhone').value = appointmentData.phone || '';
-    document.getElementById('updateEmail').value = appointmentData.email || '';
-    document.getElementById('updateStatus').value = appointmentData.status.toLowerCase();
-    
-    // Set gender radio buttons
-    document.querySelectorAll('input[name="updateGender"]').forEach(radio => {
-        radio.checked = radio.value === appointmentData.gender;
-    });
-    
-    // Convert and set date
-    const formattedDate = appointmentData.date.includes('/') 
-        ? appointmentData.date.split('/').reverse().join('-')
-        : appointmentData.date;
-    document.getElementById('updatePreferredDate').value = formattedDate;
-    
-    // Set specialty and chain async operations
-    document.getElementById('updateSpecialityType').value = appointmentData.specialty;
-    
-    handleSpecialtyChange(true)
-        .then(() => new Promise(resolve => {
-            setTimeout(() => {
-                const doctorSelect = document.getElementById('updateDoctor');
-                const doctorOption = Array.from(doctorSelect.options)
-                    .find(option => option.textContent.includes(appointmentData.doctor));
+async function populateUpdateModal(appointmentData) {
+    try {
+        // Set basic fields
+        document.getElementById('updateAppointmentId').value = appointmentData.id;
+        document.getElementById('updateFirstName').value = appointmentData.patientName;
+        document.getElementById('updatePhone').value = appointmentData.phone || '';
+        document.getElementById('updateEmail').value = appointmentData.email || '';
+        document.getElementById('updateStatus').value = appointmentData.status.toLowerCase();
+        
+        // Set gender
+        document.querySelectorAll('input[name="updateGender"]').forEach(radio => {
+            radio.checked = radio.value === appointmentData.gender;
+        });
+        
+        // Set date
+        const formattedDate = appointmentData.date.includes('/') 
+            ? appointmentData.date.split('/').reverse().join('-')
+            : appointmentData.date;
+        document.getElementById('updatePreferredDate').value = formattedDate;
+        
+        // Set specialty and load doctors
+        document.getElementById('updateSpecialityType').value = appointmentData.specialty;
+        await handleSpecialtyChange(true);
+        
+        // Wait and set doctor
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const doctorSelect = document.getElementById('updateDoctor');
+        const doctorOption = Array.from(doctorSelect.options)
+            .find(option => option.textContent.includes(appointmentData.doctor));
+        
+        if (doctorOption) {
+            doctorSelect.value = doctorOption.value;
+            handleDoctorChange(true);
+            
+            // Load time slots and set time
+            if (formattedDate) {
+                await loadTimeSlots(doctorOption.value, formattedDate, 'update', currentEditAppointmentId);
+                await new Promise(resolve => setTimeout(resolve, 200));
                 
-                if (doctorOption) {
-                    doctorSelect.value = doctorOption.value;
-                    handleDoctorChange(true);
-                    resolve(doctorOption.value);
-                } else {
-                    resolve(null);
-                }
-            }, 200);
-        }))
-        .then(doctorId => {
-            if (doctorId && formattedDate) {
-                return loadTimeSlots(doctorId, formattedDate, 'update', currentEditAppointmentId);
-            }
-        })
-        .then(() => new Promise(resolve => {
-            setTimeout(() => {
                 const timeSelect = document.getElementById('updateTime');
                 const timeOption = Array.from(timeSelect.options)
                     .find(option => 
@@ -195,16 +193,15 @@ function populateUpdateModal(appointmentData) {
                     );
                 
                 if (timeOption) timeSelect.value = timeOption.value;
-                resolve();
-            }, 200);
-        }))
-        .catch(error => {
-            console.error('Error loading update modal data:', error);
-            showMessage('Error loading appointment details', 'error');
-        });
+            }
+        }
+    } catch (error) {
+        console.error('Error loading update modal data:', error);
+        showMessage('Error loading appointment details', 'error');
+    }
 }
 
-// Helper functions for date/time formatting
+// Helper functions
 function formatDateForDisplay(dateStr) {
     if (dateStr.includes('-')) {
         const parts = dateStr.split('-');
@@ -215,12 +212,11 @@ function formatDateForDisplay(dateStr) {
 
 function formatTimeForDisplay(timeStr) {
     if (timeStr.includes(':')) {
-        const parts = timeStr.split(':');
-        const hour = parseInt(parts[0]);
-        const minute = parts[1];
+        const [hours, minutes] = timeStr.split(':');
+        const hour = parseInt(hours);
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-        return `${displayHour}:${minute} ${ampm}`;
+        return `${displayHour}:${minutes} ${ampm}`;
     }
     return timeStr;
 }
@@ -236,38 +232,7 @@ function fetchAppointmentDetails(appointmentId) {
         .catch(() => null);
 }
 
-// Unified specialty change handler
-// function handleSpecialtyChange(isUpdate = false) {
-//     const prefix = isUpdate ? 'update' : '';
-//     const specialty = document.getElementById(`${prefix}SpecialityType`).value;
-//     const doctorSelect = document.getElementById(`${prefix}Doctor`);
-//     const timeSelect = document.getElementById(`${prefix}Time`);
-    
-//     doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
-//     timeSelect.innerHTML = '<option value="">Select Time</option>';
-    
-//     if (!specialty) return Promise.resolve();
-    
-//     const formData = new FormData();
-//     formData.append('action', 'get_doctors_by_specialty');
-//     formData.append('specialty', specialty);
-    
-//     return fetch('api.php', { method: 'POST', body: formData })
-//         .then(response => response.json())
-//         .then(doctors => {
-//             doctors.forEach(doctor => {
-//                 const option = document.createElement('option');
-//                 option.value = doctor.doc_id;
-//                 option.textContent = `${doctor.doc_name} - ${doctor.experience}y exp`;
-//                 doctorSelect.appendChild(option);
-//             });
-//         })
-//         .catch(error => {
-//             console.error('Error loading doctors:', error);
-//             showMessage('Error loading doctors', 'error');
-//         });
-// }
-
+// Unified change handlers
 function handleSpecialtyChange(isUpdate = false) {
     const prefix = isUpdate ? 'update' : '';
     const specialty = document.getElementById(`${prefix}SpecialityType`).value;
@@ -286,29 +251,23 @@ function handleSpecialtyChange(isUpdate = false) {
     return fetch('api.php', { method: 'POST', body: formData })
         .then(response => response.json())
         .then(doctors => {
-            // Clear loading state
             doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
-            
-            // Add doctors to select
             doctors.forEach(doctor => {
                 const option = document.createElement('option');
                 option.value = doctor.doc_id;
                 option.textContent = `${doctor.doc_name} - ${doctor.experience}y exp`;
                 doctorSelect.appendChild(option);
             });
-            
-            return doctors; // Return doctors for chaining
+            return doctors;
         })
         .catch(error => {
             console.error('Error loading doctors:', error);
             doctorSelect.innerHTML = '<option value="">Error loading doctors</option>';
             showMessage('Error loading doctors', 'error');
-            throw error; // Re-throw to handle in calling function
+            throw error;
         });
 }
 
-
-// Unified doctor change handler
 function handleDoctorChange(isUpdate = false) {
     const prefix = isUpdate ? 'update' : '';
     const doctorId = document.getElementById(`${prefix}Doctor`).value;
@@ -328,7 +287,6 @@ function handleDoctorChange(isUpdate = false) {
     }
 }
 
-// Unified date change handler
 function handleDateChange(isUpdate = false) {
     const prefix = isUpdate ? 'update' : '';
     const doctorId = document.getElementById(`${prefix}Doctor`).value;
@@ -389,7 +347,7 @@ function formatTimeSlot(timeSlot) {
     return `${displayHour}:${minutes} ${ampm}`;
 }
 
-// Form submission handler
+// Form submission
 function handleAppointmentSubmit(event) {
     event.preventDefault();
     
@@ -417,13 +375,11 @@ function handleAppointmentSubmit(event) {
     fetch('api.php', { method: 'POST', body: formData })
         .then(response => response.json())
         .then(data => {
+            showMessage(data.message, data.success ? 'success' : 'error');
             if (data.success) {
-                showMessage(data.message, 'success');
                 resetForm();
                 hideAppointmentForm();
                 setTimeout(() => location.reload(), 1500);
-            } else {
-                showMessage(data.message, 'error');
             }
         })
         .catch(error => {
@@ -459,12 +415,10 @@ function submitUpdateAppointment() {
     fetch('api.php', { method: 'POST', body: formData })
         .then(response => response.json())
         .then(data => {
+            showMessage(data.message, data.success ? 'success' : 'error');
             if (data.success) {
-                showMessage(data.message, 'success');
                 closeUpdateModal();
                 setTimeout(() => location.reload(), 1500);
-            } else {
-                showMessage(data.message, 'error');
             }
         })
         .catch(error => {
@@ -539,89 +493,9 @@ function bookAppointmentWithDoctor() {
     bookAppointmentWithDoctorFromCard(currentDoctorId, currentSpecialty);
 }
 
-// function bookAppointmentWithDoctorFromCard(doctorId, specialty) {
-//     const form = document.getElementById('appointmentForm');
-//     if (!form) return;
-    
-//     currentDoctorId = doctorId;
-//     currentSpecialty = specialty;
-    
-//     showAppointmentForm();
-    
-//     const specialtySelect = document.getElementById('specialityType');
-//     const doctorSelect = document.getElementById('doctor');
-    
-//     if (!specialtySelect || !doctorSelect) return;
-    
-//     specialtySelect.value = specialty;
-    
-//     handleSpecialtyChange().then(() => {
-//         setTimeout(() => {
-//             doctorSelect.value = doctorId;
-//             handleDoctorChange();
-//         }, 100);
-//     }).catch(error => {
-//         console.error('Error in specialty change:', error);
-//         showAppointmentForm();
-//     });
-// }
-
-// Modal functions
-
-// function bookAppointmentWithDoctorFromCard(doctorId, specialty) {
-//     const form = document.getElementById('appointmentForm');
-//     if (!form) return;
-    
-//     currentDoctorId = doctorId;
-//     currentSpecialty = specialty;
-    
-//     showAppointmentForm();
-    
-//     const specialtySelect = document.getElementById('specialityType');
-//     const doctorSelect = document.getElementById('doctor');
-    
-//     if (!specialtySelect || !doctorSelect) return;
-    
-//     // Set the specialty first
-//     specialtySelect.value = specialty;
-    
-//     // Load doctors for the specialty and then select the specific doctor
-//     handleSpecialtyChange().then(() => {
-//         // Wait a bit longer for the doctors to load
-//         setTimeout(() => {
-//             // Set the doctor value
-//             doctorSelect.value = doctorId;
-            
-//             // Trigger the doctor change event to update the UI
-//             handleDoctorChange();
-            
-//             // Also trigger the change event manually to ensure any other listeners are called
-//             const changeEvent = new Event('change', { bubbles: true });
-//             doctorSelect.dispatchEvent(changeEvent);
-            
-//             // Update doctor info display if exists
-//             const doctorInfo = document.getElementById('doctorInfo');
-//             if (doctorInfo) {
-//                 const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
-//                 if (selectedOption && selectedOption.value) {
-//                     doctorInfo.innerHTML = `<small>Selected: ${selectedOption.textContent}</small>`;
-//                 }
-//             }
-//         }, 300); // Increased timeout to ensure doctors are loaded
-//     }).catch(error => {
-//         console.error('Error in specialty change:', error);
-//         showMessage('Error loading doctor information', 'error');
-//     });
-// }
-
-function bookAppointmentWithDoctorFromCard(doctorId, specialty) {
-    console.log('bookAppointmentWithDoctorFromCard called with:', { doctorId, specialty });
-    
+async function bookAppointmentWithDoctorFromCard(doctorId, specialty) {
     const form = document.getElementById('appointmentForm');
-    if (!form) {
-        console.error('Appointment form not found');
-        return;
-    }
+    if (!form) return;
     
     currentDoctorId = doctorId;
     currentSpecialty = specialty;
@@ -631,83 +505,33 @@ function bookAppointmentWithDoctorFromCard(doctorId, specialty) {
     const specialtySelect = document.getElementById('specialityType');
     const doctorSelect = document.getElementById('doctor');
     
-    if (!specialtySelect) {
-        console.error('Specialty select not found');
-        return;
-    }
-    if (!doctorSelect) {
-        console.error('Doctor select not found');
-        return;
-    }
+    if (!specialtySelect || !doctorSelect) return;
     
-    console.log('Setting specialty to:', specialty);
-    specialtySelect.value = specialty;
-    
-    // Manually trigger change event on specialty select
-    const specialtyChangeEvent = new Event('change', { bubbles: true });
-    specialtySelect.dispatchEvent(specialtyChangeEvent);
-    
-    // Load doctors and select the specific one
-    loadDoctorsAndSelect(doctorId, specialty);
-}
-
-function loadDoctorsAndSelect(doctorId, specialty) {
-    console.log('Loading doctors for specialty:', specialty);
-    
-    const formData = new FormData();
-    formData.append('action', 'get_doctors_by_specialty');
-    formData.append('specialty', specialty);
-    
-    fetch('api.php', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(doctors => {
-            console.log('Doctors loaded:', doctors);
-            
-            const doctorSelect = document.getElementById('doctor');
-            doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
-            
-            // Populate doctors
-            doctors.forEach(doctor => {
-                const option = document.createElement('option');
-                option.value = doctor.doc_id;
-                option.textContent = `${doctor.doc_name} - ${doctor.experience}y exp`;
-                doctorSelect.appendChild(option);
-            });
-            
-            // Now select the specific doctor
-            console.log('Selecting doctor with ID:', doctorId);
-            doctorSelect.value = doctorId;
-            
-            // Verify the selection worked
-            if (doctorSelect.value === doctorId.toString()) {
-                console.log('Doctor selected successfully');
-                
-                // Trigger change event
-                const doctorChangeEvent = new Event('change', { bubbles: true });
-                doctorSelect.dispatchEvent(doctorChangeEvent);
-                
-                // Update doctor info display
-                const doctorInfo = document.getElementById('doctorInfo');
-                if (doctorInfo) {
-                    const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
-                    doctorInfo.innerHTML = `<small>Selected: ${selectedOption.textContent}</small>`;
-                }
-                
-                // Also call handleDoctorChange directly
-                handleDoctorChange();
-            } else {
-                console.error('Failed to select doctor. Available options:', 
-                    Array.from(doctorSelect.options).map(opt => ({ value: opt.value, text: opt.textContent })));
+    try {
+        // Set specialty and load doctors
+        specialtySelect.value = specialty;
+        await handleSpecialtyChange();
+        
+        // Select the specific doctor
+        await new Promise(resolve => setTimeout(resolve, 300));
+        doctorSelect.value = doctorId;
+        
+        // Update doctor info and trigger change
+        handleDoctorChange();
+        const doctorInfo = document.getElementById('doctorInfo');
+        if (doctorInfo) {
+            const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
+            if (selectedOption?.value) {
+                doctorInfo.innerHTML = `<small>Selected: ${selectedOption.textContent}</small>`;
             }
-        })
-        .catch(error => {
-            console.error('Error loading doctors:', error);
-            showMessage('Error loading doctors', 'error');
-        });
+        }
+    } catch (error) {
+        console.error('Error setting up appointment form:', error);
+        showMessage('Error loading doctor information', 'error');
+    }
 }
 
-
-
+// Modal functions
 function showUpdateModal() {
     const modal = document.getElementById('updateAppointmentModal');
     if (modal) modal.style.display = 'block';
@@ -841,7 +665,6 @@ function resetForm() {
     if (!form) return;
     
     form.reset();
-    
     form.querySelectorAll('.error').forEach(el => el.style.display = 'none');
     form.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
     
@@ -859,7 +682,6 @@ function resetForm() {
 
 function cancelAppointmentForm() {
     hideAppointmentForm();
-    resetForm();
 }
 
 function showAppointmentDetails(appointmentData) {

@@ -39,7 +39,7 @@
                 <p>Find and book appointments with doctors, get online consultation, order medicines, book lab tests, and more.</p>
                 
                 <div class="search-box">
-                    <input type="text" class="search-input" placeholder="Search doctors, clinics, hospitals, etc.">
+                    <input type="text" class="search-input" placeholder="Search doctors, clinics etc.">
                     <button class="search-btn">Search</button>
                 </div>
             </div>

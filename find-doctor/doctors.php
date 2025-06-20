@@ -36,28 +36,16 @@
             gap: 8px;
             margin-bottom: 5px;
         }
-        .clinic-name i {
-            color: #007bff;
-            font-size: 0.9rem;
-        }
-        .clinic-name strong {
-            color: #2c3e50;
-            font-size: 0.95rem;
-        }
+        .clinic-name i { color: #007bff; font-size: 0.9rem; }
+        .clinic-name strong { color: #2c3e50; font-size: 0.95rem; }
         .clinic-location {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-left: 20px;
         }
-        .clinic-location i {
-            color: #6c757d;
-            font-size: 0.8rem;
-        }
-        .clinic-location span {
-            color: #6c757d;
-            font-size: 0.85rem;
-        }
+        .clinic-location i { color: #6c757d; font-size: 0.8rem; }
+        .clinic-location span { color: #6c757d; font-size: 0.85rem; }
         .clinic-availability {
             display: flex;
             align-items: center;
@@ -65,50 +53,16 @@
             margin-left: 20px;
             margin-top: 5px;
         }
-        .clinic-availability i {
-            color: #28a745;
-            font-size: 0.8rem;
-        }
-        .clinic-availability span {
-            color: #495057;
-            font-size: 0.85rem;
-        }
-        .clinic-availability strong {
-            color: #2c3e50;
-            font-weight: 600;
-        }
-        .doctor-clinics-section .clinic-item:only-child .clinic-availability {
-            margin-left: 0;
-            justify-content: center;
-            background-color: #e8f5e8;
-            padding: 10px;
-            border-radius: 6px;
-            border-left: 3px solid #28a745;
-        }
+        .clinic-availability i { color: #28a745; font-size: 0.8rem; }
+        .clinic-availability span { color: #495057; font-size: 0.85rem; }
+        .clinic-availability strong { color: #2c3e50; font-weight: 600; }
+        
         @media (max-width: 768px) {
-            .clinic-availability {
-                margin-left: 15px;
-                margin-top: 8px;
-            }
-            .clinic-availability span {
-                font-size: 0.8rem;
-            }
-            .doctor-clinics-section .clinic-item:only-child .clinic-availability {
-                margin-left: 0;
-                padding: 8px;
-            }
-            .clinic-item {
-                padding: 10px 12px;
-            }
-            .clinic-name strong {
-                font-size: 0.9rem;
-            }
-            .clinic-location {
-                margin-left: 15px;
-            }
-            .clinic-location span {
-                font-size: 0.8rem;
-            }
+            .clinic-availability, .clinic-location { margin-left: 15px; }
+            .clinic-availability { margin-top: 8px; }
+            .clinic-item { padding: 10px 12px; }
+            .clinic-name strong { font-size: 0.9rem; }
+            .clinic-location span, .clinic-availability span { font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -121,9 +75,8 @@
     ?>
 
     <script>
-        // Pass login status to JavaScript
         const USER_LOGGED_IN = <?php echo $isLoggedIn ? 'true' : 'false'; ?>;
-        const LOGIN_URL = '../user/login.php'; // Adjust path as needed;
+        const LOGIN_URL = '../user/login.php';
     </script>
 
     <section class="hero">
@@ -146,7 +99,7 @@
                         }
                     ?>
                 </select>
-                <button type="submit" aria-label="Search"><i class="ri-search-line" id="search-icon"></i></button>
+                <button type="submit" aria-label="Search"><i class="ri-search-line"></i></button>
             </form>
         </div>
     </section>
@@ -156,6 +109,7 @@
         <div id="doctors-container" class="doctors-container"></div>
     </section>
 
+    <!-- Doctor Profile Modal -->
     <div id="doctor-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
@@ -163,6 +117,7 @@
         </div>
     </div>
 
+    <!-- Booking Modal -->
     <div id="bookingModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -204,6 +159,7 @@
     </div>
 
     <script>
+        // DOM Elements
         const elements = {
             doctorsContainer: document.getElementById('doctors-container'),
             searchInput: document.getElementById('search-bar'),
@@ -220,6 +176,7 @@
         let currentDoctors = [];
         let selectedDoctorForBooking = null;
 
+        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             fetchDoctors();
             setupEventListeners();
@@ -231,12 +188,12 @@
                 filterDoctors();
             });
             
-            elements.closeModal.addEventListener('click', closeMainModal);
-            elements.closeBookingModal.addEventListener('click', closeBookingModalHandler);
+            elements.closeModal.addEventListener('click', () => closeModal(elements.modal));
+            elements.closeBookingModal.addEventListener('click', () => closeModal(elements.bookingModal));
             
             window.addEventListener('click', (e) => {
-                if (e.target === elements.modal) closeMainModal();
-                if (e.target === elements.bookingModal) closeBookingModalHandler();
+                if (e.target === elements.modal) closeModal(elements.modal);
+                if (e.target === elements.bookingModal) closeModal(elements.bookingModal);
             });
 
             elements.bookingForm.addEventListener('submit', handleBookingSubmit);
@@ -244,19 +201,9 @@
             document.querySelector('#date').addEventListener('change', loadTimeSlots);
         }
 
-        function closeMainModal() {
-            elements.modal.style.display = 'none';
+        function closeModal(modal) {
+            modal.style.display = 'none';
             document.body.style.overflow = 'auto';
-        }
-
-        function closeBookingModalHandler() {
-            elements.bookingModal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        // Fixed login check function
-        function checkLoginStatus() {
-            return USER_LOGGED_IN;
         }
 
         async function fetchDoctors(filters = {}) {
@@ -270,20 +217,7 @@
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 
                 const responseText = await response.text();
-                let doctors;
-                
-                try {
-                    doctors = JSON.parse(responseText);
-                } catch (parseError) {
-                    console.error('Parse error:', parseError);
-                    elements.doctorsContainer.innerHTML = `
-                        <div class="error-message">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <p>Invalid response format from server.</p>
-                        </div>
-                    `;
-                    return;
-                }
+                const doctors = JSON.parse(responseText);
                 
                 if (doctors.success === false || doctors.error) {
                     throw new Error(doctors.message || doctors.error || 'Unknown error');
@@ -297,7 +231,6 @@
                     <div class="error-message">
                         <i class="fas fa-exclamation-circle"></i>
                         <p>Failed to load doctors. Please try again later.</p>
-                        <small>Error: ${error.message}</small>
                     </div>
                 `;
             }
@@ -309,16 +242,14 @@
         }
 
         function displayDoctors(doctorsToDisplay) {
-            elements.doctorsContainer.innerHTML = '';
-            
             if (!doctorsToDisplay || doctorsToDisplay.length === 0) {
                 elements.doctorsContainer.innerHTML = '<div class="error-message"><i class="fas fa-user-md"></i><p>No doctors found matching your criteria.</p></div>';
                 return;
             }
             
+            elements.doctorsContainer.innerHTML = '';
             doctorsToDisplay.forEach(doctor => {
-                const doctorCard = createDoctorCard(doctor);
-                elements.doctorsContainer.appendChild(doctorCard);
+                elements.doctorsContainer.appendChild(createDoctorCard(doctor));
             });
         }
 
@@ -330,24 +261,9 @@
                 <div class="doctor-info">
                     <h3 class="doctor-name">${doctor.name}</h3>
                     <p class="doctor-specialty">${doctor.specialty}</p>
-                    ${doctor.location ? `
-                        <div class="doctor-location">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>${doctor.location}</span>
-                        </div>
-                    ` : ''}
-                    ${doctor.experience ? `
-                        <div class="doctor-experience">
-                            <i class="fas fa-user-md"></i>
-                            <span>${doctor.experience} Years Experience</span>
-                        </div>
-                    ` : ''}
-                    ${doctor.fees ? `
-                        <div class="doctor-fees">
-                            <i class="fas fa-money-bill-wave"></i>
-                            <span>Consultation: ${doctor.fees}/-</span>
-                        </div>
-                    ` : ''}
+                    ${doctor.location ? `<div class="doctor-location"><i class="fas fa-map-marker-alt"></i><span>${doctor.location}</span></div>` : ''}
+                    ${doctor.experience ? `<div class="doctor-experience"><i class="fas fa-user-md"></i><span>${doctor.experience} Years Experience</span></div>` : ''}
+                    ${doctor.fees ? `<div class="doctor-fees"><i class="fas fa-money-bill-wave"></i><span>Consultation: ${doctor.fees}/-</span></div>` : ''}
                     <div class="doctor-actions">
                         <button class="view-profile-btn" data-id="${doctor.id}">View Profile</button>
                         <button class="book-btn" data-id="${doctor.id}">Book Now</button>
@@ -355,212 +271,94 @@
                 </div>
             `;
             
-            const viewProfileBtn = card.querySelector('.view-profile-btn');
-            const bookBtn = card.querySelector('.book-btn');
-            
-            viewProfileBtn.addEventListener('click', () => openDoctorModal(doctor.id));
-            bookBtn.addEventListener('click', () => handleBookButtonClick(doctor.id));
+            card.querySelector('.view-profile-btn').addEventListener('click', () => openDoctorModal(doctor.id));
+            card.querySelector('.book-btn').addEventListener('click', () => {
+                if (!USER_LOGGED_IN) {
+                    window.location.href = LOGIN_URL;
+                    return;
+                }
+                openBookingForm(doctor.id);
+            });
             
             return card;
-        }
-
-        // Fixed book button click handler
-        function handleBookButtonClick(doctorId) {
-            console.log('Book button clicked. Login status:', USER_LOGGED_IN);
-            
-            if (!USER_LOGGED_IN) {
-                window.location.href = LOGIN_URL;
-            }
-            
-            openBookingForm(doctorId);
         }
 
         async function openDoctorModal(doctorId) {
             const doctor = currentDoctors.find(doc => doc.id == doctorId);
             if (!doctor) return;
             
-            elements.modalDoctorDetails.innerHTML = `
-                <div class="loading-modal">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Loading doctor details...</p>
-                </div>
-            `;
-            
+            elements.modalDoctorDetails.innerHTML = '<div class="loading-modal"><i class="fas fa-spinner fa-spin"></i><p>Loading doctor details...</p></div>';
             elements.modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
             
             try {
                 const availabilityData = await fetchDoctorAvailability(doctorId);
-                const clinicNames = doctor.clinic_names ? doctor.clinic_names.split(', ') : [];
-                const clinicLocations = doctor.clinic_locations ? doctor.clinic_locations.split(', ') : [];
-                
-                let clinicInfoHTML = '';
-                if (clinicNames.length > 0) {
-                    clinicInfoHTML = `
-                        <div class="doctor-clinics-section">
-                            <h3>Available at Clinics:</h3>
-                            <div class="clinics-list">
-                    `;
-                    
-                    clinicNames.forEach((clinicName, index) => {
-                        const clinicLocation = clinicLocations[index] || 'Location not specified';
-                        let availabilityText = 'Please contact clinic for availability';
-                        
-                        if (availabilityData && availabilityData[clinicName]) {
-                            const clinicAvailability = availabilityData[clinicName];
-                            const availableDays = Object.keys(clinicAvailability).filter(day => 
-                                Object.values(clinicAvailability[day]).some(slot => slot === true)
-                            );
-                            
-                            if (availableDays.length > 0) {
-                                const formattedDays = availableDays.map(day => 
-                                    day.charAt(0).toUpperCase() + day.slice(1)
-                                );
-                                availabilityText = formattedDays.join(', ');
-                            }
-                        } else if (doctor.availability && Array.isArray(doctor.availability)) {
-                            availabilityText = doctor.availability.join(', ');
-                        }
-                        
-                        clinicInfoHTML += `
-                            <div class="clinic-item">
-                                <div class="clinic-name">
-                                    <i class="fas fa-hospital"></i>
-                                    <strong>${clinicName}</strong>
-                                </div>
-                                <div class="clinic-location">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>${clinicLocation}</span>
-                                </div>
-                                <div class="clinic-availability">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <span><strong>Available Days:</strong> ${availabilityText}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    clinicInfoHTML += '</div></div>';
-                } else if (doctor.availability && Array.isArray(doctor.availability) && doctor.availability.length > 0) {
-                    clinicInfoHTML = `
-                        <div class="doctor-clinics-section">
-                            <h3>Availability:</h3>
-                            <div class="clinic-item">
-                                <div class="clinic-availability">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <span><strong>Available Days:</strong> ${doctor.availability.join(', ')}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
+                const clinicInfoHTML = createClinicInfo(doctor, availabilityData);
                 
                 elements.modalDoctorDetails.innerHTML = `
                     <div class="doctor-profile">
                         <div class="doctor-profile-info">
                             <h2 class="doctor-profile-name">${doctor.name}</h2>
                             <p class="doctor-specialty">${doctor.specialty}</p>
-                            
                             <div class="doctor-profile-details">
-                                ${doctor.education ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-graduation-cap"></i>
-                                        <span>${doctor.education}</span>
-                                    </div>
-                                ` : ''}
-                                ${doctor.location ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>${doctor.location}</span>
-                                    </div>
-                                ` : ''}
-                                ${doctor.experience ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-user-md"></i>
-                                        <span>${doctor.experience} Years Experience</span>
-                                    </div>
-                                ` : ''}
-                                ${doctor.email ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-envelope"></i>
-                                        <span>${doctor.email}</span>
-                                    </div>
-                                ` : ''}
-                                ${doctor.fees ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                        <span>Consultation Fee: ${doctor.fees}/-</span>
-                                    </div>
-                                ` : ''}
+                                ${createProfileDetail('fas fa-graduation-cap', doctor.education)}
+                                ${createProfileDetail('fas fa-map-marker-alt', doctor.location)}
+                                ${createProfileDetail('fas fa-user-md', doctor.experience ? `${doctor.experience} Years Experience` : null)}
+                                ${createProfileDetail('fas fa-envelope', doctor.email)}
+                                ${createProfileDetail('fas fa-money-bill-wave', doctor.fees ? `Consultation Fee: ${doctor.fees}/-` : null)}
                             </div>
                         </div>
                     </div>
-                    
-                    ${doctor.bio ? `
-                        <div class="doctor-bio">
-                            <h3>About Doctor</h3>
-                            <p>${doctor.bio}</p>
-                        </div>
-                    ` : ''}
-
+                    ${doctor.bio ? `<div class="doctor-bio"><h3>About Doctor</h3><p>${doctor.bio}</p></div>` : ''}
                     ${clinicInfoHTML}
                 `;
-                
             } catch (error) {
                 console.error('Error loading doctor details:', error);
-                const basicClinicInfo = createBasicClinicInfo(doctor);
-                
-                elements.modalDoctorDetails.innerHTML = `
-                    <div class="doctor-profile">
-                        <div class="doctor-profile-info">
-                            <h2 class="doctor-profile-name">${doctor.name}</h2>
-                            <p class="doctor-specialty">${doctor.specialty}</p>
-                            
-                            <div class="doctor-profile-details">
-                                ${doctor.education ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-graduation-cap"></i>
-                                        <span>${doctor.education}</span>
-                                    </div>
-                                ` : ''}
-                                ${doctor.location ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>${doctor.location}</span>
-                                    </div>
-                                ` : ''}
-                                ${doctor.experience ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-user-md"></i>
-                                        <span>${doctor.experience} Years Experience</span>
-                                    </div>
-                                ` : ''}
-                                ${doctor.email ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-envelope"></i>
-                                        <span>${doctor.email}</span>
-                                    </div>
-                                ` : ''}
-                                ${doctor.fees ? `
-                                    <div class="doctor-profile-detail">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                        <span>Consultation Fee: ${doctor.fees}/-</span>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    ${doctor.bio ? `
-                        <div class="doctor-bio">
-                            <h3>About Doctor</h3>
-                            <p>${doctor.bio}</p>
-                        </div>
-                    ` : ''}
-                    
-                    ${basicClinicInfo}
-                `;
+                elements.modalDoctorDetails.innerHTML = createBasicDoctorProfile(doctor);
             }
+        }
+
+        function createProfileDetail(iconClass, content) {
+            return content ? `<div class="doctor-profile-detail"><i class="${iconClass}"></i><span>${content}</span></div>` : '';
+        }
+
+        function createClinicInfo(doctor, availabilityData) {
+            const clinicNames = doctor.clinic_names ? doctor.clinic_names.split(', ') : [];
+            const clinicLocations = doctor.clinic_locations ? doctor.clinic_locations.split(', ') : [];
+            
+            if (clinicNames.length === 0) {
+                return doctor.availability && Array.isArray(doctor.availability) && doctor.availability.length > 0 
+                    ? `<div class="doctor-clinics-section"><h3>Availability:</h3><div class="clinic-item"><div class="clinic-availability"><i class="fas fa-calendar-alt"></i><span><strong>Available Days:</strong> ${doctor.availability.join(', ')}</span></div></div></div>`
+                    : '';
+            }
+            
+            let clinicInfoHTML = '<div class="doctor-clinics-section"><h3>Available at Clinics:</h3><div class="clinics-list">';
+            
+            clinicNames.forEach((clinicName, index) => {
+                const clinicLocation = clinicLocations[index] || 'Location not specified';
+                let availabilityText = 'Please contact clinic for availability';
+                
+                if (availabilityData && availabilityData[clinicName]) {
+                    const availableDays = Object.keys(availabilityData[clinicName]).filter(day => 
+                        Object.values(availabilityData[clinicName][day]).some(slot => slot === true)
+                    );
+                    if (availableDays.length > 0) {
+                        availabilityText = availableDays.map(day => day.charAt(0).toUpperCase() + day.slice(1)).join(', ');
+                    }
+                } else if (doctor.availability && Array.isArray(doctor.availability)) {
+                    availabilityText = doctor.availability.join(', ');
+                }
+                
+                clinicInfoHTML += `
+                    <div class="clinic-item">
+                        <div class="clinic-name"><i class="fas fa-hospital"></i><strong>${clinicName}</strong></div>
+                        <div class="clinic-location"><i class="fas fa-map-marker-alt"></i><span>${clinicLocation}</span></div>
+                        <div class="clinic-availability"><i class="fas fa-calendar-alt"></i><span><strong>Available Days:</strong> ${availabilityText}</span></div>
+                    </div>
+                `;
+            });
+            
+            return clinicInfoHTML + '</div></div>';
         }
 
         async function fetchDoctorAvailability(doctorId) {
@@ -573,61 +371,6 @@
                 console.error('Error fetching doctor availability:', error);
                 return null;
             }
-        }
-
-        function createBasicClinicInfo(doctor) {
-            const clinicNames = doctor.clinic_names ? doctor.clinic_names.split(', ') : [];
-            const clinicLocations = doctor.clinic_locations ? doctor.clinic_locations.split(', ') : [];
-            
-            if (clinicNames.length === 0) {
-                if (doctor.availability && Array.isArray(doctor.availability) && doctor.availability.length > 0) {
-                    return `
-                        <div class="doctor-clinics-section">
-                            <h3>Availability:</h3>
-                            <div class="clinic-item">
-                                <div class="clinic-availability">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <span><strong>Available Days:</strong> ${doctor.availability.join(', ')}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-                return '';
-            }
-            
-            let clinicInfoHTML = `
-                <div class="doctor-clinics-section">
-                    <h3>Available at Clinics:</h3>
-                    <div class="clinics-list">
-            `;
-            
-            clinicNames.forEach((clinicName, index) => {
-                const clinicLocation = clinicLocations[index] || 'Location not specified';
-                const availabilityText = doctor.availability && Array.isArray(doctor.availability) && doctor.availability.length > 0 
-                    ? doctor.availability.join(', ') 
-                    : 'Please contact clinic for availability';
-                
-                clinicInfoHTML += `
-                    <div class="clinic-item">
-                        <div class="clinic-name">
-                            <i class="fas fa-hospital"></i>
-                            <strong>${clinicName}</strong>
-                        </div>
-                        <div class="clinic-location">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>${clinicLocation}</span>
-                        </div>
-                        <div class="clinic-availability">
-                            <i class="fas fa-calendar-alt"></i>
-                            <span><strong>Available Days:</strong> ${availabilityText}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            clinicInfoHTML += '</div></div>';
-            return clinicInfoHTML;
         }
 
         function openBookingForm(doctorId) {
@@ -645,8 +388,17 @@
                 </div>
             `;
             
-            const clinicDetails = doctor.clinic_details ? doctor.clinic_details.split('||') : [];
+            populateClinicSelect(doctor);
+            setupDateInput();
+            addHiddenDoctorId(doctor.id);
+            
+            elements.bookingModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function populateClinicSelect(doctor) {
             const clinicSelect = document.querySelector('#clinic');
+            const clinicDetails = doctor.clinic_details ? doctor.clinic_details.split('||') : [];
             
             clinicSelect.innerHTML = '<option value="">Select a clinic</option>';
             
@@ -664,19 +416,23 @@
                 option.textContent = 'General Clinic';
                 clinicSelect.appendChild(option);
             }
-            
-            const timeSelect = document.querySelector('#time');
-            timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
-            
+        }
+
+        function setupDateInput() {
             const dateInput = document.querySelector('#date');
+            const timeSelect = document.querySelector('#time');
+            
             const today = new Date();
-            const minDate = today.toISOString().split('T')[0];
-            dateInput.min = minDate;
+            dateInput.min = today.toISOString().split('T')[0];
             
             const maxDate = new Date();
             maxDate.setMonth(maxDate.getMonth() + 3);
             dateInput.max = maxDate.toISOString().split('T')[0];
             
+            timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
+        }
+
+        function addHiddenDoctorId(doctorId) {
             let doctorIdInput = document.querySelector('#doctor_id');
             if (!doctorIdInput) {
                 doctorIdInput = document.createElement('input');
@@ -685,10 +441,7 @@
                 doctorIdInput.name = 'doctor_id';
                 elements.bookingForm.appendChild(doctorIdInput);
             }
-            doctorIdInput.value = doctor.id;
-            
-            elements.bookingModal.style.display = 'block';
-            document.body.style.overflow = 'hidden';
+            doctorIdInput.value = doctorId;
         }
 
         async function loadTimeSlots() {
@@ -696,12 +449,7 @@
             const dateInput = document.querySelector('#date');
             const timeSelect = document.querySelector('#time');
             
-            if (!clinicSelect || !dateInput || !timeSelect || !selectedDoctorForBooking) return;
-            
-            const selectedClinic = clinicSelect.value;
-            const selectedDate = dateInput.value;
-            
-            if (!selectedClinic || !selectedDate) {
+            if (!selectedDoctorForBooking || !clinicSelect.value || !dateInput.value) {
                 timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
                 return;
             }
@@ -710,7 +458,7 @@
             timeSelect.disabled = true;
             
             try {
-                const response = await fetch(`api.php?action=get_time_slots&doctor_id=${selectedDoctorForBooking.id}&clinic_name=${encodeURIComponent(selectedClinic)}&date=${selectedDate}`);
+                const response = await fetch(`api.php?action=get_time_slots&doctor_id=${selectedDoctorForBooking.id}&clinic_name=${encodeURIComponent(clinicSelect.value)}&date=${dateInput.value}`);
                 
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 
@@ -720,11 +468,7 @@
                 timeSelect.disabled = false;
                 
                 if (data.success && data.time_slots && data.time_slots.length > 0) {
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = 'Select a time slot';
-                    timeSelect.appendChild(defaultOption);
-                    
+                    timeSelect.innerHTML = '<option value="">Select a time slot</option>';
                     data.time_slots.forEach(slot => {
                         const option = document.createElement('option');
                         option.value = slot.value;
@@ -732,10 +476,7 @@
                         timeSelect.appendChild(option);
                     });
                 } else {
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = data.message || 'No available time slots';
-                    timeSelect.appendChild(option);
+                    timeSelect.innerHTML = `<option value="">${data.message || 'No available time slots'}</option>`;
                 }
             } catch (error) {
                 console.error('Error loading time slots:', error);
@@ -765,45 +506,32 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    elements.bookingModal.style.display = 'none';
-                    document.body.style.overflow = 'auto';
-                    
-                    // Reset form
+                    closeModal(elements.bookingModal);
                     elements.bookingForm.reset();
                     
-                    // Optionally redirect to appointments page or show confirmation
                     setTimeout(() => {
                         if (confirm('Appointment booked successfully! Would you like to view your appointments?')) {
                             window.location.href = '../user/appointments.php';
                         }
                     }, 1000);
-                    
                 } else {
                     showNotification('error', data.message);
-                    
-                    // If redirect to login is required
                     if (data.redirect_to_login) {
-                        setTimeout(() => {
-                            window.location.href = '../user/login.php';
-                        }, 2000);
+                        setTimeout(() => window.location.href = '../user/login.php', 2000);
                     }
                 }
             } catch (error) {
                 console.error('Booking error:', error);
                 showNotification('error', 'Failed to book appointment. Please try again.');
             } finally {
-                // Re-enable submit button
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalBtnText;
             }
         }
 
         function showNotification(type, message) {
-            // Remove existing notifications
-            const existingNotifications = document.querySelectorAll('.notification');
-            existingNotifications.forEach(notification => notification.remove());
+            document.querySelectorAll('.notification').forEach(n => n.remove());
             
-            // Create notification element
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             notification.innerHTML = `
@@ -816,15 +544,8 @@
                 </div>
             `;
             
-            // Add to page
             document.body.appendChild(notification);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.remove();
-                }
-            }, 5000);
+            setTimeout(() => notification.remove(), 5000);
         }
     </script>
 </body>

@@ -309,9 +309,10 @@
         <div class="nav-container" id="navContainer">
             <ul class="nav-links">
                 <li><a href="http://localhost/cure_booking/find-doctor/doctors.php">Find Doctors</a></li>
-                <li><a href="#">Video Consult</a></li>
+                <li><a href="#">Telemedicine</a></li>
                 <li><a href="http://localhost/cure_booking/medicines/medicines.php">Medicines</a></li>
                 <li><a href="http://localhost/cure_booking/lab-new/lab.php">Lab Tests</a></li>
+                <li><a href="#">Clinics</a></li>
             </ul>
         </div>
         <div class="header-right">
