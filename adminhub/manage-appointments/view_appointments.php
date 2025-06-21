@@ -36,8 +36,13 @@
         exit();
     }
 
-    // Get all appointments ordered by date (newest first)
-    $sql = "SELECT * FROM appointments ORDER BY booking_date DESC";
+    // Get all appointments with clinic information and doctor fees using doctor_id
+    $sql = "SELECT a.*, c.clinic_name, c.location as clinic_location, c.contact_number as clinic_contact, 
+                   d.fees as doctor_fees, d.doc_name as doctor_name_from_table, d.doc_specia as doctor_spec_from_table
+            FROM appointments a 
+            LEFT JOIN clinics c ON a.clinic_id = c.clinic_id 
+            LEFT JOIN doctor d ON a.doctor_id = d.doc_id
+            ORDER BY a.booking_date DESC";
     $result = $conn->query($sql);
     
     // Count appointments by status - normalized to match database enum values
@@ -106,6 +111,26 @@
             default:
                 return 'pending';
         }
+    }
+
+    // Function to format fees
+    function formatFees($fees) {
+        if ($fees === null || $fees === '' || $fees == 0) {
+            return 'Not Set';
+        }
+        return '₹' . number_format($fees, 0);
+    }
+
+    // Function to get doctor name (prioritize from appointments table, fallback to doctors table)
+    function getDoctorName($appointmentDoctorName, $doctorTableName) {
+        return !empty($appointmentDoctorName) ? $appointmentDoctorName : 
+               (!empty($doctorTableName) ? $doctorTableName : 'Not Assigned');
+    }
+
+    // Function to get doctor specialization (prioritize from appointments table, fallback to doctors table)
+    function getDoctorSpecialization($appointmentDoctorSpec, $doctorTableSpec) {
+        return !empty($appointmentDoctorSpec) ? $appointmentDoctorSpec : 
+               (!empty($doctorTableSpec) ? $doctorTableSpec : 'Not Specified');
     }
 ?>
 
@@ -176,8 +201,9 @@
                                         <th>ID</th>
                                         <th>Patient Name</th>
                                         <th>Doctor</th>
-                                        <th>Specialization</th>
+                                        <th>Clinic</th>
                                         <th>Date & Time</th>
+                                        <th>Appointment Fees</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -187,73 +213,93 @@
                                         $displayStatus = getDisplayStatus($row['status']);
                                         $statusClass = getStatusClass($row['status']);
                                         $dbStatus = $row['status'] ?: 'pending';
+                                        $clinicName = $row['clinic_name'] ?: 'Not Assigned';
+                                        $appointmentFees = formatFees($row['doctor_fees']);
+                                        $doctorName = getDoctorName($row['doctor_name'], $row['doctor_name_from_table']);
+                                        $doctorSpecialization = getDoctorSpecialization($row['doctor_specialization'], $row['doctor_spec_from_table']);
                                     ?>
                                         <tr>
                                             <td><?php echo $row['id']; ?></td>
                                             <td><?php echo htmlspecialchars($row['patient_name']); ?></td>
-                                            <td><?php echo htmlspecialchars($row['doctor_name']); ?></td>
-                                            <td><?php echo htmlspecialchars($row['doctor_specialization']); ?></td>
                                             <td>
-                                                <?php 
-                                                    echo date('M d, Y', strtotime($row['appointment_date'])) . ' at ' . 
-                                                        date('h:i A', strtotime($row['appointment_time'])); 
-                                                ?>
+                                                <div class="doctor-info">
+                                                    <strong><?php echo htmlspecialchars($doctorName); ?></strong><br>
+                                                    <small><?php echo htmlspecialchars($doctorSpecialization); ?></small>
+                                                </div>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($clinicName); ?></td>
+                                            <td>
+                                                <div class="appointment-datetime">
+                                                    <span class="date"><?php echo date('M d, Y', strtotime($row['appointment_date'])); ?></span>
+                                                    <span class="time"><?php echo date('h:i A', strtotime($row['appointment_time'])); ?></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="appointment-fees <?php echo ($row['doctor_fees'] !== null && $row['doctor_fees'] !== '' && $row['doctor_fees'] > 0) ? 'fees-set' : 'fees-not-set'; ?>">
+                                                    <?php echo $appointmentFees; ?>
+                                                </span>
                                             </td>
                                             <td>
                                                 <span class="status status-<?php echo $statusClass; ?>">
                                                     <?php echo $displayStatus; ?>
                                                 </span>
                                             </td>
-                                            <td class="actions">
-                                                <button class="btn-view" onclick="viewAppointmentDetails(<?php 
-                                                    echo json_encode([
-                                                        'id' => $row['id'],
-                                                        'patient_name' => $row['patient_name'],
-                                                        'patient_phone' => $row['patient_phone'],
-                                                        'patient_email' => $row['patient_email'],
-                                                        'doctor_name' => $row['doctor_name'],
-                                                        'doctor_specialization' => $row['doctor_specialization'],
-                                                        'appointment_date' => date('M d, Y', strtotime($row['appointment_date'])),
-                                                        'appointment_time' => date('h:i A', strtotime($row['appointment_time'])),
-                                                        'booking_date' => date('M d, Y', strtotime($row['booking_date'])),
-                                                        'status' => $displayStatus,
-                                                        'db_status' => $dbStatus
-                                                    ]); 
-                                                ?>)">
-                                                    <i class='bx bx-show'></i> View
-                                                </button>
-                                                
-                                                <?php if($dbStatus == 'pending'): ?>
-                                                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                        <input type="hidden" name="action" value="updateStatus">
-                                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                                                        <input type="hidden" name="new_status" value="confirmed">
-                                                        <button type="submit" class="btn-accept"><i class='bx bx-check'></i> Confirm</button>
-                                                    </form>
-                                                    
-                                                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                        <input type="hidden" name="action" value="updateStatus">
-                                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                                                        <input type="hidden" name="new_status" value="cancelled">
-                                                        <button type="submit" class="btn-reject"><i class='bx bx-x'></i> Cancel</button>
-                                                    </form>
-                                                <?php elseif($dbStatus == 'confirmed'): ?>
-                                                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                        <input type="hidden" name="action" value="updateStatus">
-                                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                                                        <input type="hidden" name="new_status" value="completed">
-                                                        <button type="submit" class="btn-complete"><i class='bx bx-check-double'></i> Complete</button>
-                                                    </form>
-                                                    
-                                                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                        <input type="hidden" name="action" value="updateStatus">
-                                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                                                        <input type="hidden" name="new_status" value="cancelled">
-                                                        <button type="submit" class="btn-reject"><i class='bx bx-x'></i> Cancel</button>
-                                                    </form>
-                                                <?php else: ?>
-                                                    <button class="btn-disabled" disabled><i class='bx bx-lock'></i> No Actions</button>
-                                                <?php endif; ?>
+                                            <td>
+                                                <div class="actions">
+                                                    <div class="actions-wrapper">
+                                                        <button class="btn-view" onclick="viewAppointmentDetails(
+                                                                '<?php echo $row['id']; ?>',
+                                                                '<?php echo htmlspecialchars($row['patient_name'], ENT_QUOTES); ?>',
+                                                                '<?php echo htmlspecialchars($row['patient_phone'], ENT_QUOTES); ?>',
+                                                                '<?php echo htmlspecialchars($row['patient_email'], ENT_QUOTES); ?>',
+                                                                '<?php echo htmlspecialchars($doctorName, ENT_QUOTES); ?>',
+                                                                '<?php echo htmlspecialchars($doctorSpecialization, ENT_QUOTES); ?>',
+                                                                '<?php echo htmlspecialchars($clinicName, ENT_QUOTES); ?>',
+                                                                '<?php echo htmlspecialchars($row['clinic_location'] ?: 'Not Available', ENT_QUOTES); ?>',
+                                                                '<?php echo htmlspecialchars($row['clinic_contact'] ?: 'Not Available', ENT_QUOTES); ?>',
+                                                                '<?php echo date('M d, Y', strtotime($row['appointment_date'])); ?>',
+                                                                '<?php echo date('h:i A', strtotime($row['appointment_time'])); ?>',
+                                                                '<?php echo date('M d, Y', strtotime($row['booking_date'])); ?>',
+                                                                '<?php echo $displayStatus; ?>',
+                                                                '<?php echo $dbStatus; ?>',
+                                                                '<?php echo htmlspecialchars($appointmentFees, ENT_QUOTES); ?>'
+                                                            )">
+                                                                <i class='bx bx-show'></i> View
+                                                            </button>
+                                                            
+                                                            <?php if($dbStatus == 'pending'): ?>
+                                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
+                                                                    <input type="hidden" name="action" value="updateStatus">
+                                                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                                                    <input type="hidden" name="new_status" value="confirmed">
+                                                                    <button type="submit" class="btn-accept"><i class='bx bx-check'></i> Confirm</button>
+                                                                </form>
+                                                                
+                                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
+                                                                    <input type="hidden" name="action" value="updateStatus">
+                                                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                                                    <input type="hidden" name="new_status" value="cancelled">
+                                                                    <button type="submit" class="btn-reject"><i class='bx bx-x'></i> Cancel</button>
+                                                                </form>
+                                                            <?php elseif($dbStatus == 'confirmed'): ?>
+                                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
+                                                                    <input type="hidden" name="action" value="updateStatus">
+                                                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                                                    <input type="hidden" name="new_status" value="completed">
+                                                                    <button type="submit" class="btn-complete"><i class='bx bx-check-double'></i> Complete</button>
+                                                                </form>
+                                                                
+                                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
+                                                                    <input type="hidden" name="action" value="updateStatus">
+                                                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                                                    <input type="hidden" name="new_status" value="cancelled">
+                                                                    <button type="submit" class="btn-reject"><i class='bx bx-x'></i> Absend</button>
+                                                                </form>
+                                                        <?php else: ?>
+                                                            <button class="btn-disabled" disabled><i class='bx bx-lock'></i> No Actions</button>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endwhile; ?>
@@ -275,7 +321,6 @@
                         <span class="close">&times;</span>
                         <div class="modal-header">
                             <h2>Appointment Details</h2>
-                            <p id="modalAppointmentId" class="subtitle"></p>
                         </div>
                         <div class="details-grid">
                             <div class="detail-item">
@@ -299,12 +344,28 @@
                                 <div id="modalSpecialization" class="detail-value"></div>
                             </div>
                             <div class="detail-item">
+                                <div class="detail-label">Clinic Name</div>
+                                <div id="modalClinicName" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Clinic Location</div>
+                                <div id="modalClinicLocation" class="detail-value"></div>
+                            </div>
+                            <!-- <div class="detail-item">
+                                <div class="detail-label">Clinic Contact</div>
+                                <div id="modalClinicContact" class="detail-value"></div>
+                            </div> -->
+                            <div class="detail-item">
                                 <div class="detail-label">Appointment Date</div>
                                 <div id="modalAppointmentDate" class="detail-value"></div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Appointment Time</div>
                                 <div id="modalAppointmentTime" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Appointment Fees</div>
+                                <div id="modalAppointmentFees" class="detail-value"></div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Booking Date</div>
@@ -328,170 +389,66 @@
             const closeBtn = document.getElementsByClassName("close")[0];
             
             function viewAppointmentDetails(id, patientName, patientPhone, patientEmail, doctorName, 
-                                    specialization, appointmentDate, appointmentTime, bookingDate, status) {
-                document.getElementById("modalAppointmentId").textContent = "ID: " + id;
+                                    specialization, clinicName, clinicLocation, clinicContact, 
+                                    appointmentDate, appointmentTime, bookingDate, status, dbStatus, appointmentFees) {
+                // Populate modal with appointment details
                 document.getElementById("modalPatientName").textContent = patientName;
                 document.getElementById("modalPhone").textContent = patientPhone;
                 document.getElementById("modalEmail").textContent = patientEmail;
                 document.getElementById("modalDoctorName").textContent = doctorName;
                 document.getElementById("modalSpecialization").textContent = specialization;
+                document.getElementById("modalClinicName").textContent = clinicName;
+                document.getElementById("modalClinicLocation").textContent = clinicLocation;
+                // document.getElementById("modalClinicContact").textContent = clinicContact;
                 document.getElementById("modalAppointmentDate").textContent = appointmentDate;
                 document.getElementById("modalAppointmentTime").textContent = appointmentTime;
+                document.getElementById("modalAppointmentFees").textContent = appointmentFees;
                 document.getElementById("modalBookingDate").textContent = bookingDate;
                 
+                // Set status with proper styling
                 const statusElem = document.getElementById("modalStatus");
-                statusElem.textContent = status;
-                statusElem.className = "detail-value status status-" + status.toLowerCase();
+                statusElem.innerHTML = '<span class="status status-' + getStatusClass(dbStatus) + '">' + status + '</span>';
                 
+                // Generate action buttons based on status
                 const actionsContainer = document.getElementById("modalActions");
                 actionsContainer.innerHTML = "";
                 
-                if (status === "Pending") {
-                    // Accept button
-                    const acceptForm = document.createElement("form");
-                    acceptForm.action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>";
-                    acceptForm.method = "post";
-                    acceptForm.className = "status-form";
+                if (dbStatus === 'pending') {
+                    // Confirm button
+                    const confirmBtn = createActionButton(id, 'confirmed', 'btn-accept', 'bx-check', 'Confirm');
+                    actionsContainer.appendChild(confirmBtn);
                     
-                    const actionInput = document.createElement("input");
-                    actionInput.type = "hidden";
-                    actionInput.name = "action";
-                    actionInput.value = "updateStatus";
+                    // Cancel button
+                    const cancelBtn = createActionButton(id, 'cancelled', 'btn-reject', 'bx-x', 'Cancel');
+                    actionsContainer.appendChild(cancelBtn);
                     
-                    const idInput = document.createElement("input");
-                    idInput.type = "hidden";
-                    idInput.name = "id";
-                    idInput.value = id;
-                    
-                    const statusInput = document.createElement("input");
-                    statusInput.type = "hidden";
-                    statusInput.name = "new_status";
-                    statusInput.value = "Accepted";
-                    
-                    const acceptBtn = document.createElement("button");
-                    acceptBtn.type = "submit";
-                    acceptBtn.className = "btn-accept";
-                    acceptBtn.innerHTML = "<i class='bx bx-check'></i> Accept";
-                    
-                    acceptForm.appendChild(actionInput);
-                    acceptForm.appendChild(idInput);
-                    acceptForm.appendChild(statusInput);
-                    acceptForm.appendChild(acceptBtn);
-                    
-                    // Reject button
-                    const rejectForm = document.createElement("form");
-                    rejectForm.action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>";
-                    rejectForm.method = "post";
-                    rejectForm.className = "status-form";
-                    
-                    const actionInput2 = document.createElement("input");
-                    actionInput2.type = "hidden";
-                    actionInput2.name = "action";
-                    actionInput2.value = "updateStatus";
-                    
-                    const idInput2 = document.createElement("input");
-                    idInput2.type = "hidden";
-                    idInput2.name = "id";
-                    idInput2.value = id;
-                    
-                    const statusInput2 = document.createElement("input");
-                    statusInput2.type = "hidden";
-                    statusInput2.name = "new_status";
-                    statusInput2.value = "Rejected";
-                    
-                    const rejectBtn = document.createElement("button");
-                    rejectBtn.type = "submit";
-                    rejectBtn.className = "btn-reject";
-                    rejectBtn.innerHTML = "<i class='bx bx-x'></i> Reject";
-                    
-                    rejectForm.appendChild(actionInput2);
-                    rejectForm.appendChild(idInput2);
-                    rejectForm.appendChild(statusInput2);
-                    rejectForm.appendChild(rejectBtn);
-                    
-                    actionsContainer.appendChild(acceptForm);
-                    actionsContainer.appendChild(rejectForm);
-                } else if (status === "Accepted") {
+                } else if (dbStatus === 'confirmed') {
                     // Complete button
-                    const completeForm = document.createElement("form");
-                    completeForm.action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>";
-                    completeForm.method = "post";
-                    completeForm.className = "status-form";
+                    const completeBtn = createActionButton(id, 'completed', 'btn-complete', 'bx-check-double', 'Complete');
+                    actionsContainer.appendChild(completeBtn);
                     
-                    const actionInput = document.createElement("input");
-                    actionInput.type = "hidden";
-                    actionInput.name = "action";
-                    actionInput.value = "updateStatus";
+                    // Cancel button
+                    const cancelBtn = createActionButton(id, 'cancelled', 'btn-reject', 'bx-x', 'Cancel');
+                    actionsContainer.appendChild(cancelBtn);
                     
-                    const idInput = document.createElement("input");
-                    idInput.type = "hidden";
-                    idInput.name = "id";
-                    idInput.value = id;
-                    
-                    const statusInput = document.createElement("input");
-                    statusInput.type = "hidden";
-                    statusInput.name = "new_status";
-                    statusInput.value = "Completed";
-                    
-                    const completeBtn = document.createElement("button");
-                    completeBtn.type = "submit";
-                    completeBtn.className = "btn-complete";
-                    completeBtn.innerHTML = "<i class='bx bx-check-double'></i> Complete";
-                    
-                    completeForm.appendChild(actionInput);
-                    completeForm.appendChild(idInput);
-                    completeForm.appendChild(statusInput);
-                    completeForm.appendChild(completeBtn);
-                    
-                    // Absent button
-                    const absentForm = document.createElement("form");
-                    absentForm.action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>";
-                    absentForm.method = "post";
-                    absentForm.className = "status-form";
-                    
-                    const actionInput2 = document.createElement("input");
-                    actionInput2.type = "hidden";
-                    actionInput2.name = "action";
-                    actionInput2.value = "updateStatus";
-                    
-                    const idInput2 = document.createElement("input");
-                    idInput2.type = "hidden";
-                    idInput2.name = "id";
-                    idInput2.value = id;
-                    
-                    const statusInput2 = document.createElement("input");
-                    statusInput2.type = "hidden";
-                    statusInput2.name = "new_status";
-                    statusInput2.value = "Absent";
-                    
-                    const absentBtn = document.createElement("button");
-                    absentBtn.type = "submit";
-                    absentBtn.className = "btn-reject";
-                    absentBtn.innerHTML = "<i class='bx bx-x'></i> Absent";
-                    
-                    absentForm.appendChild(actionInput2);
-                    absentForm.appendChild(idInput2);
-                    absentForm.appendChild(statusInput2);
-                    absentForm.appendChild(absentBtn);
-                    
-                    actionsContainer.appendChild(completeForm);
-                    actionsContainer.appendChild(absentForm);
                 } else {
-                    // No actions for completed, rejected, or absent appointments
+                    // No actions for completed/cancelled appointments
                     const noActionMsg = document.createElement("p");
                     noActionMsg.textContent = "No actions available for " + status.toLowerCase() + " appointments.";
                     noActionMsg.className = "no-actions";
                     actionsContainer.appendChild(noActionMsg);
                 }
                 
+                // Show modal
                 modal.style.display = "block";
             }
             
-            function createStatusForm(id, status) {
+            function createActionButton(id, newStatus, buttonClass, iconClass, buttonText) {
                 const form = document.createElement("form");
                 form.action = window.location.pathname;
                 form.method = "post";
                 form.className = "status-form";
+                form.style.display = "inline";
                 
                 const actionInput = document.createElement("input");
                 actionInput.type = "hidden";
@@ -506,19 +463,43 @@
                 const statusInput = document.createElement("input");
                 statusInput.type = "hidden";
                 statusInput.name = "new_status";
-                statusInput.value = status;
+                statusInput.value = newStatus;
+                
+                const button = document.createElement("button");
+                button.type = "submit";
+                button.className = buttonClass;
+                button.innerHTML = "<i class='bx " + iconClass + "'></i> " + buttonText;
                 
                 form.appendChild(actionInput);
                 form.appendChild(idInput);
                 form.appendChild(statusInput);
+                form.appendChild(button);
                 
                 return form;
+            }
+            
+            function getStatusClass(dbStatus) {
+                switch(dbStatus) {
+                    case 'pending':
+                    case '':
+                    case null:
+                        return 'pending';
+                    case 'confirmed':
+                        return 'confirmed';
+                    case 'completed':
+                        return 'completed';
+                    case 'cancelled':
+                        return 'cancelled';
+                    default:
+                        return 'pending';
+                }
             }
             
             function closeModal() {
                 modal.style.display = "none";
             }
             
+            // Event listeners
             closeBtn.onclick = closeModal;
             
             window.onclick = function(event) {
@@ -527,13 +508,12 @@
                 }
             }
             
+            // Auto-hide alerts after 5 seconds
             document.addEventListener('DOMContentLoaded', function() {
                 const alerts = document.querySelectorAll('.alert');
                 alerts.forEach(function(alert) {
-                    // Fade out alerts after 5 seconds
                     setTimeout(function() {
                         alert.style.opacity = '0';
-                        // Remove from DOM after fade animation completes
                         setTimeout(function() {
                             alert.style.display = 'none';
                         }, 500);

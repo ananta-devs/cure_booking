@@ -1,22 +1,13 @@
 <?php
-// Start output buffering to catch any unwanted output
 ob_start();
-
-// Set error reporting to not display errors to output
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-// Include database connection
 require_once '../include/database_connection.php';
 
-// Helper function to send JSON response
 function sendResponse($status, $message, $data = null) {
-    // Clean any output buffer
-    if (ob_get_length()) {
-        ob_clean();
-    }
-    
+    ob_clean();
     header('Content-Type: application/json');
     $response = ['status' => $status, 'message' => $message];
     if ($data) $response = array_merge($response, $data);
@@ -24,218 +15,226 @@ function sendResponse($status, $message, $data = null) {
     exit;
 }
 
-// Determine operation from request
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $jsonData = file_get_contents('php://input');
-    $data = json_decode($jsonData, true);
-    $action = isset($data['action']) ? $data['action'] : (isset($_POST['action']) ? $_POST['action'] : '');
-} else {
-    $action = isset($_GET['action']) ? $_GET['action'] : '';
+function getRequestData() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $jsonData = file_get_contents('php://input');
+        $data = json_decode($jsonData, true) ?: $_POST;
+        return $data['action'] ?? $_POST['action'] ?? '';
+    }
+    return $_GET['action'] ?? '';
 }
 
-// Route to appropriate function
-switch ($action) {
-    case 'add': saveDoctor(); break;
-    case 'list': getDoctorsList(); break;
-    case 'get': getDoctorById(); break;
-    case 'update': updateDoctor(); break;
-    case 'delete': deleteDoctor(); break;
-    case 'get_clinic_availability': getClinicAvailability(); break;
-    default: sendResponse('error', 'Invalid action specified');
+function validateRequiredFields($fields, $data) {
+    foreach ($fields as $field) {
+        if (empty($data[$field])) {
+            sendResponse('error', ucfirst(str_replace('_', ' ', $field)) . ' is required.');
+        }
+    }
+}
+
+function getImageUrl($imageName) {
+    if (empty($imageName)) {
+        return "../assets/img/default-doctor.png"; // Default image path
+    }
+    
+    // Check if image exists in uploads directory
+    $imagePath = "./uploads/" . $imageName;
+    if (file_exists($imagePath)) {
+        return "./uploads/" . $imageName;
+    }
+    
+    // Check alternative paths
+    $alternativePaths = [
+        "../uploads/" . $imageName,
+        "uploads/" . $imageName,
+        "./assets/uploads/" . $imageName
+    ];
+    
+    foreach ($alternativePaths as $path) {
+        if (file_exists($path)) {
+            return $path;
+        }
+    }
+    
+    // Return default if image not found
+    return "../assets/img/default-doctor.png";
+}
+
+function handleFileUpload($oldImage = '') {
+    // Create uploads directory if it doesn't exist
+    $uploadDir = './uploads/';
+    if (!file_exists($uploadDir)) {
+        if (!mkdir($uploadDir, 0755, true)) {
+            sendResponse('error', 'Failed to create upload directory.');
+        }
+    }
+    
+    // If no new file uploaded, return old image
+    if (empty($_FILES['doc_img']['name'])) {
+        return $oldImage;
+    }
+    
+    // Check for upload errors
+    if ($_FILES['doc_img']['error'] !== UPLOAD_ERR_OK) {
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize directive.',
+            UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive.',
+            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+            UPLOAD_ERR_EXTENSION => 'File upload stopped by extension.'
+        ];
+        
+        $errorMsg = $errorMessages[$_FILES['doc_img']['error']] ?? 'Unknown upload error.';
+        sendResponse('error', $errorMsg);
+    }
+    
+    // Validate file type
+    $fileInfo = pathinfo($_FILES['doc_img']['name']);
+    $fileExtension = strtolower($fileInfo['extension'] ?? '');
+    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    
+    if (empty($fileExtension) || !in_array($fileExtension, $allowedTypes)) {
+        sendResponse('error', 'Invalid file type. Only JPG, JPEG, PNG, GIF, and WEBP files are allowed.');
+    }
+    
+    // Check file size (2MB limit)
+    if ($_FILES['doc_img']['size'] > 2 * 1024 * 1024) {
+        sendResponse('error', 'File size exceeds 2MB limit.');
+    }
+    
+    // Validate image using getimagesize
+    $imageInfo = getimagesize($_FILES['doc_img']['tmp_name']);
+    if ($imageInfo === false) {
+        sendResponse('error', 'Invalid image file.');
+    }
+    
+    // Generate unique filename
+    $uniqueFilename = 'doctor_' . uniqid() . '_' . time() . '.' . $fileExtension;
+    $uploadPath = $uploadDir . $uniqueFilename;
+    
+    // Move uploaded file
+    if (!move_uploaded_file($_FILES['doc_img']['tmp_name'], $uploadPath)) {
+        sendResponse('error', 'Failed to upload image file.');
+    }
+    
+    // Set proper permissions
+    chmod($uploadPath, 0644);
+    
+    // Delete old image if it exists and is different from new one
+    if ($oldImage && $oldImage !== $uniqueFilename) {
+        $oldImagePaths = [
+            $uploadDir . $oldImage,
+            './uploads/' . $oldImage,
+            '../uploads/' . $oldImage
+        ];
+        
+        foreach ($oldImagePaths as $oldPath) {
+            if (file_exists($oldPath)) {
+                unlink($oldPath);
+                break;
+            }
+        }
+    }
+    
+    return $uniqueFilename;
+}
+
+function validateClinicAssignments($assignments) {
+    if (!$assignments || !is_array($assignments)) {
+        return ['valid' => false, 'message' => 'Invalid clinic assignments.'];
+    }
+    
+    $timeSlots = ['11:00-13:00', '14:00-16:00', '17:00-19:00'];
+    $weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    
+    foreach ($assignments as $assignment) {
+        if (empty($assignment['clinic_id']) || !is_array($assignment['availability'])) {
+            return ['valid' => false, 'message' => 'Invalid assignment structure.'];
+        }
+        
+        $hasSlot = false;
+        foreach ($weekDays as $day) {
+            foreach ($timeSlots as $slot) {
+                if (!empty($assignment['availability'][$day][$slot])) {
+                    $hasSlot = true;
+                    break 2;
+                }
+            }
+        }
+        
+        if (!$hasSlot) {
+            return ['valid' => false, 'message' => 'Each clinic must have at least one time slot.'];
+        }
+    }
+    
+    return ['valid' => true];
+}
+
+function saveClinicAssignments($doctorId, $assignments) {
+    global $pdo;
+    
+    foreach ($assignments as $assignment) {
+        $sql = "INSERT INTO doctor_clinic_assignments (doctor_id, clinic_id, availability_schedule, created_at) 
+                VALUES (?, ?, ?, NOW())";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$doctorId, $assignment['clinic_id'], json_encode($assignment['availability'])]);
+    }
 }
 
 function saveDoctor() {
     global $pdo;
     
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        sendResponse('error', 'Invalid request method.');
+    validateRequiredFields(['doc_name', 'doc_specia', 'fees', 'doc_pass'], $_POST);
+    
+    if (empty($_POST['clinic_assignments'])) {
+        sendResponse('error', 'At least one clinic assignment required.');
+    }
+    
+    $clinicAssignments = json_decode($_POST['clinic_assignments'], true);
+    $validation = validateClinicAssignments($clinicAssignments);
+    if (!$validation['valid']) {
+        sendResponse('error', $validation['message']);
     }
     
     try {
-        // Start transaction
         $pdo->beginTransaction();
         
-        // Validate required fields
-        $requiredFields = ['doc_name', 'doc_specia', 'fees', 'doc_pass'];
-        foreach ($requiredFields as $field) {
-            if (empty($_POST[$field])) {
-                sendResponse('error', ucfirst(str_replace('_', ' ', $field)) . ' is required.');
-            }
-        }
-        
-        // Validate clinic assignments
-        if (empty($_POST['clinic_assignments'])) {
-            sendResponse('error', 'At least one clinic assignment is required.');
-        }
-        
-        $clinicAssignments = json_decode($_POST['clinic_assignments'], true);
-        if (!$clinicAssignments || !is_array($clinicAssignments)) {
-            sendResponse('error', 'Invalid clinic assignments data.');
-        }
-        
-        // Validate time slot conflicts
-        $conflictCheck = validateTimeSlotConflicts($clinicAssignments);
-        if (!$conflictCheck['valid']) {
-            sendResponse('error', $conflictCheck['message']);
-        }
-        
-        // Handle file upload
-        $uploadDir = '../uploads/'; // Make sure this path is correct
-        $doctorImg = '';
-        
-        if (!file_exists($uploadDir)) {
-            if (!mkdir($uploadDir, 0777, true)) {
-                sendResponse('error', 'Failed to create upload directory.');
-            }
-        }
-        
-        if (!empty($_FILES['doc_img']['name'])) {
-            // Check for upload errors
-            if ($_FILES['doc_img']['error'] !== UPLOAD_ERR_OK) {
-                sendResponse('error', 'File upload error: ' . $_FILES['doc_img']['error']);
-            }
-            
-            $fileExtension = pathinfo($_FILES['doc_img']['name'], PATHINFO_EXTENSION);
-            $uniqueFilename = uniqid() . '.' . $fileExtension;
-            $uploadFile = $uploadDir . $uniqueFilename;
-            
-            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
-            if (!in_array(strtolower($fileExtension), $allowedTypes)) {
-                sendResponse('error', 'Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.');
-            }
-            
-            if ($_FILES['doc_img']['size'] > 2000000) {
-                sendResponse('error', 'File size exceeds the limit of 2MB.');
-            }
-            
-            if (move_uploaded_file($_FILES['doc_img']['tmp_name'], $uploadFile)) {
-                $doctorImg = $uniqueFilename;
-            } else {
-                sendResponse('error', 'Failed to upload the image.');
-            }
-        }
-        
-        // Hash the password
+        $doctorImg = handleFileUpload();
         $hashedPassword = password_hash($_POST['doc_pass'], PASSWORD_DEFAULT);
         
-        // Prepare SQL statement for doctor
         $sql = "INSERT INTO doctor (doc_name, doc_specia, doc_email, fees, doc_img, gender, experience, location, education, bio, doc_pass) 
-                VALUES (:doc_name, :doc_specia, :doc_email, :fees, :doc_img, :gender, :experience, :location, :education, :bio, :doc_pass)";
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            $_POST['doc_name'],
+            $_POST['doc_specia'],
+            $_POST['doc_email'] ?: null,
+            $_POST['fees'],
+            $doctorImg,
+            $_POST['gender'] ?: null,
+            $_POST['experience'] ?: null,
+            $_POST['location'] ?: null,
+            $_POST['education'] ?: null,
+            $_POST['bio'] ?: null,
+            $hashedPassword
+        ]);
         
-        // Bind parameters with null checks
-        $doc_email = !empty($_POST['doc_email']) ? $_POST['doc_email'] : null;
-        $gender = !empty($_POST['gender']) ? $_POST['gender'] : null;
-        $experience = !empty($_POST['experience']) ? $_POST['experience'] : null;
-        $location = !empty($_POST['location']) ? $_POST['location'] : null;
-        $education = !empty($_POST['education']) ? $_POST['education'] : null;
-        $bio = !empty($_POST['bio']) ? $_POST['bio'] : null;
-        
-        $stmt->bindParam(':doc_name', $_POST['doc_name']);
-        $stmt->bindParam(':doc_specia', $_POST['doc_specia']);
-        $stmt->bindParam(':doc_email', $doc_email);
-        $stmt->bindParam(':fees', $_POST['fees']);
-        $stmt->bindParam(':doc_img', $doctorImg);
-        $stmt->bindParam(':gender', $gender);
-        $stmt->bindParam(':experience', $experience);
-        $stmt->bindParam(':location', $location);
-        $stmt->bindParam(':education', $education);
-        $stmt->bindParam(':bio', $bio);
-        $stmt->bindParam(':doc_pass', $hashedPassword);
-        
-        // Execute the statement
-        if (!$stmt->execute()) {
-            throw new Exception('Failed to insert doctor record.');
-        }
-        
-        // Get the doctor ID
         $doctorId = $pdo->lastInsertId();
+        saveClinicAssignments($doctorId, $clinicAssignments);
         
-        // Insert clinic assignments
-        foreach ($clinicAssignments as $assignment) {
-            $clinicId = $assignment['clinic_id'];
-            $availability = $assignment['availability'];
-            
-            // Insert into doctor_clinic_assignments table
-            $assignmentSql = "INSERT INTO doctor_clinic_assignments (doctor_id, clinic_id, availability_schedule, created_at) 
-                             VALUES (:doctor_id, :clinic_id, :availability_schedule, NOW())";
-            
-            $assignmentStmt = $pdo->prepare($assignmentSql);
-            $assignmentStmt->bindParam(':doctor_id', $doctorId);
-            $assignmentStmt->bindParam(':clinic_id', $clinicId);
-            $assignmentStmt->bindParam(':availability_schedule', json_encode($availability));
-            
-            if (!$assignmentStmt->execute()) {
-                throw new Exception('Failed to insert clinic assignment.');
-            }
-        }
-        
-        // Commit transaction
         $pdo->commit();
-        
         sendResponse('success', 'Doctor added successfully!', ['doctor_id' => $doctorId]);
         
     } catch (Exception $e) {
-        // Rollback transaction on error
-        if ($pdo->inTransaction()) {
-            $pdo->rollback();
+        $pdo->rollback();
+        if (!empty($doctorImg) && file_exists('./uploads/' . $doctorImg)) {
+            unlink('./uploads/' . $doctorImg);
         }
-        
-        // Delete uploaded file if it exists
-        if (!empty($doctorImg) && file_exists($uploadDir . $doctorImg)) {
-            unlink($uploadDir . $doctorImg);
-        }
-        
         sendResponse('error', 'Error: ' . $e->getMessage());
     }
-}
-
-function validateTimeSlotConflicts($clinicAssignments) {
-    global $pdo;
-    
-    $weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    $timeSlots = ['11:00-13:00', '14:00-16:00', '17:00-19:00'];
-    
-    // Validate that clinic assignments have proper structure
-    foreach ($clinicAssignments as $assignment) {
-        if (!isset($assignment['clinic_id']) || empty($assignment['clinic_id'])) {
-            return [
-                'valid' => false,
-                'message' => 'Each clinic assignment must have a valid clinic ID.'
-            ];
-        }
-        
-        if (!isset($assignment['availability']) || !is_array($assignment['availability'])) {
-            return [
-                'valid' => false,
-                'message' => 'Each clinic assignment must have a valid availability schedule.'
-            ];
-        }
-        
-        // Validate that at least one time slot is selected for each clinic
-        $hasTimeSlot = false;
-        foreach ($weekDays as $day) {
-            if (isset($assignment['availability'][$day])) {
-                foreach ($timeSlots as $slot) {
-                    if (isset($assignment['availability'][$day][$slot]) && 
-                        $assignment['availability'][$day][$slot] === true) {
-                        $hasTimeSlot = true;
-                        break 2;
-                    }
-                }
-            }
-        }
-        
-        if (!$hasTimeSlot) {
-            return [
-                'valid' => false,
-                'message' => 'Each clinic assignment must have at least one time slot selected.'
-            ];
-        }
-    }
-    
-    return ['valid' => true];
 }
 
 function getDoctorsList() {
@@ -247,13 +246,17 @@ function getDoctorsList() {
                        COUNT(DISTINCT dca.clinic_id) as clinic_count
                 FROM doctor d
                 LEFT JOIN doctor_clinic_assignments dca ON d.doc_id = dca.doctor_id
-                LEFT JOIN clinics c ON dca.clinic_id = c.clinic_id
+                LEFT JOIN clinics c ON dca.clinic_id = c.clinic_id AND c.status = 'active'
                 GROUP BY d.doc_id
                 ORDER BY d.doc_name";
         
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $doctors = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Process image URLs for each doctor
+        foreach ($doctors as &$doctor) {
+            $doctor['image_url'] = getImageUrl($doctor['doc_img']);
+            $doctor['has_image'] = !empty($doctor['doc_img']) && file_exists('./uploads/' . $doctor['doc_img']);
+        }
         
         sendResponse('success', 'Doctors retrieved successfully', ['doctors' => $doctors]);
         
@@ -265,45 +268,35 @@ function getDoctorsList() {
 function getDoctorById() {
     global $pdo;
     
-    $doctorId = isset($_GET['id']) ? $_GET['id'] : (isset($_POST['id']) ? $_POST['id'] : '');
-    
-    if (empty($doctorId)) {
-        sendResponse('error', 'Doctor ID is required.');
-    }
+    $doctorId = $_GET['id'] ?? $_POST['id'] ?? '';
+    if (empty($doctorId)) sendResponse('error', 'Doctor ID required.');
     
     try {
-        // Get doctor details
-        $sql = "SELECT * FROM doctor WHERE doc_id = :doc_id";
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':doc_id', $doctorId);
-        $stmt->execute();
+        $doctor = $pdo->prepare("SELECT * FROM doctor WHERE doc_id = ?");
+        $doctor->execute([$doctorId]);
+        $doctorData = $doctor->fetch(PDO::FETCH_ASSOC);
         
-        $doctor = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$doctorData) sendResponse('error', 'Doctor not found.');
         
-        if (!$doctor) {
-            sendResponse('error', 'Doctor not found.');
-        }
+        // Add image URL to doctor data
+        $doctorData['image_url'] = getImageUrl($doctorData['doc_img']);
+        $doctorData['has_image'] = !empty($doctorData['doc_img']) && file_exists('./uploads/' . $doctorData['doc_img']);
         
-        // Get clinic assignments
-        $assignmentSql = "SELECT dca.*, c.clinic_name, c.location 
-                         FROM doctor_clinic_assignments dca
-                         JOIN clinics c ON dca.clinic_id = c.clinic_id
-                         WHERE dca.doctor_id = :doctor_id";
+        $assignments = $pdo->prepare("
+            SELECT dca.*, c.* FROM doctor_clinic_assignments dca
+            JOIN clinics c ON dca.clinic_id = c.clinic_id
+            WHERE dca.doctor_id = ? ORDER BY c.clinic_name
+        ");
+        $assignments->execute([$doctorId]);
+        $assignmentData = $assignments->fetchAll(PDO::FETCH_ASSOC);
         
-        $assignmentStmt = $pdo->prepare($assignmentSql);
-        $assignmentStmt->bindParam(':doctor_id', $doctorId);
-        $assignmentStmt->execute();
-        
-        $assignments = $assignmentStmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Parse availability schedules
-        foreach ($assignments as &$assignment) {
+        foreach ($assignmentData as &$assignment) {
             $assignment['availability_schedule'] = json_decode($assignment['availability_schedule'], true);
         }
         
         sendResponse('success', 'Doctor retrieved successfully', [
-            'doctor' => $doctor,
-            'clinic_assignments' => $assignments
+            'doctor' => $doctorData,
+            'clinic_assignments' => $assignmentData
         ]);
         
     } catch (Exception $e) {
@@ -314,146 +307,48 @@ function getDoctorById() {
 function updateDoctor() {
     global $pdo;
     
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        sendResponse('error', 'Invalid request method.');
-    }
+    $doctorId = $_POST['doc_id'] ?? '';
+    if (empty($doctorId)) sendResponse('error', 'Doctor ID required.');
+    
+    validateRequiredFields(['doc_name', 'doc_specia', 'fees'], $_POST);
     
     try {
         $pdo->beginTransaction();
         
-        $doctorId = $_POST['doc_id'] ?? '';
-        if (empty($doctorId)) {
-            sendResponse('error', 'Doctor ID is required.');
-        }
+        // Get existing image name
+        $existingImg = $_POST['existing_img'] ?? '';
+        $doctorImg = handleFileUpload($existingImg);
         
-        // Validate required fields
-        $requiredFields = ['doc_name', 'doc_specia', 'fees'];
-        foreach ($requiredFields as $field) {
-            if (empty($_POST[$field])) {
-                sendResponse('error', ucfirst(str_replace('_', ' ', $field)) . ' is required.');
-            }
-        }
-        
-        // Handle file upload
-        $uploadDir = '../uploads/';
-        $doctorImg = $_POST['existing_img'] ?? '';
-        
-        if (!empty($_FILES['doc_img']['name'])) {
-            if ($_FILES['doc_img']['error'] !== UPLOAD_ERR_OK) {
-                sendResponse('error', 'File upload error: ' . $_FILES['doc_img']['error']);
-            }
-            
-            $fileExtension = pathinfo($_FILES['doc_img']['name'], PATHINFO_EXTENSION);
-            $uniqueFilename = uniqid() . '.' . $fileExtension;
-            $uploadFile = $uploadDir . $uniqueFilename;
-            
-            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
-            if (!in_array(strtolower($fileExtension), $allowedTypes)) {
-                sendResponse('error', 'Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.');
-            }
-            
-            if ($_FILES['doc_img']['size'] > 2000000) {
-                sendResponse('error', 'File size exceeds the limit of 2MB.');
-            }
-            
-            if (move_uploaded_file($_FILES['doc_img']['tmp_name'], $uploadFile)) {
-                // Delete old image if it exists
-                if (!empty($doctorImg) && file_exists($uploadDir . $doctorImg)) {
-                    unlink($uploadDir . $doctorImg);
-                }
-                $doctorImg = $uniqueFilename;
-            } else {
-                sendResponse('error', 'Failed to upload the image.');
-            }
-        }
-        
-        // Update doctor record
-        $sql = "UPDATE doctor SET 
-                doc_name = :doc_name,
-                doc_specia = :doc_specia,
-                doc_email = :doc_email,
-                fees = :fees,
-                doc_img = :doc_img,
-                gender = :gender,
-                experience = :experience,
-                location = :location,
-                education = :education,
-                bio = :bio";
-        
-        // Only update password if provided
-        if (!empty($_POST['doc_pass'])) {
-            $sql .= ", doc_pass = :doc_pass";
-            $hashedPassword = password_hash($_POST['doc_pass'], PASSWORD_DEFAULT);
-        }
-        
-        $sql .= " WHERE doc_id = :doc_id";
-        
-        $stmt = $pdo->prepare($sql);
-        
-        // Bind parameters with null checks
-        $doc_email = !empty($_POST['doc_email']) ? $_POST['doc_email'] : null;
-        $gender = !empty($_POST['gender']) ? $_POST['gender'] : null;
-        $experience = !empty($_POST['experience']) ? $_POST['experience'] : null;
-        $location = !empty($_POST['location']) ? $_POST['location'] : null;
-        $education = !empty($_POST['education']) ? $_POST['education'] : null;
-        $bio = !empty($_POST['bio']) ? $_POST['bio'] : null;
-        
-        $stmt->bindParam(':doc_name', $_POST['doc_name']);
-        $stmt->bindParam(':doc_specia', $_POST['doc_specia']);
-        $stmt->bindParam(':doc_email', $doc_email);
-        $stmt->bindParam(':fees', $_POST['fees']);
-        $stmt->bindParam(':doc_img', $doctorImg);
-        $stmt->bindParam(':gender', $gender);
-        $stmt->bindParam(':experience', $experience);
-        $stmt->bindParam(':location', $location);
-        $stmt->bindParam(':education', $education);
-        $stmt->bindParam(':bio', $bio);
-        $stmt->bindParam(':doc_id', $doctorId);
+        $sql = "UPDATE doctor SET doc_name=?, doc_specia=?, doc_email=?, fees=?, doc_img=?, 
+                gender=?, experience=?, location=?, education=?, bio=?";
+        $params = [
+            $_POST['doc_name'], $_POST['doc_specia'], $_POST['doc_email'] ?: null,
+            $_POST['fees'], $doctorImg, $_POST['gender'] ?: null,
+            $_POST['experience'] ?: null, $_POST['location'] ?: null,
+            $_POST['education'] ?: null, $_POST['bio'] ?: null
+        ];
         
         if (!empty($_POST['doc_pass'])) {
-            $stmt->bindParam(':doc_pass', $hashedPassword);
+            $sql .= ", doc_pass=?";
+            $params[] = password_hash($_POST['doc_pass'], PASSWORD_DEFAULT);
         }
         
-        if (!$stmt->execute()) {
-            throw new Exception('Failed to update doctor record.');
-        }
+        $sql .= " WHERE doc_id=?";
+        $params[] = $doctorId;
         
-        // Update clinic assignments if provided
+        $pdo->prepare($sql)->execute($params);
+        
         if (!empty($_POST['clinic_assignments'])) {
+            $pdo->prepare("DELETE FROM doctor_clinic_assignments WHERE doctor_id = ?")->execute([$doctorId]);
             $clinicAssignments = json_decode($_POST['clinic_assignments'], true);
-            
-            // Delete existing assignments
-            $deleteAssignmentsSql = "DELETE FROM doctor_clinic_assignments WHERE doctor_id = :doctor_id";
-            $deleteStmt = $pdo->prepare($deleteAssignmentsSql);
-            $deleteStmt->bindParam(':doctor_id', $doctorId);
-            $deleteStmt->execute();
-            
-            // Insert new assignments
-            foreach ($clinicAssignments as $assignment) {
-                $clinicId = $assignment['clinic_id'];
-                $availability = $assignment['availability'];
-                
-                $assignmentSql = "INSERT INTO doctor_clinic_assignments (doctor_id, clinic_id, availability_schedule, created_at) 
-                                 VALUES (:doctor_id, :clinic_id, :availability_schedule, NOW())";
-                
-                $assignmentStmt = $pdo->prepare($assignmentSql);
-                $assignmentStmt->bindParam(':doctor_id', $doctorId);
-                $assignmentStmt->bindParam(':clinic_id', $clinicId);
-                $assignmentStmt->bindParam(':availability_schedule', json_encode($availability));
-                
-                if (!$assignmentStmt->execute()) {
-                    throw new Exception('Failed to update clinic assignment.');
-                }
-            }
+            saveClinicAssignments($doctorId, $clinicAssignments);
         }
         
         $pdo->commit();
         sendResponse('success', 'Doctor updated successfully!');
         
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollback();
-        }
+        $pdo->rollback();
         sendResponse('error', 'Error updating doctor: ' . $e->getMessage());
     }
 }
@@ -461,49 +356,63 @@ function updateDoctor() {
 function deleteDoctor() {
     global $pdo;
     
-    $doctorId = isset($_POST['id']) ? $_POST['id'] : (isset($_GET['id']) ? $_GET['id'] : '');
+    // Get doctor ID from multiple possible sources
+    $doctorId = $_POST['doctor_id'] ?? $_POST['id'] ?? $_GET['id'] ?? '';
     
     if (empty($doctorId)) {
-        sendResponse('error', 'Doctor ID is required.');
+        sendResponse('error', 'Doctor ID required.');
     }
     
     try {
         $pdo->beginTransaction();
         
-        // Get doctor image to delete
-        $imgSql = "SELECT doc_img FROM doctor WHERE doc_id = :doc_id";
-        $imgStmt = $pdo->prepare($imgSql);
-        $imgStmt->bindParam(':doc_id', $doctorId);
-        $imgStmt->execute();
-        $doctor = $imgStmt->fetch(PDO::FETCH_ASSOC);
+        // First, get the doctor's image to delete it later
+        $doctor = $pdo->prepare("SELECT doc_img FROM doctor WHERE doc_id = ?");
+        $doctor->execute([$doctorId]);
+        $doctorData = $doctor->fetch(PDO::FETCH_ASSOC);
         
-        // Delete clinic assignments first
-        $deleteAssignmentsSql = "DELETE FROM doctor_clinic_assignments WHERE doctor_id = :doctor_id";
-        $deleteAssignmentsStmt = $pdo->prepare($deleteAssignmentsSql);
-        $deleteAssignmentsStmt->bindParam(':doctor_id', $doctorId);
-        $deleteAssignmentsStmt->execute();
-        
-        // Delete doctor record
-        $deleteDoctorSql = "DELETE FROM doctor WHERE doc_id = :doc_id";
-        $deleteDoctorStmt = $pdo->prepare($deleteDoctorSql);
-        $deleteDoctorStmt->bindParam(':doc_id', $doctorId);
-        
-        if (!$deleteDoctorStmt->execute()) {
-            throw new Exception('Failed to delete doctor.');
+        if (!$doctorData) {
+            $pdo->rollback();
+            sendResponse('error', 'Doctor not found.');
         }
         
-        // Delete doctor image file if it exists
-        if (!empty($doctor['doc_img']) && file_exists('../uploads/' . $doctor['doc_img'])) {
-            unlink('../uploads/' . $doctor['doc_img']);
+        // Delete doctor clinic assignments first (foreign key constraint)
+        $pdo->prepare("DELETE FROM doctor_clinic_assignments WHERE doctor_id = ?")->execute([$doctorId]);
+        
+        // Delete any appointments related to this doctor (if applicable)
+        $pdo->prepare("DELETE FROM appointments WHERE doctor_id = ?")->execute([$doctorId]);
+        
+        // Delete the doctor record
+        $deleteStmt = $pdo->prepare("DELETE FROM doctor WHERE doc_id = ?");
+        $deleteStmt->execute([$doctorId]);
+        
+        // Check if any rows were affected
+        if ($deleteStmt->rowCount() === 0) {
+            $pdo->rollback();
+            sendResponse('error', 'Doctor not found or already deleted.');
+        }
+        
+        // Delete image file if exists
+        if (!empty($doctorData['doc_img'])) {
+            $imagePaths = [
+                './uploads/' . $doctorData['doc_img'],
+                '../uploads/' . $doctorData['doc_img'],
+                'uploads/' . $doctorData['doc_img']
+            ];
+            
+            foreach ($imagePaths as $path) {
+                if (file_exists($path)) {
+                    unlink($path);
+                    break;
+                }
+            }
         }
         
         $pdo->commit();
         sendResponse('success', 'Doctor deleted successfully!');
         
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollback();
-        }
+        $pdo->rollback();
         sendResponse('error', 'Error deleting doctor: ' . $e->getMessage());
     }
 }
@@ -511,52 +420,59 @@ function deleteDoctor() {
 function getClinicAvailability() {
     global $pdo;
     
-    $clinicId = isset($_GET['clinic_id']) ? $_GET['clinic_id'] : '';
-    
-    if (empty($clinicId)) {
-        sendResponse('error', 'Clinic ID is required.');
-    }
+    $clinicId = $_GET['clinic_id'] ?? '';
+    if (empty($clinicId)) sendResponse('error', 'Clinic ID required.');
     
     try {
-        // Get all time slots occupied by doctors at this clinic
-        $sql = "SELECT dca.availability_schedule, d.doc_name 
+        $sql = "SELECT dca.availability_schedule, d.doc_name, d.doc_id, d.doc_specia
                 FROM doctor_clinic_assignments dca
                 JOIN doctor d ON dca.doctor_id = d.doc_id
-                WHERE dca.clinic_id = :clinic_id";
+                WHERE dca.clinic_id = ? ORDER BY d.doc_name";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':clinic_id', $clinicId);
-        $stmt->execute();
-        
+        $stmt->execute([$clinicId]);
         $assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         $occupiedSlots = [];
-        $weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
         $timeSlots = ['11:00-13:00', '14:00-16:00', '17:00-19:00'];
+        $weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
         
         foreach ($assignments as $assignment) {
             $schedule = json_decode($assignment['availability_schedule'], true);
+            $doctorInfo = [
+                'doc_id' => $assignment['doc_id'],
+                'doc_name' => $assignment['doc_name'],
+                'doc_specia' => $assignment['doc_specia']
+            ];
             
             foreach ($weekDays as $day) {
                 foreach ($timeSlots as $slot) {
-                    if (isset($schedule[$day][$slot]) && $schedule[$day][$slot] === true) {
-                        $occupiedSlots[$day][$slot] = $assignment['doc_name'];
+                    if (!empty($schedule[$day][$slot])) {
+                        $occupiedSlots[$day][$slot][] = $doctorInfo;
                     }
                 }
             }
         }
         
-        sendResponse('success', 'Clinic availability retrieved successfully', [
-            'occupied_slots' => $occupiedSlots
-        ]);
+        sendResponse('success', 'Availability retrieved successfully', ['occupied_slots' => $occupiedSlots]);
         
     } catch (Exception $e) {
-        sendResponse('error', 'Error retrieving clinic availability: ' . $e->getMessage());
+        sendResponse('error', 'Error retrieving availability: ' . $e->getMessage());
     }
 }
 
-// Clean output buffer at the end
-if (ob_get_length()) {
-    ob_end_clean();
+// Route actions
+$action = getRequestData();
+
+switch ($action) {
+    case 'add': saveDoctor(); break;
+    case 'list': getDoctorsList(); break;
+    case 'get': getDoctorById(); break;
+    case 'update': updateDoctor(); break;
+    case 'delete': deleteDoctor(); break;
+    case 'get_clinic_availability': getClinicAvailability(); break;
+    default: sendResponse('error', 'Invalid action specified');
 }
+
+ob_end_clean();
 ?>

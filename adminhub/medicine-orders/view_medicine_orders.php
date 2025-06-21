@@ -39,8 +39,9 @@
     // Get all orders with medicine details ordered by date (newest first)
     $sql = "SELECT 
                 mo.*,
-                GROUP_CONCAT(DISTINCT moi.medicine_name SEPARATOR ', ') as medicine_names,
-                GROUP_CONCAT(DISTINCT CONCAT(moi.medicine_name, ' (₹', moi.medicine_price, ' x ', moi.quantity, ')') SEPARATOR ', ') as medicine_details
+                GROUP_CONCAT(DISTINCT moi.medicine_name SEPARATOR '|') as medicine_names,
+                GROUP_CONCAT(DISTINCT CONCAT(moi.medicine_name, ' (₹', moi.medicine_price, ' x ', moi.quantity, ')') SEPARATOR ', ') as medicine_details,
+                COUNT(DISTINCT moi.medicine_name) as medicine_count
             FROM medicine_orders mo 
             LEFT JOIN medicine_order_items moi ON mo.id = moi.order_id 
             GROUP BY mo.id 
@@ -148,64 +149,84 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php while($row = $result->fetch_assoc()): ?>
+                                <?php while($row = $result->fetch_assoc()): 
+                                    // Process medicine names for display
+                                    $medicineNames = $row['medicine_names'] ? explode('|', $row['medicine_names']) : [];
+                                    $firstMedicine = !empty($medicineNames) ? $medicineNames[0] : 'No medicines';
+                                    $medicineCount = (int)($row['medicine_count'] ?? 0);
+                                ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($row['order_number']); ?></td>
-                                        <td><?php echo htmlspecialchars($row['name']); ?></td>
-                                        <td><?php echo htmlspecialchars($row['medicine_names'] ?: 'No medicines'); ?></td>
-                                        <td>₹<?php echo number_format($row['total_amount'], 2); ?></td>
-                                        <td><?php echo date('M d, Y', strtotime($row['order_date'])); ?></td>
+                                        <td>
+                                            <span class="order-number"><?php echo htmlspecialchars($row['order_number']); ?></span>
+                                        </td>
+                                        <td>
+                                            <span class="customer-name"><?php echo htmlspecialchars($row['name']); ?></span>
+                                        </td>
+                                        <td>
+                                            <div class="medicine-list">
+                                                <span class="medicine-item"><?php echo htmlspecialchars($firstMedicine); ?></span>
+                                                <?php if ($medicineCount > 1): ?>
+                                                    <span class="medicine-more">+<?php echo ($medicineCount - 1); ?> more</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="total-amount">₹<?php echo number_format($row['total_amount'], 2); ?></span>
+                                        </td>
+                                        <td>
+                                            <span class="order-date"><?php echo date('M d, Y', strtotime($row['order_date'])); ?></span>
+                                        </td>
                                         <td>
                                             <span class="status status-<?php echo strtolower($row['status']); ?>">
                                                 <?php echo ucfirst($row['status']); ?>
                                             </span>
                                         </td>
-                                        <td class="actions">
-                                            <button class="btn-view" onclick="viewOrderDetails(
-                                                '<?php echo $row['id']; ?>', 
-                                                '<?php echo htmlspecialchars($row['order_number'], ENT_QUOTES); ?>', 
-                                                '<?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>', 
-                                                '<?php echo htmlspecialchars($row['phone'], ENT_QUOTES); ?>', 
-                                                '<?php echo htmlspecialchars($row['email'], ENT_QUOTES); ?>', 
-                                                '<?php echo htmlspecialchars($row['address'], ENT_QUOTES); ?>', 
-                                                '<?php echo htmlspecialchars($row['medicine_details'] ?: 'No medicines', ENT_QUOTES); ?>', 
-                                                '<?php echo number_format($row['total_amount'], 2); ?>', 
-                                                '<?php echo date('M d, Y H:i', strtotime($row['order_date'])); ?>', 
-                                                '<?php echo $row['status']; ?>')">
-                                                <i class='bx bx-show'></i> View
-                                            </button>
-                                            
-                                            <?php if($row['status'] == 'pending'): ?>
-                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                    <input type="hidden" name="action" value="updateStatus">
-                                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                                                    <input type="hidden" name="new_status" value="confirmed">
-                                                    <button type="submit" class="btn-accept"><i class='bx bx-check'></i>Confirm</button>
-                                                </form>
+                                        <td>
+                                            <div class="actions">
+                                                <button class="btn-view" onclick="viewOrderDetails(
+                                                    '<?php echo $row['id']; ?>', 
+                                                    '<?php echo htmlspecialchars($row['order_number'], ENT_QUOTES); ?>', 
+                                                    '<?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>', 
+                                                    '<?php echo htmlspecialchars($row['phone'], ENT_QUOTES); ?>', 
+                                                    '<?php echo htmlspecialchars($row['email'], ENT_QUOTES); ?>', 
+                                                    '<?php echo htmlspecialchars($row['address'], ENT_QUOTES); ?>', 
+                                                    '<?php echo htmlspecialchars($row['medicine_details'] ?: 'No medicines', ENT_QUOTES); ?>', 
+                                                    '<?php echo number_format($row['total_amount'], 2); ?>', 
+                                                    '<?php echo date('M d, Y H:i', strtotime($row['order_date'])); ?>', 
+                                                    '<?php echo $row['status']; ?>')">
+                                                    <i class='bx bx-show'></i> View
+                                                </button>
                                                 
-                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                    <input type="hidden" name="action" value="updateStatus">
-                                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                                                    <input type="hidden" name="new_status" value="cancelled">
-                                                    <button type="submit" class="btn-reject"><i class='bx bx-x'></i>Cancel</button>
-                                                </form>
-                                            <?php elseif($row['status'] == 'confirmed'): ?>
-                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                    <input type="hidden" name="action" value="updateStatus">
-                                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                                                    <input type="hidden" name="new_status" value="shipped">
-                                                    <button type="submit" class="btn-ship"><i class='bx bx-package'></i>Ship</button>
-                                                </form>
-                                            <?php elseif($row['status'] == 'shipped'): ?>
-                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                    <input type="hidden" name="action" value="updateStatus">
-                                                    <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                                                    <input type="hidden" name="new_status" value="delivered">
-                                                    <button type="submit" class="btn-deliver"><i class='bx bx-check-circle'></i>Mark Delivered</button>
-                                                </form>
-                                            <?php else: ?>
-                                                <button class="btn-disabled" disabled><i class='bx bx-check'></i>No Actions</button>
-                                            <?php endif; ?>
+                                                <?php if($row['status'] == 'pending'): ?>
+                                                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
+                                                        <input type="hidden" name="action" value="updateStatus">
+                                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                                        <input type="hidden" name="new_status" value="confirmed">
+                                                        <button type="submit" class="btn-accept"><i class='bx bx-check'></i>Confirm</button>
+                                                    </form>
+                                                    
+                                                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
+                                                        <input type="hidden" name="action" value="updateStatus">
+                                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                                        <input type="hidden" name="new_status" value="cancelled">
+                                                        <button type="submit" class="btn-reject"><i class='bx bx-x'></i>Cancel</button>
+                                                    </form>
+                                                <?php elseif($row['status'] == 'confirmed'): ?>
+                                                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
+                                                        <input type="hidden" name="action" value="updateStatus">
+                                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                                        <input type="hidden" name="new_status" value="shipped">
+                                                        <button type="submit" class="btn-ship"><i class='bx bx-package'></i>Ship</button>
+                                                    </form>
+                                                <?php elseif($row['status'] == 'shipped'): ?>
+                                                    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
+                                                        <input type="hidden" name="action" value="updateStatus">
+                                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                                        <input type="hidden" name="new_status" value="delivered">
+                                                        <button type="submit" class="btn-deliver"><i class='bx bx-check-circle'></i>Mark Delivered</button>
+                                                    </form>                                            
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>

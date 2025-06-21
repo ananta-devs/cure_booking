@@ -309,7 +309,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="http://localhost/cure_booking/adminhub/manage-clinics/show_clinics.php">
+                    <a href="http://localhost/cure_booking/adminhub/manage-clinics/clinic_list.php">
                         <i class='bx bx-list-ul'></i>
                         <span class="text">Clinic List</span>
                     </a>

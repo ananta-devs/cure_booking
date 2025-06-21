@@ -17,6 +17,60 @@
         die("Database connection failed: " . $conn->connect_error);
     }
 
+    // Handle file upload
+    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'uploadReport') {
+        $bookingId = $_POST['booking_id'];
+        $uploadDir = './uploads/lab_reports/';
+        
+        // Create directory if it doesn't exist
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        
+        if (isset($_FILES['lab_report']) && $_FILES['lab_report']['error'] == 0) {
+            $allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            $allowedExtensions = ['pdf', 'doc', 'docx'];
+            
+            $fileType = $_FILES['lab_report']['type'];
+            $fileName = $_FILES['lab_report']['name'];
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            
+            if (in_array($fileType, $allowedTypes) && in_array($fileExtension, $allowedExtensions)) {
+                // Generate unique filename
+                $newFileName = $bookingId . '_' . time() . '.' . $fileExtension;
+                $uploadPath = $uploadDir . $newFileName;
+                
+                if (move_uploaded_file($_FILES['lab_report']['tmp_name'], $uploadPath)) {
+                    // Update database with report path and status
+                    $updateSql = "UPDATE lab_orders SET report_file = ?, status = 'Upload Done' WHERE booking_id = ?";
+                    $stmt = $conn->prepare($updateSql);
+                    $stmt->bind_param("ss", $newFileName, $bookingId);
+                    
+                    if ($stmt->execute()) {
+                        $_SESSION['message'] = "Lab report uploaded successfully and status updated!";
+                        $_SESSION['message_type'] = "success";
+                    } else {
+                        $_SESSION['message'] = "Error updating database: " . $conn->error;
+                        $_SESSION['message_type'] = "error";
+                    }
+                } else {
+                    $_SESSION['message'] = "Error uploading file.";
+                    $_SESSION['message_type'] = "error";
+                }
+            } else {
+                $_SESSION['message'] = "Invalid file type. Only PDF, DOC, and DOCX files are allowed.";
+                $_SESSION['message_type'] = "error";
+            }
+        } else {
+            $_SESSION['message'] = "Please select a file to upload.";
+            $_SESSION['message_type'] = "error";
+        }
+        
+        // Redirect to avoid form resubmission
+        header("Location: ".$_SERVER['PHP_SELF']);
+        exit();
+    }
+
     // Handle status update if form submitted
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'updateStatus') {
         $bookingId = $_POST['booking_id'];
@@ -50,7 +104,7 @@
             FROM lab_orders lo 
             LEFT JOIN lab_order_items loi ON lo.id = loi.order_id 
             GROUP BY lo.id, lo.booking_id, lo.customer_name, lo.phone, lo.email, lo.address, 
-                     lo.sample_collection_date, lo.time_slot, lo.total_amount, lo.status, lo.created_at
+                     lo.sample_collection_date, lo.time_slot, lo.total_amount, lo.status, lo.created_at, lo.report_file
             ORDER BY lo.created_at DESC";
     $result = $conn->query($sql);
     
@@ -103,170 +157,6 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="styles.css">
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-    <style>
-        .test-list {
-            max-width: 300px;
-            position: relative;
-        }
-        
-        .test-preview {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        
-        .test-names-container {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 0.9em;
-        }
-        
-        .test-summary {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 3px;
-        }
-        
-        .test-count {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        
-        .test-total {
-            background: #e8f5e8;
-            color: #2e7d32;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 0.75em;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        
-        .test-details {
-            font-size: 0.85em;
-            color: #666;
-            margin-top: 2px;
-        }
-        
-        .modal-tests {
-            margin-top: 15px;
-        }
-        
-        .test-item {
-            background: #f8f9fa;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 8px;
-            border-left: 4px solid #007bff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .test-item h4 {
-            margin: 0 0 8px 0;
-            color: #333;
-            font-size: 1.05em;
-        }
-        
-        .test-item-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 8px;
-        }
-        
-        .test-item p {
-            margin: 0;
-            font-size: 0.9em;
-            color: #666;
-        }
-        
-        .test-item .price-highlight {
-            color: #28a745;
-            font-weight: bold;
-        }
-        
-        .amount-highlight {
-            font-weight: bold;
-            color: #28a745;
-            font-size: 1.05em;
-        }
-        
-        .modal-tests-summary {
-            background: #f0f8ff;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            border: 1px solid #d0e7ff;
-        }
-        
-        .tests-total-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 2px solid #dee2e6;
-        }
-        
-        /* Tooltip for test names */
-        .test-tooltip {
-            position: relative;
-            cursor: pointer;
-        }
-        
-        .test-tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-        
-        .tooltip-text {
-            visibility: hidden;
-            opacity: 0;
-            width: 300px;
-            background-color: #333;
-            color: white;
-            text-align: left;
-            border-radius: 6px;
-            padding: 8px;
-            position: absolute;
-            z-index: 1000;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -150px;
-            transition: opacity 0.3s;
-            font-size: 0.85em;
-            line-height: 1.4;
-        }
-        
-        .tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #333 transparent transparent transparent;
-        }
-
-        /* Responsive improvements */
-        @media (max-width: 768px) {
-            .test-list {
-                max-width: 200px;
-            }
-            
-            .test-item-details {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 </head>
 <body>
     <!-- SIDEBAR -->
@@ -318,112 +208,121 @@
                 
                 <div class="bookings-container">
                     <?php if ($result->num_rows > 0): ?>
-                        <table class="bookings-table">
-                            <thead>
+                    <table class="bookings-table">
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Customer Name</th>
+                                <th>Tests Ordered</th>
+                                <th>Total Amount</th>
+                                <th>Collection Date</th>
+                                <th>Time Slot</th>
+                                <th>Status</th>
+                                <th class="actions-column">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while($row = $result->fetch_assoc()): ?>
                                 <tr>
-                                    <th>Booking ID</th>
-                                    <th>Customer Name</th>
-                                    <th>Tests Ordered</th>
-                                    <th>Total Amount</th>
-                                    <th>Collection Date</th>
-                                    <th>Time Slot</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while($row = $result->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($row['booking_id']); ?></td>
-                                        <td><?php echo htmlspecialchars($row['customer_name']); ?></td>
-                                        <td class="test-list">
-                                            <div class="test-preview">
-                                                <div class="test-tooltip test-names-container" title="<?php echo htmlspecialchars($row['test_names'] ?: 'No tests'); ?>">
-                                                    <?php 
-                                                        if ($row['test_names']) {
-                                                            $testNames = explode(', ', $row['test_names']);
-                                                            if (count($testNames) > 2) {
-                                                                echo htmlspecialchars($testNames[0] . ', ' . $testNames[1] . '...');
-                                                            } else {
-                                                                echo htmlspecialchars($row['test_names']);
-                                                            }
-                                                        } else {
-                                                            echo 'No tests found';
-                                                        }
-                                                    ?>
-                                                    <span class="tooltip-text"><?php echo htmlspecialchars($row['test_names'] ?: 'No tests available'); ?></span>
-                                                </div>
-                                                <div class="test-summary">
-                                                    <span class="test-count"><?php echo intval($row['total_tests']); ?> test<?php echo intval($row['total_tests']) != 1 ? 's' : ''; ?></span>
-                                                    <?php if ($row['calculated_total'] && $row['calculated_total'] != $row['total_amount']): ?>
-                                                        <span class="test-total">Items: ₹<?php echo number_format($row['calculated_total'], 2); ?></span>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="amount-highlight">₹<?php echo number_format($row['total_amount'], 2); ?></td>
-                                        <td><?php echo date('M d, Y', strtotime($row['sample_collection_date'])); ?></td>
-                                        <td><?php echo htmlspecialchars($row['time_slot']); ?></td>
-                                        <td>
-                                            <span class="status status-<?php echo strtolower(str_replace(' ', '-', $row['status'])); ?>">
-                                                <?php echo htmlspecialchars($row['status']); ?>
-                                            </span>
-                                        </td>
-                                        <td class="actions">
+                                    <td><?php echo htmlspecialchars($row['booking_id']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['customer_name']); ?></td>
+                                    <td class="test-list">
+                                        <div class="single-test-display">
+                                            <?php 
+                                                if ($row['test_names']) {
+                                                    $testNames = explode(', ', $row['test_names']);
+                                                    $firstTest = $testNames[0];
+                                                    $totalTests = intval($row['total_tests']);
+                                                    
+                                                    echo '<div class="primary-test-name" title="' . htmlspecialchars($row['test_names']) . '">';
+                                                    echo htmlspecialchars($firstTest);
+                                                    echo '</div>';
+                                                    
+                                                    if ($totalTests > 1) {
+                                                        echo '<div class="test-count-badge">';
+                                                        echo '<i class="bx bx-plus"></i>';
+                                                        echo ($totalTests - 1) . ' more';
+                                                        echo '</div>';
+                                                    }
+                                                } else {
+                                                    echo '<div class="primary-test-name">No tests found</div>';
+                                                }
+                                            ?>
+                                        </div>
+                                    </td>
+                                    <td class="amount-highlight">₹<?php echo number_format($row['total_amount'], 2); ?></td>
+                                    <td><?php echo date('M d, Y', strtotime($row['sample_collection_date'])); ?></td>
+                                    <td><?php echo htmlspecialchars($row['time_slot']); ?></td>
+                                    <td>
+                                        <span class="status status-<?php echo strtolower(str_replace(' ', '-', $row['status'])); ?>">
+                                            <?php echo htmlspecialchars($row['status']); ?>
+                                        </span>
+                                    </td>
+                                    <td class="actions-column">
+                                        <div class="actions">
                                             <button class="btn-view" onclick="viewBookingDetails('<?php echo $row['id']; ?>')">
                                                 <i class='bx bx-show'></i> View
                                             </button>
+                                            
+                                            <?php if(!empty($row['report_file']) && ($row['status'] == 'Upload Done' || $row['status'] == 'Completed')): ?>
+                                                <button class="btn-view" onclick="viewReport('<?php echo htmlspecialchars($row['report_file']); ?>', '<?php echo htmlspecialchars($row['customer_name']); ?>')">
+                                                    <i class='bx bx-file-blank'></i> Report
+                                                </button>
+                                            <?php endif; ?>
                                             
                                             <?php if($row['status'] == 'Pending'): ?>
                                                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
                                                     <input type="hidden" name="action" value="updateStatus">
                                                     <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($row['booking_id']); ?>">
                                                     <input type="hidden" name="new_status" value="Confirmed">
-                                                    <button type="submit" class="btn-accept"><i class='bx bx-check'></i>Confirm</button>
+                                                    <button type="submit" class="btn-accept">
+                                                        <i class='bx bx-check'></i>Confirm
+                                                    </button>
                                                 </form>
                                                 
                                                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
                                                     <input type="hidden" name="action" value="updateStatus">
                                                     <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($row['booking_id']); ?>">
                                                     <input type="hidden" name="new_status" value="Cancelled">
-                                                    <button type="submit" class="btn-reject"><i class='bx bx-x'></i>Cancel</button>
+                                                    <button type="submit" class="btn-reject">
+                                                        <i class='bx bx-x'></i>Cancel
+                                                    </button>
                                                 </form>
                                             <?php elseif($row['status'] == 'Confirmed'): ?>
                                                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
                                                     <input type="hidden" name="action" value="updateStatus">
                                                     <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($row['booking_id']); ?>">
                                                     <input type="hidden" name="new_status" value="Sample Collected">
-                                                    <button type="submit" class="btn-accept"><i class='bx bx-vial'></i>Collected</button>
+                                                    <button type="submit" class="btn-accept">
+                                                        <i class='bx bx-vial'></i>Collected
+                                                    </button>
                                                 </form>
                                             <?php elseif($row['status'] == 'Sample Collected'): ?>
-                                                <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
-                                                    <input type="hidden" name="action" value="updateStatus">
-                                                    <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($row['booking_id']); ?>">
-                                                    <input type="hidden" name="new_status" value="Sample Collected">
-                                                    <button type="submit" class="btn-accept"><i class='bx bx-vial'></i>Sample Collected</button>
-                                                </form>
-                                            <?php elseif($row['status'] == 'Sample Collected'): ?>
+                                                <button class="btn-complete" onclick="openUploadModal('<?php echo htmlspecialchars($row['booking_id']); ?>', '<?php echo htmlspecialchars($row['customer_name']); ?>')">
+                                                    <i class='bx bx-upload'></i>Complete
+                                                </button>
+                                            <?php elseif($row['status'] == 'Upload Done'): ?>
                                                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
                                                     <input type="hidden" name="action" value="updateStatus">
                                                     <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($row['booking_id']); ?>">
                                                     <input type="hidden" name="new_status" value="Completed">
-                                                    <button type="submit" class="btn-accept"><i class='bx bx-check-circle'></i>Complete</button>
                                                 </form>
-                                            <?php else: ?>
-                                                <button class="btn-disabled" disabled>No Actions</button>
                                             <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
                     <?php else: ?>
                         <div class="empty-state">
+                            <i class='bx bx-test-tube'></i>
                             <h3>No Orders Found</h3>
                             <p>There are currently no lab orders in the system.</p>
                         </div>
                     <?php endif; ?>
                 </div>
+
             </div>
             
             <!-- Booking Details Modal -->
@@ -434,57 +333,134 @@
                         <h2>Order Details</h2>
                         <p id="modalBookingId" class="subtitle"></p>
                     </div>
-                    <div class="details-grid">
-                        <div class="detail-item">
-                            <div class="detail-label">Customer Name</div>
-                            <div id="modalCustomerName" class="detail-value"></div>
+                    <div class="modal-body">
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Customer Name</div>
+                                <div id="modalCustomerName" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Phone Number</div>
+                                <div id="modalPhone" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Email</div>
+                                <div id="modalEmail" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Address</div>
+                                <div id="modalAddress" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Sample Collection Date</div>
+                                <div id="modalDate" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Time Slot</div>
+                                <div id="modalTime" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Total Amount</div>
+                                <div id="modalTotalAmount" class="detail-value amount-highlight"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Booking Created</div>
+                                <div id="modalBookingTime" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Status</div>
+                                <div id="modalStatus" class="detail-value"></div>
+                            </div>
                         </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Phone Number</div>
-                            <div id="modalPhone" class="detail-value"></div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Email</div>
-                            <div id="modalEmail" class="detail-value"></div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Address</div>
-                            <div id="modalAddress" class="detail-value"></div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Sample Collection Date</div>
-                            <div id="modalDate" class="detail-value"></div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Time Slot</div>
-                            <div id="modalTime" class="detail-value"></div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Total Amount</div>
-                            <div id="modalTotalAmount" class="detail-value amount-highlight"></div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Booking Created</div>
-                            <div id="modalBookingTime" class="detail-value"></div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Status</div>
-                            <div id="modalStatus" class="detail-value"></div>
+                        <div class="modal-tests">
+                            <h3>Ordered Tests</h3>
+                            <div id="modalTestsList"></div>
                         </div>
                     </div>
-                    <div class="modal-tests">
-                        <h3>Ordered Tests</h3>
-                        <div class="modal-tests-summary">
-                            <div id="modalTestsSummary"></div>
-                        </div>
-                        <div id="modalTestsList"></div>
-                        <div class="tests-total-container">
-                            <span>Tests Total:</span>
-                            <span id="modalTestsTotal" class="amount-highlight"></span>
+                </div>
+            </div>
+
+            <!-- Lab Report Upload Modal -->
+            <div id="uploadModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="closeUploadModal()">&times;</span>
+                    <div class="modal-header">
+                        <h2>Upload Lab Report</h2>
+                        <p id="uploadModalSubtitle" class="subtitle"></p>
+                    </div>
+                    <div class="modal-body">
+                        <form id="uploadForm" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="uploadReport">
+                            <input type="hidden" id="uploadBookingId" name="booking_id" value="">
+                            
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Customer Name</div>
+                                    <div id="uploadCustomerName" class="detail-value"></div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Booking ID</div>
+                                    <div id="uploadBookingIdDisplay" class="detail-value"></div>
+                                </div>
+                            </div>
+
+                            <div class="modal-tests">
+                                <h3>Select Lab Report File</h3>
+                                <div class="test-item">
+                                    <div class="detail-item">
+                                        <div class="detail-label">
+                                            <i class='bx bx-file'></i> Lab Report (PDF, DOC, DOCX)
+                                        </div>
+                                        <div class="detail-value">
+                                            <input type="file" 
+                                                   id="lab_report" 
+                                                   name="lab_report" 
+                                                   accept=".pdf,.doc,.docx" 
+                                                   required
+                                                   style="width: 100%; padding: 10px; border: 2px dashed var(--primary-color); border-radius: 5px; background-color: #f8f9fc; cursor: pointer;">
+                                        </div>
+                                    </div>
+                                    <div class="test-item-details">
+                                        <p style="color: var(--secondary-color); font-size: 12px; margin-top: 10px;">
+                                            <i class='bx bx-info-circle'></i> 
+                                            Supported formats: PDF, DOC, DOCX. Maximum file size: 10MB
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-reject" onclick="closeUploadModal()">
+                            <i class='bx bx-x'></i> Cancel
+                        </button>
+                        <button type="submit" form="uploadForm" class="btn-accept" id="uploadButton">
+                            <i class='bx bx-upload'></i> Upload Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Viewer Modal -->
+            <div id="reportModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="closeReportModal()">&times;</span>
+                    <div class="modal-header">
+                        <h2>Lab Report</h2>
+                        <p id="reportModalSubtitle" class="subtitle"></p>
+                    </div>
+                    <div class="modal-body">
+                        <div class="report-viewer" id="reportViewer">
+                            <!-- Report will be loaded here -->
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <div id="modalActions"></div>
+                        <button type="button" class="btn-view" id="downloadReportBtn">
+                            <i class='bx bx-download'></i> Download Report
+                        </button>
+                        <button type="button" class="btn-reject" onclick="closeReportModal()">
+                            <i class='bx bx-x'></i> Close
+                        </button>
                     </div>
                 </div>
             </div>
@@ -493,123 +469,369 @@
     </section>
     <!-- CONTENT -->
 
-    <script>
-        // Modal functionality
-        const modal = document.getElementById("bookingModal");
-        const closeBtn = document.getElementsByClassName("close")[0];
+<script>
+    const modal = document.getElementById("bookingModal");
+    const uploadModal = document.getElementById("uploadModal");
+    const reportModal = document.getElementById("reportModal");
+    const closeBtns = document.getElementsByClassName("close");
+    let currentOrderId = null;
 
-        function viewBookingDetails(orderId) {
-            // Show loading state
-            document.getElementById("modalTestsList").innerHTML = '<div style="text-align: center; padding: 20px;">Loading tests...</div>';
-            
-            // Fetch order details via AJAX
-            fetch('get_order_details.php?order_id=' + orderId)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const order = data.order;
-                        const tests = data.tests;
-                        
-                        // Populate modal with booking details
-                        document.getElementById("modalBookingId").textContent = "ID: " + order.booking_id;
-                        document.getElementById("modalCustomerName").textContent = order.customer_name || 'N/A';
-                        document.getElementById("modalPhone").textContent = order.phone || 'N/A';
-                        document.getElementById("modalEmail").textContent = order.email || 'N/A';
-                        document.getElementById("modalAddress").textContent = order.address || 'N/A';
-                        document.getElementById("modalDate").textContent = new Date(order.sample_collection_date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                        });
-                        document.getElementById("modalTime").textContent = order.time_slot || 'N/A';
-                        document.getElementById("modalTotalAmount").textContent = "₹" + parseFloat(order.total_amount || 0).toFixed(2);
-                        document.getElementById("modalBookingTime").textContent = order.created_at || 'N/A';
-
-                        // Set status with appropriate styling
-                        const statusElem = document.getElementById("modalStatus");
-                        statusElem.textContent = order.status || 'Unknown';
-                        statusElem.className = "detail-value status status-" + (order.status || 'unknown').toLowerCase().replace(' ', '-');
-
-                        // Populate tests summary
-                        const summaryElem = document.getElementById("modalTestsSummary");
-                        summaryElem.innerHTML = `<strong>${tests.length} test${tests.length !== 1 ? 's' : ''} ordered</strong>`;
-
-                        // Populate tests list
-                        const testsContainer = document.getElementById("modalTestsList");
-                        testsContainer.innerHTML = "";
-                        
-                        let testsTotal = 0;
-                        
-                        if (tests.length > 0) {
-                            tests.forEach((test, index) => {
-                                const testDiv = document.createElement("div");
-                                testDiv.className = "test-item";
-                                
-                                const subtotal = parseFloat(test.subtotal || 0);
-                                testsTotal += subtotal;
-                                
-                                testDiv.innerHTML = `
-                                    <h4>${test.test_name || 'Unnamed Test'}</h4>
-                                    <div class="test-item-details">
-                                        <p><strong>Price:</strong> <span class="price-highlight">₹${parseFloat(test.test_price || 0).toFixed(2)}</span></p>
-                                        <p><strong>Sample Type:</strong> ${test.sample_type || 'Not specified'}</p>
-                                        <p><strong>Quantity:</strong> ${test.quantity || 1}</p>
-                                        <p><strong>Subtotal:</strong> <span class="price-highlight">₹${subtotal.toFixed(2)}</span></p>
-                                    </div>
-                                `;
-                                testsContainer.appendChild(testDiv);
-                            });
-                        } else {
-                            testsContainer.innerHTML = '<div class="test-item"><p style="text-align: center; color: #999;">No tests found for this order</p></div>';
-                        }
-                        
-                        // Update tests total
-                        document.getElementById("modalTestsTotal").textContent = "₹" + testsTotal.toFixed(2);
-
-                        // Show the modal
-                        modal.style.display = "block";
-                    } else {
-                        alert("Error loading order details: " + (data.message || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert("Error loading order details. Please try again.");
-                });
-        }
-
-        function closeModal() {
-            modal.style.display = "none";
-        }
-
-        // Close modal when clicking on X
-        closeBtn.onclick = closeModal;
-
-        // Close modal when clicking outside of it
-        window.onclick = function (event) {
-            if (event.target == modal) {
-                closeModal();
-            }
+    // Report Viewer Functions
+    function viewReport(reportFile, customerName) {
+        const reportPath = './uploads/lab_reports/' + reportFile;
+        const fileExtension = reportFile.split('.').pop().toLowerCase();
+        
+        document.getElementById("reportModalSubtitle").textContent = `Report for ${customerName}`;
+        
+        const reportViewer = document.getElementById("reportViewer");
+        const downloadBtn = document.getElementById("downloadReportBtn");
+        
+        // Set up download button
+        downloadBtn.onclick = function() {
+            window.open(reportPath, '_blank');
         };
+        
+        if (fileExtension === 'pdf') {
+            // Display PDF in iframe
+            reportViewer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <iframe src="${reportPath}" 
+                            style="width: 100%; height: 600px; border: none; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);" 
+                            type="application/pdf">
+                        <p>Your browser does not support PDFs. 
+                           <a href="${reportPath}" target="_blank">Download the PDF</a> instead.
+                        </p>
+                    </iframe>
+                </div>
+            `;
+        } else {
+            // For DOC/DOCX files, show download option
+            reportViewer.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px;">
+                    <i class='bx bx-file-blank' style="font-size: 64px; color: var(--primary-color); margin-bottom: 20px;"></i>
+                    <h3 style="color: var(--dark-color); margin-bottom: 15px;">Lab Report</h3>
+                    <p style="color: var(--secondary-color); margin-bottom: 25px;">
+                        This is a ${fileExtension.toUpperCase()} document for ${customerName}
+                    </p>
+                    <p style="color: var(--secondary-color); font-size: 14px; margin-bottom: 30px;">
+                        <i class='bx bx-info-circle'></i> 
+                        ${fileExtension.toUpperCase()} files cannot be previewed in browser. Click download to view the report.
+                    </p>
+                    <button class="btn-view" onclick="window.open('${reportPath}', '_blank')" style="padding: 12px 24px; font-size: 16px;">
+                        <i class='bx bx-download'></i> Download & View Report
+                    </button>
+                </div>
+            `;
+        }
+        
+        reportModal.style.display = "block";
+        document.body.style.overflow = "hidden";
+    }
 
-        // Auto dismiss alerts after 5 seconds
-        document.addEventListener("DOMContentLoaded", function () {
-            const alerts = document.querySelectorAll(".alert");
-            alerts.forEach(function (alert) {
-                setTimeout(function () {
-                    alert.style.opacity = "0";
-                    alert.style.transition = "opacity 0.5s";
-                    setTimeout(function () {
-                        alert.style.display = "none";
-                    }, 500);
-                }, 5000);
+    function closeReportModal() {
+        reportModal.style.display = "none";
+        document.body.style.overflow = "auto";
+        
+        // Clear the report viewer
+        document.getElementById("reportViewer").innerHTML = "";
+        document.getElementById("reportModalSubtitle").textContent = "";
+    }
+
+    // Upload Modal Functions
+    function openUploadModal(bookingId, customerName) {
+        document.getElementById("uploadBookingId").value = bookingId;
+        document.getElementById("uploadBookingIdDisplay").textContent = bookingId;
+        document.getElementById("uploadCustomerName").textContent = customerName;
+        document.getElementById("uploadModalSubtitle").textContent = `Complete order for ${customerName}`;
+        
+        uploadModal.style.display = "block";
+        document.body.style.overflow = "hidden";
+    }
+
+    function closeUploadModal() {
+        uploadModal.style.display = "none";
+        document.body.style.overflow = "auto";
+        
+        // Reset form
+        document.getElementById("uploadForm").reset();
+        document.getElementById("uploadBookingId").value = "";
+        document.getElementById("uploadBookingIdDisplay").textContent = "";
+        document.getElementById("uploadCustomerName").textContent = "";
+        document.getElementById("uploadModalSubtitle").textContent = "";
+    }
+
+    // File input validation
+    document.getElementById("lab_report").addEventListener("change", function() {
+        const file = this.files[0];
+        const uploadButton = document.getElementById("uploadButton");
+        
+        if (file) {
+            const fileSize = file.size / 1024 / 1024; // Convert to MB
+            const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            
+            if (fileSize > 10) {
+                alert("File size must be less than 10MB");
+                this.value = "";
+                uploadButton.disabled = true;
+                return;
+            }
+            
+            if (!allowedTypes.includes(file.type)) {
+                alert("Only PDF, DOC, and DOCX files are allowed");
+                this.value = "";
+                uploadButton.disabled = true;
+                return;
+            }
+            
+            uploadButton.disabled = false;
+            uploadButton.innerHTML = `<i class='bx bx-upload'></i> Upload ${file.name}`;
+        } else {
+            uploadButton.disabled = true;
+            uploadButton.innerHTML = `<i class='bx bx-upload'></i> Upload Report`;
+        }
+    });
+
+    // Existing booking modal functions
+    function viewBookingDetails(orderId) {
+        currentOrderId = orderId;
+        
+        // Show modal first with loading state
+        modal.style.display = "block";
+        document.body.style.overflow = "hidden"; // Prevent background scrolling
+        
+        // Reset modal content with loading state
+        resetModalContent();
+        showLoadingState();
+        
+        // Fetch order details via AJAX
+        fetch('get_order_details.php?order_id=' + orderId)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                hideLoadingState();
+                
+                if (data.success) {
+                    populateModalWithData(data.order, data.tests);
+                } else {
+                    showErrorState(data.message || 'Failed to load order details');
+                }
+            })
+            .catch(error => {
+                hideLoadingState();
+                console.error('Error fetching order details:', error);
+                showErrorState('Failed to load order details. Please try again.');
             });
+    }
+
+    function resetModalContent() {
+        // Clear all modal fields
+        const fields = [
+            'modalBookingId', 'modalCustomerName', 'modalPhone', 'modalEmail',
+            'modalAddress', 'modalDate', 'modalTime', 'modalTotalAmount',
+            'modalBookingTime', 'modalStatus', 'modalTestsList'
+        ];
+        
+        fields.forEach(fieldId => {
+            const element = document.getElementById(fieldId);
+            if (element) {
+                element.innerHTML = '';
+            }
         });
-    </script>
+    }
+
+    function showLoadingState() {
+        document.getElementById("modalBookingId").innerHTML = 'Loading...';
+        document.getElementById("modalTestsList").innerHTML = `
+            <div class="loading-tests">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <div style="width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <span>Loading order details...</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function hideLoadingState() {
+        const loadingElement = document.querySelector('.loading-tests');
+        if (loadingElement) {
+            loadingElement.remove();
+        }
+    }
+
+    function showErrorState(message) {
+        document.getElementById("modalTestsList").innerHTML = `
+            <div class="error-state" style="text-align: center; padding: 40px; color: #e74c3c;">
+                <i class='bx bx-error-circle' style="font-size: 48px; margin-bottom: 16px;"></i>
+                <p>${message}</p>
+                <button onclick="viewBookingDetails(${currentOrderId})" class="btn-view" style="margin-top: 16px;">
+                    <i class='bx bx-refresh'></i> Retry
+                </button>
+            </div>
+        `;
+    }
+
+    function populateModalWithData(order, tests) {
+        // Populate order details
+        document.getElementById("modalBookingId").textContent = `Booking ID: ${order.booking_id}`;
+        document.getElementById("modalCustomerName").textContent = order.customer_name;
+        document.getElementById("modalPhone").textContent = order.phone;
+        document.getElementById("modalEmail").textContent = order.email;
+        document.getElementById("modalAddress").textContent = order.address;
+        document.getElementById("modalDate").textContent = new Date(order.sample_collection_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        document.getElementById("modalTime").textContent = order.time_slot;
+        document.getElementById("modalTotalAmount").textContent = `₹${parseFloat(order.total_amount).toFixed(2)}`;
+        document.getElementById("modalBookingTime").textContent = new Date(order.created_at).toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Set status with appropriate styling
+        const statusElement = document.getElementById("modalStatus");
+        statusElement.innerHTML = `<span class="status status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span>`;
+        
+        // Populate tests list
+        let testsHtml = '';
+        let totalCalculated = 0;
+        
+        if (tests && tests.length > 0) {
+            tests.forEach(test => {
+                const subtotal = parseFloat(test.subtotal);
+                totalCalculated += subtotal;
+                
+                testsHtml += `
+                    <div class="test-item">
+                        <div class="test-main-info">
+                            <div class="test-name">
+                                <i class='bx bx-test-tube'></i>
+                                ${test.test_name}
+                            </div>
+                            <div class="test-price">₹${parseFloat(test.test_price).toFixed(2)}</div>
+                        </div>
+                        <div class="test-item-details">
+                            <div class="test-detail">
+                                <span class="detail-label">Sample Type:</span>
+                                <span class="detail-value">${test.sample_type}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            testsHtml = `
+                <div class="no-tests" style="text-align: center; padding: 40px; color: var(--secondary-color);">
+                    <i class='bx bx-test-tube' style="font-size: 48px; margin-bottom: 16px;"></i>
+                    <p>No test details found for this order.</p>
+                </div>
+            `;
+        }
+        
+        document.getElementById("modalTestsList").innerHTML = testsHtml;
+    }
+
+    // Close modal event handlers
+    for (let i = 0; i < closeBtns.length; i++) {
+        closeBtns[i].onclick = function() {
+            modal.style.display = "none";
+            uploadModal.style.display = "none";
+            reportModal.style.display = "none";
+            document.body.style.overflow = "auto";
+        }
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+            document.body.style.overflow = "auto";
+        }
+        if (event.target == uploadModal) {
+            closeUploadModal();
+        }
+        if (event.target == reportModal) {
+            closeReportModal();
+        }
+    }
+
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 300);
+            }, 5000);
+        });
+    });
+
+    // Add CSS animations for loading spinner
+    document.head.appendChild(style);
+
+    // Form validation for status updates
+    document.querySelectorAll('.status-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const action = this.querySelector('input[name="new_status"]').value;
+            let confirmMessage = '';
+            
+            switch(action) {
+                case 'Confirmed':
+                    confirmMessage = 'Are you sure you want to confirm this booking?';
+                    break;
+                case 'Cancelled':
+                    confirmMessage = 'Are you sure you want to cancel this booking? This action cannot be undone.';
+                    break;
+                case 'Sample Collected':
+                    confirmMessage = 'Confirm that the sample has been collected from the customer?';
+                    break;
+                case 'Completed':
+                    confirmMessage = 'Mark this order as completed? The customer will be notified.';
+                    break;
+                default:
+                    confirmMessage = 'Are you sure you want to update the status?';
+            }
+            
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Upload form validation
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        const fileInput = document.getElementById('lab_report');
+        
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('Please select a file to upload.');
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const fileSize = file.size / 1024 / 1024; // Convert to MB
+        
+        if (fileSize > 10) {
+            e.preventDefault();
+            alert('File size must be less than 10MB.');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to upload this lab report? This will mark the order as completed.')) {
+            e.preventDefault();
+        }
+    });
+</script>
+
 </body>
 </html>
-
-<?php
-// Close database connection
-$conn->close();
-?>
