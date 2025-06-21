@@ -99,8 +99,7 @@
                 lo.*,
                 GROUP_CONCAT(DISTINCT loi.test_name ORDER BY loi.test_name SEPARATOR ', ') as test_names,
                 GROUP_CONCAT(DISTINCT CONCAT(loi.test_name, ' (₹', FORMAT(loi.test_price, 2), ')') ORDER BY loi.test_name SEPARATOR '<br>') as test_details,
-                COUNT(DISTINCT loi.id) as total_tests,
-                SUM(loi.subtotal) as calculated_total
+                COUNT(DISTINCT loi.id) as total_tests
             FROM lab_orders lo 
             LEFT JOIN lab_order_items loi ON lo.id = loi.order_id 
             GROUP BY lo.id, lo.booking_id, lo.customer_name, lo.phone, lo.email, lo.address, 
@@ -131,7 +130,7 @@
 
     // Enhanced function to get test details for a specific order
     function getTestDetailsForOrder($conn, $orderId) {
-        $testSql = "SELECT test_name, test_price, sample_type, quantity, subtotal 
+        $testSql = "SELECT test_name, test_price, sample_type, quantity
                    FROM lab_order_items 
                    WHERE order_id = ? 
                    ORDER BY test_name";
@@ -706,8 +705,8 @@
         
         if (tests && tests.length > 0) {
             tests.forEach(test => {
-                const subtotal = parseFloat(test.subtotal);
-                totalCalculated += subtotal;
+                // const subtotal = parseFloat(test.subtotal);
+                // totalCalculated += subtotal;
                 
                 testsHtml += `
                     <div class="test-item">

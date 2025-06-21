@@ -59,7 +59,6 @@ try {
                     test_name,
                     test_price,
                     sample_type,
-                    subtotal,
                     created_at
                  FROM lab_order_items 
                  WHERE order_id = ? 
@@ -82,10 +81,10 @@ try {
         $test['test_name'] = $test['test_name'] ?? 'Unnamed Test';
         $test['test_price'] = floatval($test['test_price'] ?? 0);
         $test['sample_type'] = $test['sample_type'] ?? 'Not specified';
-        $test['subtotal'] = floatval($test['subtotal'] ?? 0);
+        // $test['subtotal'] = floatval($test['subtotal'] ?? 0);
         
         // Calculate total for verification
-        $totalCalculated += $test['subtotal'];
+        // $totalCalculated += $test['subtotal'];
         
         $tests[] = $test;
     }
