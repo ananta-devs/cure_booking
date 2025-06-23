@@ -418,19 +418,6 @@
             }
         }
 
-        function setupDateInput() {
-            const dateInput = document.querySelector('#date');
-            const timeSelect = document.querySelector('#time');
-            
-            const today = new Date();
-            dateInput.min = today.toISOString().split('T')[0];
-            
-            const maxDate = new Date();
-            maxDate.setMonth(maxDate.getMonth() + 3);
-            dateInput.max = maxDate.toISOString().split('T')[0];
-            
-            timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
-        }
 
         function addHiddenDoctorId(doctorId) {
             let doctorIdInput = document.querySelector('#doctor_id');
@@ -509,13 +496,37 @@
                     closeModal(elements.bookingModal);
                     elements.bookingForm.reset();
                     
-                    setTimeout(() => {
-                        if (confirm('Appointment booked successfully! Would you like to view your appointments?')) {
-                            window.location.href = '../user/appointments.php';
+                    // Enhanced success message with daily appointment info
+                    let successMessage = 'Appointment booked successfully!';
+                    if (data.appointment_details) {
+                        const details = data.appointment_details;
+                        successMessage += `\n\nAppointment Details:`;
+                        successMessage += `\nDoctor: ${details.doctor_name}`;
+                        successMessage += `\nDate: ${details.appointment_date}`;
+                        successMessage += `\nTime: ${details.appointment_time}`;
+                        successMessage += `\nClinic: ${details.clinic_name}`;
+                        
+                        if (details.daily_appointments_count && details.remaining_slots_today !== undefined) {
+                            successMessage += `\n\nDaily Booking Status:`;
+                            successMessage += `\nAppointments today: ${details.daily_appointments_count}/4`;
+                            successMessage += `\nRemaining slots today: ${details.remaining_slots_today}`;
                         }
-                    }, 1000);
+                    }
+                    
+                    setTimeout(() => {
+                        alert(successMessage);
+                    }, 500);
+                    
+                    showNotification('success', 'Appointment booked successfully!');
                 } else {
-                    showNotification('error', data.message);
+                    // Enhanced error handling for daily limit
+                    let errorMessage = data.message;
+                    if (data.message && data.message.includes('maximum limit of 4 appointments per day')) {
+                        errorMessage = 'Daily Booking Limit Reached!\n\nYou can book up to 4 appointments per day. Please choose a different date to continue booking.';
+                    }
+                    
+                    showNotification('error', errorMessage);
+                    
                     if (data.redirect_to_login) {
                         setTimeout(() => window.location.href = '../user/login.php', 2000);
                     }
@@ -537,7 +548,7 @@
             notification.innerHTML = `
                 <div class="notification-content">
                     <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-                    <span>${message}</span>
+                    <span style="white-space: pre-line;">${message}</span>
                     <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -545,7 +556,74 @@
             `;
             
             document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 5000);
+            setTimeout(() => notification.remove(), 7000); // Extended timeout for longer messages
+        }
+
+        async function checkDailyBookingStatus(email, date) {
+            try {
+                const response = await fetch(`api.php?action=check_daily_bookings&email=${encodeURIComponent(email)}&date=${date}`);
+                if (!response.ok) throw new Error('Failed to check booking status');
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error checking daily booking status:', error);
+                return null;
+            }
+        }
+
+        // Enhanced date input setup with booking limit info
+        function setupDateInput() {
+            const dateInput = document.querySelector('#date');
+            const timeSelect = document.querySelector('#time');
+            
+            const today = new Date();
+            dateInput.min = today.toISOString().split('T')[0];
+            
+            const maxDate = new Date();
+            maxDate.setMonth(maxDate.getMonth() + 3);
+            dateInput.max = maxDate.toISOString().split('T')[0];
+            
+            timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
+            
+            // Add event listener to show booking limit info when date changes
+            dateInput.addEventListener('change', async function() {
+                const selectedDate = this.value;
+                const userEmail = document.querySelector('#email').value;
+                
+                if (selectedDate && userEmail) {
+                    const bookingStatus = await checkDailyBookingStatus(userEmail, selectedDate);
+                    if (bookingStatus && bookingStatus.success) {
+                        const count = bookingStatus.daily_count || 0;
+                        const remaining = 4 - count;
+                        
+                        if (count > 0) {
+                            const statusDiv = document.querySelector('.daily-booking-status') || document.createElement('div');
+                            statusDiv.className = 'daily-booking-status';
+                            statusDiv.innerHTML = `
+                                <div style="background: ${remaining === 0 ? '#ffebee' : '#e8f5e8'}; 
+                                           border: 1px solid ${remaining === 0 ? '#f44336' : '#4caf50'}; 
+                                           padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 14px;">
+                                    <i class="fas ${remaining === 0 ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+                                    Daily Booking Status: ${count}/4 appointments on ${new Date(selectedDate).toLocaleDateString()}
+                                    ${remaining === 0 ? ' (Limit reached - choose another date)' : ` (${remaining} slots remaining)`}
+                                </div>
+                            `;
+                            
+                            if (!document.querySelector('.daily-booking-status')) {
+                                dateInput.parentNode.appendChild(statusDiv);
+                            }
+                            
+                            if (remaining === 0) {
+                                timeSelect.innerHTML = '<option value="">Daily booking limit reached - choose another date</option>';
+                                timeSelect.disabled = true;
+                            } else {
+                                timeSelect.disabled = false;
+                            }
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>

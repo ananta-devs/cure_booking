@@ -91,8 +91,8 @@ try {
 
 // Function to handle doctor login
 function handleDoctorLogin($pdo, $email, $inputPassword) {
-    // FIXED: Use correct column name 'doc_id' instead of 'id'
-    $stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_email, doc_pass, doc_specia, doc_img FROM doctor WHERE doc_email = :email LIMIT 1");
+    // Prepare and execute query to find doctor by email
+    $stmt = $pdo->prepare("SELECT id, doc_name, doc_email, doc_pass, doc_specia, doc_img FROM doctor WHERE doc_email = :email LIMIT 1");
     $stmt->bindParam(':email', $email, PDO::PARAM_STR);
     $stmt->execute();
     
@@ -117,8 +117,7 @@ function handleDoctorLogin($pdo, $email, $inputPassword) {
     
     if ($passwordMatch) {
         // Password is correct - create session
-        // FIXED: Use 'doc_id' instead of 'id'
-        $_SESSION['doctor_id'] = $doctor['doc_id'];
+        $_SESSION['doctor_id'] = $doctor['id'];
         $_SESSION['doctor_name'] = $doctor['doc_name'];
         $_SESSION['doctor_email'] = $doctor['doc_email'];
         $_SESSION['doctor_specialty'] = $doctor['doc_specia'];
@@ -129,9 +128,8 @@ function handleDoctorLogin($pdo, $email, $inputPassword) {
         
         // Update last login (optional)
         try {
-            // FIXED: Use 'doc_id' instead of 'id'
-            $updateStmt = $pdo->prepare("UPDATE doctor SET created_at = created_at WHERE doc_id = :id");
-            $updateStmt->bindParam(':id', $doctor['doc_id'], PDO::PARAM_INT);
+            $updateStmt = $pdo->prepare("UPDATE doctor SET last_login = NOW() WHERE id = :id");
+            $updateStmt->bindParam(':id', $doctor['id'], PDO::PARAM_INT);
             $updateStmt->execute();
         } catch (Exception $e) {
             // Ignore if last_login column doesn't exist
@@ -139,7 +137,7 @@ function handleDoctorLogin($pdo, $email, $inputPassword) {
         }
         
         sendResponse(true, "Welcome back, Dr. " . $doctor['doc_name'] . "!", "http://localhost/cure_booking/doctor/doctor_show.php", [
-            'doctor_id' => $doctor['doc_id'],
+            'doctor_id' => $doctor['id'],
             'doctor_name' => $doctor['doc_name'],
             'user_type' => 'doctor'
         ]);
