@@ -13,7 +13,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Manage Doctors - Appointment System</title>
+    <title>Manage Appointments - Clinic Dashboard</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="stl.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
@@ -25,12 +25,12 @@
         <?php include './include/sidebar.php'; ?>
         
         <main class="main-content">
-            <div id="manage-doctors-section" class="content-section active">
+            <div id="manage-appointments-section" class="content-section active">
                 <div class="header">
-                    <h1>Manage Doctors</h1>
-                    <p>Add, edit, and manage doctor information for your clinic</p>
+                    <h1>Manage Appointments</h1>
+                    <p>View and manage appointment statuses for your clinic</p>
                     <div class="quick-actions">
-                        <button class="action-btn" id="viewAppointmentsBtn">
+                        <button class="action-btn active" id="viewAppointmentsBtn">
                             <i class="fa fa-calendar-check"></i> View Appointments
                         </button>
                         <button class="action-btn" id="allDoctorsBtn">
@@ -56,7 +56,20 @@
                                     <option value="cancelled">Cancelled</option>
                                     <option value="no_show">No Show</option>
                                 </select>
-                                <button id="filterBtn" class="filter-btn">Filter</button>
+                                <select id="filterDoctor">
+                                    <option value="">All Doctors</option>
+                                    <?php foreach ($doctors as $doctor): ?>
+                                    <option value="<?php echo htmlspecialchars($doctor['doc_id']); ?>">
+                                        Dr. <?php echo htmlspecialchars($doctor['doc_name']); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button id="filterBtn" class="filter-btn">
+                                    <i class="fa fa-filter"></i> Filter
+                                </button>
+                                <button id="clearFilterBtn" class="filter-btn secondary">
+                                    <i class="fa fa-times"></i> Clear
+                                </button>
                             </div>
                         </div>
                         <div class="appointments-table">
@@ -76,143 +89,43 @@
                                     <?php foreach ($appointments as $appointment): ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars($appointment['id']); ?></td>
-                                        <td><?php echo htmlspecialchars($appointment['patient_name']); ?></td>
                                         <td>
-                                            <?php echo htmlspecialchars($appointment['doc_name']); ?><br>
-                                            <small><?php echo htmlspecialchars($appointment['doctor_specialization']); ?></small>
+                                                <strong><?php echo htmlspecialchars($appointment['patient_name']); ?></strong>
+                                                <small><?php echo htmlspecialchars($appointment['patient_phone']); ?></small>
+            
+                                        </td>
+                                        <td>
+
+                                                <strong><?php echo htmlspecialchars($appointment['doc_name']); ?></strong>
+                                                <small><?php echo htmlspecialchars($appointment['doctor_specialization']); ?></small>
+
                                         </td>
                                         <td><?php echo date('d/m/Y', strtotime($appointment['appointment_date'])); ?></td>
                                         <td><?php echo date('g:i A', strtotime($appointment['appointment_time'])); ?></td>
-                                        <td><span class="status-badge status-<?php echo $appointment['status']; ?>"><?php echo ucfirst($appointment['status']); ?></span></td>
+                                        <td>
+                                            <span class="status-badge status-<?php echo $appointment['status']; ?>">
+                                                <?php echo ucfirst($appointment['status']); ?>
+                                            </span>
+                                        </td>
                                         <td>
                                             <div class="action-buttons">
-                                                <button class="btn-view" onclick="viewAppointment(<?php echo $appointment['id']; ?>)">View</button>
-                                                <button class="btn-edit" onclick="editAppointment(<?php echo $appointment['id']; ?>)">Edit</button>
-                                                <button class="btn-delete" onclick="deleteAppointment(<?php echo $appointment['id']; ?>)">Delete</button>
+                                                <button class="btn-view" onclick="viewAppointment(<?php echo $appointment['id']; ?>)" title="View Details">
+                                                    <i class="fa fa-eye"></i>
+                                                </button>
+                                                <button class="btn-edit" onclick="updateAppointmentStatus(<?php echo $appointment['id']; ?>, '<?php echo $appointment['status']; ?>')" title="Update Status">
+                                                    <i class="fa fa-edit"></i>
+                                                </button>
+                                                <?php if (in_array($appointment['status'], ['pending', 'confirmed'])): ?>
+                                                <button class="btn-delete" onclick="cancelAppointment(<?php echo $appointment['id']; ?>)" title="Cancel Appointment">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Update Appointment Modal -->
-                <div id="updateAppointmentModal" class="modal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3>Update Appointment</h3>
-                            <button class="modal-close" onclick="closeUpdateModal()">&times;</button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="updateAppointmentForm">
-                                <input type="hidden" id="updateAppointmentId" name="appointment_id">
-                                
-                                <div class="form-section">
-                                    <h4>Patient Information</h4>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="updateFirstName" class="required">Patient Name</label>
-                                            <input type="text" id="updateFirstName" name="firstName" required />
-                                            <div class="error" id="updateFirstNameError">Please enter patient name</div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="required">Gender</label>
-                                            <div class="radio-group">
-                                                <div class="radio-option">
-                                                    <input type="radio" id="updateGenderMale" name="updateGender" value="male" required />
-                                                    <label for="updateGenderMale">Male</label>
-                                                </div>
-                                                <div class="radio-option">
-                                                    <input type="radio" id="updateGenderFemale" name="updateGender" value="female" />
-                                                    <label for="updateGenderFemale">Female</label>
-                                                </div>
-                                                <div class="radio-option">
-                                                    <input type="radio" id="updateGenderOther" name="updateGender" value="other" />
-                                                    <label for="updateGenderOther">Other</label>
-                                                </div>
-                                            </div>
-                                            <div class="error" id="updateGenderError">Please select gender</div>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="updatePhone" class="required">Phone Number</label>
-                                            <input type="tel" id="updatePhone" name="phone" required />
-                                            <div class="error" id="updatePhoneError">Please enter a valid phone number</div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="updateEmail" class="required">Email Address</label>
-                                            <input type="email" id="updateEmail" name="email" required />
-                                            <div class="error" id="updateEmailError">Please enter a valid email address</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-section">
-                                    <h4>Appointment Details</h4>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="updateSpecialityType" class="required">Speciality</label>
-                                            <select id="updateSpecialityType" name="specialityType" required>
-                                                <option value="">Select Speciality</option>
-                                                <?php foreach ($specialties as $specialty): ?>
-                                                <option value="<?php echo htmlspecialchars($specialty); ?>"><?php echo htmlspecialchars($specialty); ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <div class="error" id="updateSpecialityTypeError">Please select a speciality</div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="updateDoctor" class="required">Preferred Doctor</label>
-                                            <select id="updateDoctor" name="doctor" required>
-                                                <option value="">Select Doctor</option>
-                                            </select>
-                                            <div class="doctor-info" id="updateDoctorInfo"></div>
-                                            <div class="error" id="updateDoctorError">Please select a doctor</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="updatePreferredDate" class="required">Preferred Date</label>
-                                            <input type="date" id="updatePreferredDate" name="preferredDate" required min="<?php echo date('Y-m-d'); ?>" />
-                                            <div class="error" id="updatePreferredDateError">Please select a preferred date</div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="updateTime" class="required">Time Slot</label>
-                                            <select id="updateTime" name="time" required>
-                                                <option value="">Select Time</option>
-                                            </select>
-                                            <div class="time-loading" id="updateTimeLoading" style="display: none;">
-                                                <i class="fa fa-spinner fa-spin"></i> Loading available slots...
-                                            </div>
-                                            <div class="error" id="updateTimeError">Please select a time slot</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="updateStatus" class="required">Status</label>
-                                            <select id="updateStatus" name="status" required>
-                                                <option value="pending">Pending</option>
-                                                <option value="confirmed">Confirmed</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="cancelled">Cancelled</option>
-                                                <option value="no_show">No Show</option>
-                                            </select>
-                                            <div class="error" id="updateStatusError">Please select a status</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn-secondary" onclick="closeUpdateModal()">Cancel</button>
-                            <button type="button" class="btn-primary" onclick="submitUpdateAppointment()">
-                                <i class="fa fa-save"></i> Update Appointment
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -224,153 +137,234 @@
                         <div class="doctors-grid" id="doctorsGrid">
                             <?php if (empty($doctors)): ?>
                                 <div class="no-doctors-message">
+                                    <i class="fa fa-user-md fa-3x"></i>
+                                    <h3>No Doctors Found</h3>
                                     <p>No doctors are currently assigned to your clinic.</p>
                                 </div>
                             <?php else: ?>
                                 <?php foreach ($doctors as $doctor): ?>
                                 <div class="doctor-card">
-                                    <img src="<?php echo $doctor['doc_img'] ? 'http://localhost/cure_booking/adminhub//manage-doctors/uploads/' . htmlspecialchars($doctor['doc_img']) : 'https://via.placeholder.com/80'; ?>" 
-                                        alt="<?php echo htmlspecialchars($doctor['doc_name']); ?>" class="doctor-image">
-                                    <div class="doctor-name"><?php echo htmlspecialchars($doctor['doc_name']); ?></div>
-                                    <div class="doctor-specialty"><?php echo htmlspecialchars($doctor['doc_specia']); ?></div>
-                                    <div class="doctor-info">
-                                        <div><strong>Experience:</strong> <?php echo htmlspecialchars($doctor['experience']); ?> years</div>
-                                        <div><strong>Location:</strong> <?php echo htmlspecialchars($doctor['location']); ?></div>
-                                        <div><strong>Education:</strong> <?php echo htmlspecialchars($doctor['education']); ?></div>
-                                        <div><strong>Email:</strong> <?php echo htmlspecialchars($doctor['doc_email']); ?></div>
+                                    <div class="doctor-image-container">
+                                        <img src="<?php echo $doctor['doc_img'] ? 'http://localhost/cure_booking/adminhub/manage-doctors/uploads/' . htmlspecialchars($doctor['doc_img']) : 'https://via.placeholder.com/120x120?text=Dr'; ?>" 
+                                            alt="<?php echo htmlspecialchars($doctor['doc_name']); ?>" class="doctor-image">
                                     </div>
-                                    <div class="doctor-card-actions">
-                                        <button class="btn-view-doctor" onclick="showDoctorModal(<?php echo htmlspecialchars(json_encode($doctor)); ?>)">
-                                            <i class="fa fa-eye"></i> View Details
-                                        </button>
-                                        <!-- <button class="btn-book-appointment" onclick="bookAppointmentWithDoctorFromCard(<?php echo $doctor['doc_id']; ?>, '<?php echo htmlspecialchars($doctor['doc_specia']); ?>')">
-                                            <i class="fa fa-calendar-plus"></i> Book Appointment
-                                        </button> -->
-                                        <button class="btn-book-appointment" onclick="bookAppointmentWithDoctorFromCard('<?php echo $doctor['doc_id']; ?>', '<?php echo $doctor['doc_specia']; ?>', '<?php echo $doctor['doc_name']; ?>')">
-                                            <i class="fa fa-calendar-plus"></i>Book Appointment
-                                        </button>
+                                    <div class="doctor-details">
+                                        <h3 class="doctor-name">Dr. <?php echo htmlspecialchars($doctor['doc_name']); ?></h3>
+                                        <p class="doctor-specialty"><?php echo htmlspecialchars($doctor['doc_specia']); ?></p>
+                                        <div class="doctor-info">
+                                            <div class="info-item">
+                                                <i class="fa fa-graduation-cap"></i>
+                                                <span><?php echo htmlspecialchars($doctor['experience']); ?> years experience</span>
+                                            </div>
+                                            <div class="info-item">
+                                                <i class="fa fa-map-marker-alt"></i>
+                                                <span><?php echo htmlspecialchars($doctor['location']); ?></span>
+                                            </div>
+                                            <div class="info-item">
+                                                <i class="fa fa-envelope"></i>
+                                                <span><?php echo htmlspecialchars($doctor['doc_email']); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="doctor-card-actions">
+                                            <button class="btn-view-doctor" onclick="showDoctorModal(<?php echo htmlspecialchars(json_encode($doctor)); ?>)">
+                                                <i class="fa fa-eye"></i> View Details
+                                            </button>
+                                            <button class="btn-book-appointment" onclick="showBookingModal(<?php echo htmlspecialchars(json_encode($doctor)); ?>)">
+                                                <i class="fa fa-calendar-plus"></i> Book Appointment
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </div>
                     </div>
-                    <form id="appointmentForm">
-                        <div class="form-section">
-                            <h3>Patient Information</h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="firstName" class="required">Name</label>
-                                    <input type="text" id="firstName" name="firstName" required />
-                                    <div class="error" id="firstNameError">Please enter patient name</div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="required">Gender</label>
-                                    <div class="radio-group">
-                                        <div class="radio-option">
-                                            <input type="radio" id="genderMale" name="gender" value="male" required />
-                                            <label for="genderMale">Male</label>
-                                        </div>
-                                        <div class="radio-option">
-                                            <input type="radio" id="genderFemale" name="gender" value="female" />
-                                            <label for="genderFemale">Female</label>
-                                        </div>
-                                        <div class="radio-option">
-                                            <input type="radio" id="genderOther" name="gender" value="other" />
-                                            <label for="genderOther">Other</label>
-                                        </div>
-                                    </div>
-                                    <div class="error" id="genderError">Please select gender</div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="phone" class="required">Phone Number</label>
-                                    <input type="tel" id="phone" name="phone" required />
-                                    <div class="error" id="phoneError">Please enter a valid phone number</div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="email" class="required">Email Address</label>
-                                    <input type="email" id="email" name="email" required />
-                                    <div class="error" id="emailError">Please enter a valid email address</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-section">
-                            <h3>Appointment Details</h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="specialityType" class="required">Speciality</label>
-                                    <select id="specialityType" name="specialityType" required>
-                                        <option value="">Select Speciality</option>
-                                        <?php foreach ($specialties as $specialty): ?>
-                                        <option value="<?php echo htmlspecialchars($specialty); ?>"><?php echo htmlspecialchars($specialty); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="doctor" class="required">Preferred Doctor</label>
-                                    <select id="doctor" name="doctor" required>
-                                        <option value="">Select Doctor</option>
-                                    </select>
-                                    <div class="doctor-info" id="doctorInfo"></div>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="preferredDate" class="required">Preferred Date</label>
-                                    <input type="date" id="preferredDate" name="preferredDate" required min="<?php echo date('Y-m-d'); ?>" />
-                                    <div class="error" id="preferredDateError">Please select a preferred date</div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="time" class="required">Time Slot</label>
-                                    <select id="time" name="time" required>
-                                        <option value="">Select Time</option>
-                                    </select>
-                                    <div class="time-loading" id="timeLoading" style="display: none;">
-                                        <i class="fa fa-spinner fa-spin"></i> Loading available slots...
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="button" id="cancelAppointmentBtn" class="btn-secondary">Cancel</button>
-                            <button type="submit">Book Appointment</button>
-                        </div>
-                    </form>
                 </div>
 
-                <?php
-                    echo "<script>console.log('Doctor data:', " . json_encode($doctor) . ");</script>";
-                ?>
+                <!-- View Appointment Modal -->
+                <div id="appointmentModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2><i class="fa fa-calendar-check"></i> Appointment Details</h2>
+                            <button class="modal-close" onclick="closeAppointmentModal()">&times;</button>
+                        </div>
+                        <div class="modal-body" id="appointmentModalBody">
+                            <!-- Appointment details will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Status Modal -->
+                <div id="statusModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2><i class="fa fa-edit"></i> Update Appointment Status</h2>
+                            <button class="modal-close" onclick="closeStatusModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="statusUpdateForm">
+                                <input type="hidden" id="appointmentId" name="appointment_id">
+                                <div class="form-group">
+                                    <label for="newStatus" class="required">New Status:</label>
+                                    <select id="newStatus" name="status" required>
+                                        <option value="">Select Status</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="confirmed">Confirmed</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="cancelled">Cancelled</option>
+                                        <option value="no_show">No Show</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="statusNote">Note (Optional):</label>
+                                    <textarea id="statusNote" name="note" rows="3" placeholder="Add a note about this status change..."></textarea>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-modal btn-secondary" onclick="closeStatusModal()">
+                                <i class="fa fa-times"></i> Cancel
+                            </button>
+                            <button class="btn-modal btn-primary" onclick="saveStatusUpdate()">
+                                <i class="fa fa-save"></i> Update Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Doctor Modal -->
                 <div id="doctorModal" class="modal">
                     <div class="doctor-modal-content">
                         <div class="doctor-modal-header">
-                            <h3>Doctor Details</h3>
+                            <h3><i class="fa fa-user-md"></i> Doctor Details</h3>
                             <button class="doctor-modal-close" onclick="closeDoctorModal()">&times;</button>
                         </div>
                         <div class="doctor-modal-body" id="doctorModalBody">
                             <!-- Doctor details will be populated here -->
                         </div>
                         <div class="doctor-modal-footer">
-                            <button class="btn-close" onclick="closeDoctorModal()">Close</button>
-                            <button class="btn-book-modal" onclick="bookAppointmentWithDoctor()">
-                                <i class="fa fa-calendar-plus"></i> Book Appointment
+                            <button class="btn-modal btn-secondary" onclick="closeDoctorModal()">
+                                <i class="fa fa-times"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Book Appointment Modal -->
+                <div id="bookingModal" class="modal">
+                    <div class="modal-content booking-modal">
+                        <div class="modal-header">
+                            <h2><i class="fa fa-calendar-plus"></i> Book Appointment</h2>
+                            <button class="modal-close" onclick="closeBookingModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="bookingForm">
+                                <!-- Hidden fields for doctor and clinic info -->
+                                <input type="hidden" id="bookingDoctorId" name="doctor_id">
+                                <input type="hidden" id="bookingClinicId" name="clinic_id">
+                                
+                                <!-- Doctor and Clinic Info (Read-only) -->
+                                <div class="booking-info-section">
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label for="bookingClinicName">Clinic Name:</label>
+                                            <input type="text" id="bookingClinicName" name="clinic_name" readonly class="form-control-readonly">
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <label for="bookingDoctorName">Doctor Name:</label>
+                                            <input type="text" id="bookingDoctorName" name="doctor_name" readonly class="form-control-readonly">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="bookingDoctorSpecialty">Specialization:</label>
+                                        <input type="text" id="bookingDoctorSpecialty" name="doctor_specialization" readonly class="form-control-readonly">
+                                    </div>
+                                </div>
+
+                                <!-- Patient Information -->
+                                <div class="booking-form-section">
+                                    <h3><i class="fa fa-user"></i> Patient Information</h3>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label for="patientName" class="required">Patient Name:</label>
+                                            <input type="text" id="patientName" name="patient_name" required placeholder="Enter patient's full name">
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <label for="patientGender" class="required">Gender:</label>
+                                            <select id="patientGender" name="gender" required>
+                                                <option value="">Select Gender</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label for="patientPhone" class="required">Phone Number:</label>
+                                            <input type="tel" id="patientPhone" name="patient_phone" required placeholder="Enter phone number" pattern="[0-9]{10}">
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <label for="patientEmail" class="required">Email Address:</label>
+                                            <input type="email" id="patientEmail" name="patient_email" required placeholder="Enter email address">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Appointment Details -->
+                                <div class="booking-form-section">
+                                    <h3><i class="fa fa-calendar"></i> Appointment Details</h3>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label for="appointmentDate" class="required">Appointment Date:</label>
+                                            <input type="date" id="appointmentDate" name="appointment_date" required min="<?php echo date('Y-m-d'); ?>">
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <label for="appointmentTime" class="required">Appointment Time:</label>
+                                            <select id="appointmentTime" name="appointment_time" required>
+                                                <option value="">Select Time</option>
+                                                <option value="09:00">09:00 AM</option>
+                                                <option value="09:30">09:30 AM</option>
+                                                <option value="10:00">10:00 AM</option>
+                                                <option value="10:30">10:30 AM</option>
+                                                <option value="11:00">11:00 AM</option>
+                                                <option value="11:30">11:30 AM</option>
+                                                <option value="12:00">12:00 PM</option>
+                                                <option value="12:30">12:30 PM</option>
+                                                <option value="14:00">02:00 PM</option>
+                                                <option value="14:30">02:30 PM</option>
+                                                <option value="15:00">03:00 PM</option>
+                                                <option value="15:30">03:30 PM</option>
+                                                <option value="16:00">04:00 PM</option>
+                                                <option value="16:30">04:30 PM</option>
+                                                <option value="17:00">05:00 PM</option>
+                                                <option value="17:30">05:30 PM</option>
+                                                <option value="18:00">06:00 PM</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="appointmentNotes">Additional Notes (Optional):</label>
+                                        <textarea id="appointmentNotes" name="notes" rows="3" placeholder="Any specific requirements or notes for the appointment..."></textarea>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-modal btn-secondary" onclick="closeBookingModal()">
+                                <i class="fa fa-times"></i> Cancel
+                            </button>
+                            <button class="btn-modal btn-primary" onclick="saveAppointmentBooking()">
+                                <i class="fa fa-calendar-check"></i> Book Appointment
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-        
         </main>
     </div>
     
-    
     <script src="script.js"></script>
+    <script src="add_script.js"></script>
 </body>
 </html>

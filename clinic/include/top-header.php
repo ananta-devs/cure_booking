@@ -17,6 +17,7 @@
         font-size: 1.2rem;
         font-weight: 600;
         color: #4a5568;
+        padding-left:20px;
     }
     .hamburger {
     width: 24px;

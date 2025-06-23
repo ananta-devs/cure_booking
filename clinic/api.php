@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once 'database_connection.php';
 
 // Check authentication and get clinic_id
@@ -14,17 +13,30 @@ $clinic_id = $_SESSION['clinic_id'];
 function getAppointments($conn, $clinic_id) {
     $query = "SELECT a.id, a.patient_name, a.patient_phone, a.patient_email,
                      a.appointment_date, a.appointment_time, a.status, a.gender,
-                     d.doc_name, d.doc_specia as doctor_specialization, d.doc_id
+                     a.created_at,
+                     d.doc_name, d.doc_specia as doctor_specialization, d.doc_id,
+                     d.doc_email, d.experience, d.location, d.education
               FROM appointments a 
               JOIN doctor d ON a.doctor_id = d.doc_id 
               WHERE a.clinic_id = ?
               ORDER BY a.appointment_date DESC, a.appointment_time DESC";
     
     $stmt = mysqli_prepare($conn, $query);
+    if (!$stmt) {
+        error_log("MySQL prepare error: " . mysqli_error($conn));
+        return [];
+    }
+    
     mysqli_stmt_bind_param($stmt, "i", $clinic_id);
     mysqli_stmt_execute($stmt);
     
-    return mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
+    $result = mysqli_stmt_get_result($stmt);
+    if (!$result) {
+        error_log("MySQL result error: " . mysqli_error($conn));
+        return [];
+    }
+    
+    return mysqli_fetch_all($result, MYSQLI_ASSOC);
 }
 
 // Fetch doctors assigned to clinic
@@ -141,32 +153,183 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
     
     switch ($_POST['action']) {
-        case 'get_appointment_details':
-            $appointment_id = (int)$_POST['appointment_id'];
-            
-            // Verify appointment belongs to clinic
-            $query = "SELECT a.*, d.doc_name, d.doc_specia, d.doc_email, d.experience, d.location, d.education
-                    FROM appointments a 
-                    JOIN doctor d ON a.doctor_id = d.doc_id 
-                    WHERE a.id = ? AND a.clinic_id = ?";
-            
-            $stmt = mysqli_prepare($conn, $query);
-            mysqli_stmt_bind_param($stmt, "ii", $appointment_id, $clinic_id);
-            mysqli_stmt_execute($stmt);
-            $result = mysqli_stmt_get_result($stmt);
-            
-            if ($appointment = mysqli_fetch_assoc($result)) {
+        case 'get_appointments':
+            try {
+                $appointments = getAppointments($conn, $clinic_id);
                 echo json_encode([
                     'success' => true,
-                    'appointment' => $appointment
+                    'appointments' => $appointments
                 ]);
-            } else {
+            } catch (Exception $e) {
+                error_log("Error getting appointments: " . $e->getMessage());
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Appointment not found'
+                    'message' => 'Failed to load appointments'
                 ]);
             }
             exit();
+
+        case 'get_appointment_details':
+            try {
+                $appointment_id = (int)$_POST['appointment_id'];
+                
+                if (!$appointment_id) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid appointment ID'
+                    ]);
+                    exit();
+                }
+                
+                // Enhanced query with all necessary joins and fields
+                $query = "SELECT a.*, 
+                                 d.doc_name, d.doc_specia, d.doc_email, 
+                                 d.experience, d.location, d.education,
+                                 c.clinic_name
+                          FROM appointments a 
+                          JOIN doctor d ON a.doctor_id = d.doc_id 
+                          LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                          WHERE a.id = ? AND a.clinic_id = ?";
+                
+                $stmt = mysqli_prepare($conn, $query);
+                if (!$stmt) {
+                    throw new Exception("Database prepare error: " . mysqli_error($conn));
+                }
+                
+                mysqli_stmt_bind_param($stmt, "ii", $appointment_id, $clinic_id);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+                
+                if (!$result) {
+                    throw new Exception("Database query error: " . mysqli_error($conn));
+                }
+                
+                $appointment = mysqli_fetch_assoc($result);
+                
+                if ($appointment) {
+                    // Ensure all expected fields are present
+                    $appointment['doctor_specialization'] = $appointment['doc_specia'];
+                    
+                    echo json_encode([
+                        'success' => true,
+                        'appointment' => $appointment
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Appointment not found or access denied'
+                    ]);
+                }
+            } catch (Exception $e) {
+                error_log("Error getting appointment details: " . $e->getMessage());
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Database error occurred'
+                ]);
+            }
+            exit();
+
+        case 'update_appointment_status':
+            try {
+                $appointment_id = (int)$_POST['appointment_id'];
+                $new_status = mysqli_real_escape_string($conn, $_POST['status']);
+                $note = isset($_POST['note']) ? mysqli_real_escape_string($conn, $_POST['note']) : '';
+                
+                // Validate status
+                $allowed_statuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no_show'];
+                if (!in_array($new_status, $allowed_statuses)) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid status'
+                    ]);
+                    exit();
+                }
+                
+                // Verify appointment belongs to clinic
+                $verify_query = "SELECT id FROM appointments WHERE id = ? AND clinic_id = ?";
+                $verify_stmt = mysqli_prepare($conn, $verify_query);
+                mysqli_stmt_bind_param($verify_stmt, "ii", $appointment_id, $clinic_id);
+                mysqli_stmt_execute($verify_stmt);
+                
+                if (mysqli_num_rows(mysqli_stmt_get_result($verify_stmt)) === 0) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Appointment not found'
+                    ]);
+                    exit();
+                }
+                
+                // Update appointment status
+                $update_query = "UPDATE appointments SET status = ?, updated_at = NOW()";
+                $params = [$new_status];
+                $types = "s";
+                
+                // Add note if provided
+                if (!empty($note)) {
+                    $update_query .= ", notes = ?";
+                    $params[] = $note;
+                    $types .= "s";
+                }
+                
+                $update_query .= " WHERE id = ? AND clinic_id = ?";
+                $params[] = $appointment_id;
+                $params[] = $clinic_id;
+                $types .= "ii";
+                
+                $stmt = mysqli_prepare($conn, $update_query);
+                mysqli_stmt_bind_param($stmt, $types, ...$params);
+                
+                if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Appointment status updated successfully'
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to update appointment status'
+                    ]);
+                }
+            } catch (Exception $e) {
+                error_log("Error updating appointment status: " . $e->getMessage());
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Database error occurred'
+                ]);
+            }
+            exit();
+
+        case 'cancel_appointment':
+            try {
+                $appointment_id = (int)$_POST['appointment_id'];
+                
+                // Update appointment status to cancelled
+                $query = "UPDATE appointments SET status = 'cancelled', updated_at = NOW() 
+                         WHERE id = ? AND clinic_id = ?";
+                
+                $stmt = mysqli_prepare($conn, $query);
+                mysqli_stmt_bind_param($stmt, "ii", $appointment_id, $clinic_id);
+                
+                if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Appointment cancelled successfully'
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to cancel appointment'
+                    ]);
+                }
+            } catch (Exception $e) {
+                error_log("Error cancelling appointment: " . $e->getMessage());
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Database error occurred'
+                ]);
+            }
+            exit();
+            
         case 'get_time_slots':
             $doctor_id = (int)$_POST['doctor_id'];
             $appointment_date = $_POST['appointment_date'];
@@ -358,6 +521,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             mysqli_stmt_execute($stmt);
             
             echo json_encode(mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC));
+            exit();
+
+        default:
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid action'
+            ]);
             exit();
     }
 }

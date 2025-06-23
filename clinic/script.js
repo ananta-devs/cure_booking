@@ -1,724 +1,865 @@
 // Global variables
-let currentDoctorId = null;
-let currentSpecialty = null;
-let isEditMode = false;
-let currentEditAppointmentId = null;
+let currentAppointmentId = null;
+let currentAppointmentStatus = null;
 
 // DOM Content Loaded Event
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener("DOMContentLoaded", function () {
     initializeEventListeners();
-    initializeDateRestrictions();
     showAppointmentsSection();
+    loadAppointments();
 });
 
 // Initialize all event listeners
 function initializeEventListeners() {
-    // Navigation
-    document.getElementById('viewAppointmentsBtn')?.addEventListener('click', showAppointmentsSection);
-    document.getElementById('allDoctorsBtn')?.addEventListener('click', showDoctorsSection);
+    // Navigation buttons
+    document
+        .getElementById("viewAppointmentsBtn")
+        ?.addEventListener("click", showAppointmentsSection);
+    document
+        .getElementById("allDoctorsBtn")
+        ?.addEventListener("click", showDoctorsSection);
 
-    // Forms
-    document.getElementById('appointmentForm')?.addEventListener('submit', handleAppointmentSubmit);
-    document.getElementById('cancelAppointmentBtn')?.addEventListener('click', cancelAppointmentForm);
-    document.getElementById('filterBtn')?.addEventListener('click', filterAppointments);
+    // Filter buttons
+    document
+        .getElementById("filterBtn")
+        ?.addEventListener("click", filterAppointments);
+    document
+        .getElementById("clearFilterBtn")
+        ?.addEventListener("click", clearFilters);
 
-    // Form field changes
-    ['specialityType', 'updateSpecialityType'].forEach(id => {
-        document.getElementById(id)?.addEventListener('change', (e) => 
-            handleSpecialtyChange(id.includes('update')));
-    });
-    
-    ['doctor', 'updateDoctor'].forEach(id => {
-        document.getElementById(id)?.addEventListener('change', (e) => 
-            handleDoctorChange(id.includes('update')));
-    });
-    
-    ['preferredDate', 'updatePreferredDate'].forEach(id => {
-        document.getElementById(id)?.addEventListener('change', (e) => 
-            handleDateChange(id.includes('update')));
-    });
+    // Filter inputs
+    document
+        .getElementById("filterDate")
+        ?.addEventListener("change", filterAppointments);
+    document
+        .getElementById("filterStatus")
+        ?.addEventListener("change", filterAppointments);
+    document
+        .getElementById("filterDoctor")
+        ?.addEventListener("change", filterAppointments);
+
+    // Status update form
+    document
+        .getElementById("statusUpdateForm")
+        ?.addEventListener("submit", handleStatusUpdate);
 
     // Modal events
-    document.addEventListener('click', handleModalClicks);
-    document.addEventListener('keydown', (e) => e.key === 'Escape' && closeDoctorModal());
-    
-    addFormValidation();
+    document.addEventListener("click", handleModalClicks);
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            closeAllModals();
+        }
+    });
 }
 
-// Handle modal clicks
+// Handle modal clicks for closing on backdrop
 function handleModalClicks(event) {
-    const doctorModal = document.getElementById('doctorModal');
-    const updateModal = document.getElementById('updateAppointmentModal');
-    
-    if (event.target === doctorModal) closeDoctorModal();
-    if (event.target === updateModal) closeUpdateModal();
-}
-
-// Initialize date restrictions
-function initializeDateRestrictions() {
-    const dateInput = document.getElementById('preferredDate');
-    if (dateInput) {
-        dateInput.setAttribute('min', new Date().toISOString().split('T')[0]);
-    }
+    const modals = [
+        "appointmentModal",
+        "statusModal",
+        "doctorModal",
+        "bookingModal",
+    ];
+    modals.forEach((modalId) => {
+        const modal = document.getElementById(modalId);
+        if (event.target === modal) {
+            closeModal(modalId);
+        }
+    });
 }
 
 // Navigation functions
 function showSection(activeSection, inactiveSection, activeBtn, inactiveBtn) {
-    document.getElementById(activeSection).style.display = 'block';
-    document.getElementById(inactiveSection).style.display = 'none';
-    document.getElementById(activeBtn).classList.add('active');
-    document.getElementById(inactiveBtn).classList.remove('active');
-    hideAppointmentForm();
+    document.getElementById(activeSection).style.display = "block";
+    document.getElementById(inactiveSection).style.display = "none";
+    document.getElementById(activeBtn).classList.add("active");
+    document.getElementById(inactiveBtn).classList.remove("active");
+    closeAllModals();
 }
 
 function showAppointmentsSection() {
-    showSection('appointmentsSection', 'doctorsSection', 'viewAppointmentsBtn', 'allDoctorsBtn');
+    showSection(
+        "appointmentsSection",
+        "doctorsSection",
+        "viewAppointmentsBtn",
+        "allDoctorsBtn"
+    );
+    loadAppointments();
 }
 
 function showDoctorsSection() {
-    showSection('doctorsSection', 'appointmentsSection', 'allDoctorsBtn', 'viewAppointmentsBtn');
+    showSection(
+        "doctorsSection",
+        "appointmentsSection",
+        "allDoctorsBtn",
+        "viewAppointmentsBtn"
+    );
+    loadDoctors(); // Load doctors when switching to doctors section
 }
 
-// Form visibility
-function showAppointmentForm() {
-    const form = document.getElementById('appointmentForm');
-    const doctorsGrid = document.getElementById('doctorsGrid');
-    
-    if (form) {
-        form.style.display = 'block';
-        form.scrollIntoView({ behavior: 'smooth' });
-    }
-    if (doctorsGrid) doctorsGrid.style.display = 'none';
-}
-
-function hideAppointmentForm() {
-    const form = document.getElementById('appointmentForm');
-    const doctorsGrid = document.getElementById('doctorsGrid');
-    
-    if (form) {
-        form.style.display = 'none';
-        resetForm();
-    }
-    if (doctorsGrid) doctorsGrid.style.display = 'grid';
-}
-
-// Appointment functions
+// Appointment Modal Functions
 function viewAppointment(appointmentId) {
-    const row = Array.from(document.querySelectorAll('#appointmentsTableBody tr'))
-        .find(row => row.cells[0].textContent == appointmentId);
-    
-    if (row) {
-        const cells = row.cells;
-        showAppointmentDetails({
-            id: cells[0].textContent,
-            patientName: cells[1].textContent,
-            doctor: cells[2].textContent.split('\n')[0],
-            date: cells[3].textContent,
-            time: cells[4].textContent,
-            status: cells[5].textContent.trim()
-        });
+    currentAppointmentId = appointmentId;
+
+    const modal = document.getElementById("appointmentModal");
+    const modalBody = document.getElementById("appointmentModalBody");
+
+    if (!modal || !modalBody) {
+        console.error("Modal elements not found");
+        return;
     }
-}
 
-function editAppointment(appointmentId) {
-    currentEditAppointmentId = appointmentId;
-    isEditMode = true;
-    
-    fetchAppointmentDetails(appointmentId).then(data => {
-        if (data) {
-            populateUpdateModal({
-                id: data.id,
-                patientName: data.patient_name,
-                doctor: data.doctor_name || data.doc_name,
-                specialty: data.doctor_specialization || data.doc_specia,
-                date: formatDateForDisplay(data.appointment_date),
-                time: formatTimeForDisplay(data.appointment_time),
-                status: data.status,
-                phone: data.patient_phone,
-                email: data.patient_email,
-                gender: data.gender
-            });
-            showUpdateModal();
-        } else {
-            showMessage('Error loading appointment details', 'error');
-        }
-    });
-}
-
-async function populateUpdateModal(appointmentData) {
-    try {
-        // Set basic fields
-        document.getElementById('updateAppointmentId').value = appointmentData.id;
-        document.getElementById('updateFirstName').value = appointmentData.patientName;
-        document.getElementById('updatePhone').value = appointmentData.phone || '';
-        document.getElementById('updateEmail').value = appointmentData.email || '';
-        document.getElementById('updateStatus').value = appointmentData.status.toLowerCase();
-        
-        // Set gender
-        document.querySelectorAll('input[name="updateGender"]').forEach(radio => {
-            radio.checked = radio.value === appointmentData.gender;
-        });
-        
-        // Set date
-        const formattedDate = appointmentData.date.includes('/') 
-            ? appointmentData.date.split('/').reverse().join('-')
-            : appointmentData.date;
-        document.getElementById('updatePreferredDate').value = formattedDate;
-        
-        // Set specialty and load doctors
-        document.getElementById('updateSpecialityType').value = appointmentData.specialty;
-        await handleSpecialtyChange(true);
-        
-        // Wait and set doctor
-        await new Promise(resolve => setTimeout(resolve, 200));
-        const doctorSelect = document.getElementById('updateDoctor');
-        const doctorOption = Array.from(doctorSelect.options)
-            .find(option => option.textContent.includes(appointmentData.doctor));
-        
-        if (doctorOption) {
-            doctorSelect.value = doctorOption.value;
-            handleDoctorChange(true);
-            
-            // Load time slots and set time
-            if (formattedDate) {
-                await loadTimeSlots(doctorOption.value, formattedDate, 'update', currentEditAppointmentId);
-                await new Promise(resolve => setTimeout(resolve, 200));
-                
-                const timeSelect = document.getElementById('updateTime');
-                const timeOption = Array.from(timeSelect.options)
-                    .find(option => 
-                        option.textContent.includes(appointmentData.time) || 
-                        option.value === appointmentData.time ||
-                        formatTimeSlot(option.value) === appointmentData.time
-                    );
-                
-                if (timeOption) timeSelect.value = timeOption.value;
-            }
-        }
-    } catch (error) {
-        console.error('Error loading update modal data:', error);
-        showMessage('Error loading appointment details', 'error');
-    }
-}
-
-// Helper functions
-function formatDateForDisplay(dateStr) {
-    if (dateStr.includes('-')) {
-        const parts = dateStr.split('-');
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return dateStr;
-}
-
-function formatTimeForDisplay(timeStr) {
-    if (timeStr.includes(':')) {
-        const [hours, minutes] = timeStr.split(':');
-        const hour = parseInt(hours);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-        return `${displayHour}:${minutes} ${ampm}`;
-    }
-    return timeStr;
-}
-
-function fetchAppointmentDetails(appointmentId) {
-    const formData = new FormData();
-    formData.append('action', 'get_appointment_details');
-    formData.append('appointment_id', appointmentId);
-    
-    return fetch('api.php', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => data.success ? data.appointment : null)
-        .catch(() => null);
-}
-
-// Unified change handlers
-function handleSpecialtyChange(isUpdate = false) {
-    const prefix = isUpdate ? 'update' : '';
-    const specialty = document.getElementById(`${prefix}SpecialityType`).value;
-    const doctorSelect = document.getElementById(`${prefix}Doctor`);
-    const timeSelect = document.getElementById(`${prefix}Time`);
-    
-    doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
-    timeSelect.innerHTML = '<option value="">Select Time</option>';
-    
-    if (!specialty) return Promise.resolve();
-    
-    const formData = new FormData();
-    formData.append('action', 'get_doctors_by_specialty');
-    formData.append('specialty', specialty);
-    
-    return fetch('api.php', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(doctors => {
-            doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
-            doctors.forEach(doctor => {
-                const option = document.createElement('option');
-                option.value = doctor.doc_id;
-                option.textContent = `${doctor.doc_name} - ${doctor.experience}y exp`;
-                doctorSelect.appendChild(option);
-            });
-            return doctors;
-        })
-        .catch(error => {
-            console.error('Error loading doctors:', error);
-            doctorSelect.innerHTML = '<option value="">Error loading doctors</option>';
-            showMessage('Error loading doctors', 'error');
-            throw error;
-        });
-}
-
-function handleDoctorChange(isUpdate = false) {
-    const prefix = isUpdate ? 'update' : '';
-    const doctorId = document.getElementById(`${prefix}Doctor`).value;
-    const date = document.getElementById(`${prefix}PreferredDate`).value;
-    const doctorInfo = document.getElementById(`${prefix}DoctorInfo`);
-    
-    if (doctorInfo) {
-        const selectedOption = document.querySelector(`#${prefix}Doctor option[value="${doctorId}"]`);
-        doctorInfo.innerHTML = selectedOption ? `<small>Selected: ${selectedOption.textContent}</small>` : '';
-    }
-    
-    if (doctorId && date) {
-        const excludeId = isUpdate ? currentEditAppointmentId : null;
-        loadTimeSlots(doctorId, date, prefix, excludeId);
-    } else {
-        document.getElementById(`${prefix}Time`).innerHTML = '<option value="">Select Time</option>';
-    }
-}
-
-function handleDateChange(isUpdate = false) {
-    const prefix = isUpdate ? 'update' : '';
-    const doctorId = document.getElementById(`${prefix}Doctor`).value;
-    const date = document.getElementById(`${prefix}PreferredDate`).value;
-    
-    if (doctorId && date) {
-        const excludeId = isUpdate ? currentEditAppointmentId : null;
-        loadTimeSlots(doctorId, date, prefix, excludeId);
-    }
-}
-
-// Time slots loading
-function loadTimeSlots(doctorId, date, prefix = '', excludeAppointmentId = null) {
-    const timeSelect = document.getElementById(`${prefix}Time`);
-    const timeLoading = document.getElementById(`${prefix}TimeLoading`);
-    
-    if (timeLoading) timeLoading.style.display = 'block';
-    timeSelect.innerHTML = '<option value="">Loading...</option>';
-    
-    const formData = new FormData();
-    formData.append('action', 'get_time_slots');
-    formData.append('doctor_id', doctorId);
-    formData.append('appointment_date', date);
-    if (excludeAppointmentId) formData.append('exclude_appointment_id', excludeAppointmentId);
-    
-    return fetch('api.php', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => {
-            if (timeLoading) timeLoading.style.display = 'none';
-            
-            timeSelect.innerHTML = '<option value="">Select Time</option>';
-            
-            if (data.success && data.time_slots?.length) {
-                data.time_slots.forEach(slot => {
-                    const option = document.createElement('option');
-                    option.value = slot;
-                    option.textContent = formatTimeSlot(slot);
-                    timeSelect.appendChild(option);
-                });
-            } else {
-                timeSelect.innerHTML = '<option value="">No slots available</option>';
-                if (!data.success) showMessage(data.message || 'Error loading time slots', 'error');
-            }
-        })
-        .catch(error => {
-            if (timeLoading) timeLoading.style.display = 'none';
-            console.error('Error:', error);
-            timeSelect.innerHTML = '<option value="">Error loading slots</option>';
-            showMessage('Error loading time slots', 'error');
-        });
-}
-
-function formatTimeSlot(timeSlot) {
-    const [hours, minutes] = timeSlot.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    return `${displayHour}:${minutes} ${ampm}`;
-}
-
-// Form submission
-function handleAppointmentSubmit(event) {
-    event.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    const formData = new FormData();
-    formData.append('action', isEditMode ? 'update_appointment' : 'book_appointment');
-    formData.append('patient_name', document.getElementById('firstName').value);
-    formData.append('patient_phone', document.getElementById('phone').value);
-    formData.append('patient_email', document.getElementById('email').value);
-    formData.append('doctor_id', document.getElementById('doctor').value);
-    formData.append('appointment_date', document.getElementById('preferredDate').value);
-    formData.append('appointment_time', document.getElementById('time').value);
-    formData.append('gender', document.querySelector('input[name="gender"]:checked').value);
-    
-    if (isEditMode && currentEditAppointmentId) {
-        formData.append('id', currentEditAppointmentId);
-    }
-    
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = isEditMode ? 'Updating...' : 'Booking...';
-    
-    fetch('api.php', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => {
-            showMessage(data.message, data.success ? 'success' : 'error');
-            if (data.success) {
-                resetForm();
-                hideAppointmentForm();
-                setTimeout(() => location.reload(), 1500);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showMessage('An error occurred while processing the appointment', 'error');
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        });
-}
-
-function submitUpdateAppointment() {
-    if (!validateUpdateForm()) return;
-    
-    const formData = new FormData();
-    formData.append('action', 'update_appointment');
-    formData.append('id', document.getElementById('updateAppointmentId').value);
-    formData.append('patient_name', document.getElementById('updateFirstName').value);
-    formData.append('patient_phone', document.getElementById('updatePhone').value);
-    formData.append('patient_email', document.getElementById('updateEmail').value);
-    formData.append('doctor_id', document.getElementById('updateDoctor').value);
-    formData.append('appointment_date', document.getElementById('updatePreferredDate').value);
-    formData.append('appointment_time', document.getElementById('updateTime').value);
-    formData.append('gender', document.querySelector('input[name="updateGender"]:checked').value);
-    formData.append('status', document.getElementById('updateStatus').value);
-    
-    const submitBtn = document.querySelector('.btn-primary');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Updating...';
-    
-    fetch('api.php', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => {
-            showMessage(data.message, data.success ? 'success' : 'error');
-            if (data.success) {
-                closeUpdateModal();
-                setTimeout(() => location.reload(), 1500);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showMessage('An error occurred while updating the appointment', 'error');
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-        });
-}
-
-function deleteAppointment(appointmentId) {
-    if (!confirm('Are you sure you want to delete this appointment?')) return;
-    
-    const formData = new FormData();
-    formData.append('action', 'delete_appointment');
-    formData.append('id', appointmentId);
-    
-    fetch('api.php', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => {
-            showMessage(data.message, data.success ? 'success' : 'error');
-            if (data.success) setTimeout(() => location.reload(), 1500);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showMessage('An error occurred while deleting the appointment', 'error');
-        });
-}
-
-// Doctor modal functions
-function showDoctorModal(doctorData) {
-    const modal = document.getElementById('doctorModal');
-    const modalBody = document.getElementById('doctorModalBody');
-    
-    if (!modal || !modalBody) return;
-    
-    currentDoctorId = doctorData.doc_id;
-    currentSpecialty = doctorData.doc_specia;
-    
+    // Show loading state
     modalBody.innerHTML = `
-        <div class="doctor-details">
-            <div class="doctor-header">
-                <img src="${doctorData.doc_img ? 'uploads/doctors/' + doctorData.doc_img : 'https://via.placeholder.com/120'}" 
-                     alt="${doctorData.doc_name}" class="modal-doctor-image">
-                <div class="doctor-basic-info">
-                    <h4>${doctorData.doc_name}</h4>
-                    <p class="specialty">${doctorData.doc_specia}</p>
-                    <p class="experience">${doctorData.experience} years experience</p>
-                </div>
-            </div>
-            <div class="doctor-info-grid">
-                <div class="info-item"><strong>Email:</strong><span>${doctorData.doc_email}</span></div>
-                <div class="info-item"><strong>Location:</strong><span>${doctorData.location}</span></div>
-                <div class="info-item"><strong>Education:</strong><span>${doctorData.education}</span></div>
-                <div class="info-item"><strong>Specialization:</strong><span>${doctorData.doc_specia}</span></div>
-            </div>
+        <div class="loading-container">
+            <i class="fa fa-spinner fa-spin fa-2x"></i>
+            <p>Loading appointment details...</p>
         </div>
     `;
-    
-    modal.style.display = 'block';
+
+    modal.style.display = "block";
+
+    // Fetch appointment details
+    const formData = new FormData();
+    formData.append("action", "get_appointment_details");
+    formData.append("appointment_id", appointmentId);
+
+    fetch("api.php", {
+        method: "POST",
+        body: formData,
+    })
+        .then((response) => {
+            console.log("Response status:", response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text(); // Get text first to see raw response
+        })
+        .then((text) => {
+            console.log("Raw response:", text); // Debug log
+            try {
+                const data = JSON.parse(text);
+                console.log("Parsed data:", data); // Debug log
+                if (data.success && data.appointment) {
+                    displayAppointmentDetails(data.appointment);
+                } else {
+                    modalBody.innerHTML = `
+                    <div class="error-container">
+                        <i class="fa fa-exclamation-triangle fa-2x"></i>
+                        <p>Error: ${
+                            data.message || "No appointment data found"
+                        }</p>
+                        <button class="btn btn-secondary" onclick="closeAppointmentModal()">Close</button>
+                    </div>
+                `;
+                }
+            } catch (parseError) {
+                console.error("JSON parse error:", parseError);
+                modalBody.innerHTML = `
+                <div class="error-container">
+                    <i class="fa fa-exclamation-triangle fa-2x"></i>
+                    <p>Invalid response from server</p>
+                    <button class="btn btn-secondary" onclick="closeAppointmentModal()">Close</button>
+                </div>
+            `;
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            modalBody.innerHTML = `
+            <div class="error-container">
+                <i class="fa fa-exclamation-triangle fa-2x"></i>
+                <p>An error occurred while loading appointment details: ${error.message}</p>
+                <button class="btn btn-secondary" onclick="closeAppointmentModal()">Close</button>
+            </div>
+        `;
+        });
 }
 
-function closeDoctorModal() {
-    const modal = document.getElementById('doctorModal');
-    if (modal) modal.style.display = 'none';
-}
+// Enhanced displayAppointmentDetails function with better error handling
+function displayAppointmentDetails(appointment) {
+    const modalBody = document.getElementById("appointmentModalBody");
 
-function bookAppointmentWithDoctor() {
-    closeDoctorModal();
-    bookAppointmentWithDoctorFromCard(currentDoctorId, currentSpecialty);
-}
+    if (!appointment) {
+        modalBody.innerHTML = `
+            <div class="error-container">
+                <i class="fa fa-exclamation-triangle fa-2x"></i>
+                <p>No appointment data received</p>
+                <button class="btn btn-secondary" onclick="closeAppointmentModal()">Close</button>
+            </div>
+        `;
+        return;
+    }
 
-async function bookAppointmentWithDoctorFromCard(doctorId, specialty) {
-    const form = document.getElementById('appointmentForm');
-    if (!form) return;
-    
-    currentDoctorId = doctorId;
-    currentSpecialty = specialty;
-    
-    showAppointmentForm();
-    
-    const specialtySelect = document.getElementById('specialityType');
-    const doctorSelect = document.getElementById('doctor');
-    
-    if (!specialtySelect || !doctorSelect) return;
-    
     try {
-        // Set specialty and load doctors
-        specialtySelect.value = specialty;
-        await handleSpecialtyChange();
-        
-        // Select the specific doctor
-        await new Promise(resolve => setTimeout(resolve, 300));
-        doctorSelect.value = doctorId;
-        
-        // Update doctor info and trigger change
-        handleDoctorChange();
-        const doctorInfo = document.getElementById('doctorInfo');
-        if (doctorInfo) {
-            const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
-            if (selectedOption?.value) {
-                doctorInfo.innerHTML = `<small>Selected: ${selectedOption.textContent}</small>`;
+        // Format date and time with error handling
+        let formattedDate = "N/A";
+        let formattedTime = "N/A";
+
+        if (appointment.appointment_date) {
+            const appointmentDate = new Date(appointment.appointment_date);
+            if (!isNaN(appointmentDate.getTime())) {
+                formattedDate = appointmentDate.toLocaleDateString("en-GB", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                });
             }
         }
+
+        if (appointment.appointment_time) {
+            const appointmentTime = new Date(
+                `1970-01-01T${appointment.appointment_time}`
+            );
+            if (!isNaN(appointmentTime.getTime())) {
+                formattedTime = appointmentTime.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                });
+            }
+        }
+
+        // Get patient initials for avatar - fix field name mapping
+        const patientName =
+            appointment.patient_name ||
+            appointment.patient_name ||
+            "Unknown Patient";
+        const patientInitials = patientName
+            .split(" ")
+            .map((name) => name.charAt(0))
+            .join("")
+            .toUpperCase();
+
+        // Get status styling
+        const statusClass = getStatusClass(appointment.status);
+        const statusIcon = getStatusIcon(appointment.status);
+
+        // Fix field name mapping for doctor and contact info
+        const doctorName =
+            appointment.doc_name || appointment.doctor_name || "Not assigned";
+        const contactNumber =
+            appointment.patient_phone ||
+            appointment.contact_number ||
+            "Not provided";
+        const email =
+            appointment.patient_email || appointment.email || "Not provided";
+
+        modalBody.innerHTML = `
+            <div class="appointment-detail-card">
+                <div class="appointment-header">
+                    <div class="patient-avatar">
+                        ${patientInitials}
+                    </div>
+                    <div class="appointment-info">
+                        <h3>${patientName}</h3>
+                        <div class="status-badge ${statusClass}">
+                            <i class="${statusIcon}"></i>
+                            ${appointment.status || "Unknown"}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="appointment-details">
+                    <div class="detail-row">
+                        <i class="fa fa-calendar"></i>
+                        <span>Date: ${formattedDate}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i class="fa fa-clock"></i>
+                        <span>Time: ${formattedTime}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i class="fa fa-user-md"></i>
+                        <span>Doctor: ${doctorName}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i class="fa fa-phone"></i>
+                        <span>Contact: ${contactNumber}</span>
+                    </div>
+                    <div class="detail-row">
+                        <i class="fa fa-envelope"></i>
+                        <span>Email: ${email}</span>
+                    </div>
+                    ${
+                        appointment.gender
+                            ? `
+                    <div class="detail-row">
+                        <i class="fa fa-user"></i>
+                        <span>Gender: ${appointment.gender}</span>
+                    </div>
+                    `
+                            : ""
+                    }
+                    ${
+                        appointment.reason
+                            ? `
+                    <div class="detail-row">
+                        <i class="fa fa-stethoscope"></i>
+                        <span>Reason: ${appointment.reason}</span>
+                    </div>
+                    `
+                            : ""
+                    }
+                    ${
+                        appointment.notes
+                            ? `
+                    <div class="detail-row">
+                        <i class="fa fa-sticky-note"></i>
+                        <span>Notes: ${appointment.notes}</span>
+                    </div>
+                    `
+                            : ""
+                    }
+                </div>
+                
+                <div class="appointment-actions">
+                    <button class="btn btn-primary" onclick="openStatusModal(${
+                        appointment.id
+                    }, '${appointment.status}')">
+                        <i class="fa fa-edit"></i> Update Status
+                    </button>
+                    <button class="btn btn-secondary" onclick="closeAppointmentModal()">
+                        <i class="fa fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        `;
     } catch (error) {
-        console.error('Error setting up appointment form:', error);
-        showMessage('Error loading doctor information', 'error');
+        console.error("Error displaying appointment details:", error);
+        modalBody.innerHTML = `
+            <div class="error-container">
+                <i class="fa fa-exclamation-triangle fa-2x"></i>
+                <p>An error occurred while displaying appointment details</p>
+                <button class="btn btn-secondary" onclick="closeAppointmentModal()">Close</button>
+            </div>
+        `;
     }
 }
 
-// Modal functions
-function showUpdateModal() {
-    const modal = document.getElementById('updateAppointmentModal');
-    if (modal) modal.style.display = 'block';
-}
+// Status Modal Functions
+function openStatusModal(appointmentId, currentStatus) {
+    currentAppointmentId = appointmentId;
+    currentAppointmentStatus = currentStatus;
 
-function closeUpdateModal() {
-    const modal = document.getElementById('updateAppointmentModal');
-    if (modal) modal.style.display = 'none';
-    
-    const form = document.getElementById('updateAppointmentForm');
-    if (form) form.reset();
-    
-    isEditMode = false;
-    currentEditAppointmentId = null;
-}
+    const modal = document.getElementById("statusModal");
+    const statusSelect = document.getElementById("newStatus");
 
-// Form validation
-function validateFormFields(fields, prefix = '') {
-    let isValid = true;
-    
-    // Clear previous errors
-    fields.forEach(field => {
-        const errorElement = document.getElementById(field.error);
-        const inputElement = document.getElementById(field.id);
-        if (errorElement) errorElement.style.display = 'none';
-        if (inputElement) inputElement.classList.remove('error');
-    });
-    
-    // Validate each field
-    fields.forEach(field => {
-        const element = document.getElementById(field.id);
-        const errorElement = document.getElementById(field.error);
-        
-        if (element && !element.value.trim()) {
-            isValid = false;
-            element.classList.add('error');
-            if (errorElement) errorElement.style.display = 'block';
-        }
-    });
-    
-    // Validate gender
-    const genderName = prefix ? `${prefix}Gender` : 'gender';
-    const genderChecked = document.querySelector(`input[name="${genderName}"]:checked`);
-    const genderError = document.getElementById(`${prefix}GenderError`);
-    if (!genderChecked) {
-        isValid = false;
-        if (genderError) genderError.style.display = 'block';
+    if (!modal) {
+        console.error("Status modal not found");
+        return;
     }
-    
-    // Validate email and phone
-    const emailField = document.getElementById(`${prefix}Email`);
-    const phoneField = document.getElementById(`${prefix}Phone`);
-    
-    if (emailField?.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField.value)) {
-        isValid = false;
-        emailField.classList.add('error');
-        const emailError = document.getElementById(`${prefix}EmailError`);
-        if (emailError) {
-            emailError.textContent = 'Please enter a valid email address';
-            emailError.style.display = 'block';
-        }
+
+    // Set current status as selected
+    if (statusSelect) {
+        statusSelect.value = currentStatus;
     }
-    
-    if (phoneField?.value && !/^[0-9]{10}$/.test(phoneField.value.replace(/\D/g, ''))) {
-        isValid = false;
-        phoneField.classList.add('error');
-        const phoneError = document.getElementById(`${prefix}PhoneError`);
-        if (phoneError) {
-            phoneError.textContent = 'Please enter a valid 10-digit phone number';
-            phoneError.style.display = 'block';
-        }
+
+    modal.style.display = "block";
+}
+
+function handleStatusUpdate(event) {
+    event.preventDefault();
+
+    const newStatus = document.getElementById("newStatus")?.value;
+    const notes = document.getElementById("statusNotes")?.value || "";
+
+    if (!currentAppointmentId || !newStatus) {
+        showNotification("Please select a status", "error");
+        return;
     }
-    
-    return isValid;
-}
 
-function validateForm() {
-    const fields = [
-        { id: 'firstName', error: 'firstNameError' },
-        { id: 'phone', error: 'phoneError' },
-        { id: 'email', error: 'emailError' },
-        { id: 'preferredDate', error: 'preferredDateError' }
-    ];
-    return validateFormFields(fields);
-}
+    // Show loading state
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Updating...';
+    submitBtn.disabled = true;
 
-function validateUpdateForm() {
-    const fields = [
-        { id: 'updateFirstName', error: 'updateFirstNameError' },
-        { id: 'updatePhone', error: 'updatePhoneError' },
-        { id: 'updateEmail', error: 'updateEmailError' },
-        { id: 'updatePreferredDate', error: 'updatePreferredDateError' },
-        { id: 'updateSpecialityType', error: 'updateSpecialityTypeError' },
-        { id: 'updateDoctor', error: 'updateDoctorError' },
-        { id: 'updateTime', error: 'updateTimeError' },
-        { id: 'updateStatus', error: 'updateStatusError' }
-    ];
-    return validateFormFields(fields, 'update');
-}
+    const formData = new FormData();
+    formData.append("action", "update_appointment_status");
+    formData.append("appointment_id", currentAppointmentId);
+    formData.append("status", newStatus);
+    formData.append("notes", notes);
 
-function addFormValidation() {
-    const inputs = document.querySelectorAll('#appointmentForm input, #appointmentForm select');
-    
-    inputs.forEach(input => {
-        input.addEventListener('blur', () => validateField(input));
-        input.addEventListener('input', function() {
-            this.classList.remove('error');
-            const errorElement = document.getElementById(this.id + 'Error');
-            if (errorElement) errorElement.style.display = 'none';
+    fetch("api.php", {
+        method: "POST",
+        body: formData,
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            if (data.success) {
+                showNotification(
+                    "Appointment status updated successfully!",
+                    "success"
+                );
+                closeModal("statusModal");
+                loadAppointments(); // Refresh the appointments list
+
+                // If appointment modal is open, refresh its content
+                if (
+                    document.getElementById("appointmentModal").style
+                        .display === "block"
+                ) {
+                    viewAppointment(currentAppointmentId);
+                }
+            } else {
+                showNotification(
+                    data.message || "Failed to update appointment status",
+                    "error"
+                );
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            showNotification(
+                "An error occurred while updating the appointment",
+                "error"
+            );
+        })
+        .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
         });
-    });
 }
 
-function validateField(field) {
-    const errorElement = document.getElementById(field.id + 'Error');
-    
-    if (field.hasAttribute('required') && !field.value.trim()) {
-        field.classList.add('error');
-        if (errorElement) errorElement.style.display = 'block';
-        return false;
+// Load and display appointments
+function loadAppointments() {
+    const appointmentsContainer = document.getElementById(
+        "appointmentsContainer"
+    );
+
+    if (!appointmentsContainer) {
+        console.error("Appointments container not found");
+        return;
     }
-    
-    field.classList.remove('error');
-    if (errorElement) errorElement.style.display = 'none';
-    return true;
+
+    // Show loading state
+    appointmentsContainer.innerHTML = `
+        <div class="loading-container">
+            <i class="fa fa-spinner fa-spin fa-2x"></i>
+            <p>Loading appointments...</p>
+        </div>
+    `;
+
+    const formData = new FormData();
+    formData.append("action", "get_appointments");
+
+    fetch("api.php", {
+        method: "POST",
+        body: formData,
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            if (data.success && data.appointments) {
+                displayAppointments(data.appointments);
+            } else {
+                appointmentsContainer.innerHTML = `
+                    <div class="no-data-container">
+                        <i class="fa fa-calendar-times fa-3x"></i>
+                        <h3>No appointments found</h3>
+                        <p>${
+                            data.message ||
+                            "There are no appointments to display."
+                        }</p>
+                    </div>
+                `;
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            appointmentsContainer.innerHTML = `
+                <div class="error-container">
+                    <i class="fa fa-exclamation-triangle fa-2x"></i>
+                    <p>Failed to load appointments: ${error.message}</p>
+                    <button class="btn btn-primary" onclick="loadAppointments()">
+                        <i class="fa fa-refresh"></i> Retry
+                    </button>
+                </div>
+            `;
+        });
 }
 
-// Utility functions
-function resetForm() {
-    const form = document.getElementById('appointmentForm');
-    if (!form) return;
-    
-    form.reset();
-    form.querySelectorAll('.error').forEach(el => el.style.display = 'none');
-    form.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
-    
-    document.getElementById('doctor').innerHTML = '<option value="">Select Doctor</option>';
-    document.getElementById('time').innerHTML = '<option value="">Select Time</option>';
-    
-    const doctorInfo = document.getElementById('doctorInfo');
-    if (doctorInfo) doctorInfo.innerHTML = '';
-    
-    isEditMode = false;
-    currentEditAppointmentId = null;
-    currentDoctorId = null;
-    currentSpecialty = null;
+function displayAppointments(appointments) {
+    const appointmentsContainer = document.getElementById(
+        "appointmentsContainer"
+    );
+
+    if (!appointments || appointments.length === 0) {
+        appointmentsContainer.innerHTML = `
+            <div class="no-data-container">
+                <i class="fa fa-calendar-times fa-3x"></i>
+                <h3>No appointments found</h3>
+                <p>There are no appointments to display.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const appointmentsHTML = appointments
+        .map((appointment) => {
+            const statusClass = getStatusClass(appointment.status);
+            const statusIcon = getStatusIcon(appointment.status);
+
+            // Format date and time - fix field name mapping
+            let formattedDate = "N/A";
+            let formattedTime = "N/A";
+
+            if (appointment.appointment_date) {
+                const date = new Date(appointment.appointment_date);
+                if (!isNaN(date.getTime())) {
+                    formattedDate = date.toLocaleDateString("en-GB");
+                }
+            }
+
+            if (appointment.appointment_time) {
+                const time = new Date(
+                    `1970-01-01T${appointment.appointment_time}`
+                );
+                if (!isNaN(time.getTime())) {
+                    formattedTime = time.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                    });
+                }
+            }
+
+            // Fix field name mapping
+            const patientName = appointment.patient_name || "Unknown Patient";
+            const doctorName =
+                appointment.doc_name ||
+                appointment.doctor_name ||
+                "Not assigned";
+
+            return `
+            <div class="appointment-card" onclick="viewAppointment(${
+                appointment.id
+            })">
+                <div class="appointment-card-header">
+                    <div class="patient-info">
+                        <h4>${patientName}</h4>
+                        <p class="doctor-name">
+                            <i class="fa fa-user-md"></i>
+                            ${doctorName}
+                        </p>
+                    </div>
+                    <div class="status-badge ${statusClass}">
+                        <i class="${statusIcon}"></i>
+                        ${appointment.status || "Unknown"}
+                    </div>
+                </div>
+                <div class="appointment-card-body">
+                    <div class="appointment-datetime">
+                        <div class="date-info">
+                            <i class="fa fa-calendar"></i>
+                            <span>${formattedDate}</span>
+                        </div>
+                        <div class="time-info">
+                            <i class="fa fa-clock"></i>
+                            <span>${formattedTime}</span>
+                        </div>
+                    </div>
+                    ${
+                        appointment.reason
+                            ? `
+                    <div class="appointment-reason">
+                        <i class="fa fa-stethoscope"></i>
+                        <span>${appointment.reason}</span>
+                    </div>
+                    `
+                            : ""
+                    }
+                </div>
+            </div>
+        `;
+        })
+        .join("");
+
+    appointmentsContainer.innerHTML = appointmentsHTML;
 }
 
-function cancelAppointmentForm() {
-    hideAppointmentForm();
-}
-
-function showAppointmentDetails(appointmentData) {
-    alert(`Appointment Details:\n\nID: ${appointmentData.id}\nPatient: ${appointmentData.patientName}\nDoctor: ${appointmentData.doctor}\nDate: ${appointmentData.date}\nTime: ${appointmentData.time}\nStatus: ${appointmentData.status}`);
-}
-
+// Filter Functions
 function filterAppointments() {
-    const filterDate = document.getElementById('filterDate').value;
-    const filterStatus = document.getElementById('filterStatus').value;
-    const rows = document.querySelectorAll('#appointmentsTableBody tr');
-    
-    rows.forEach(row => {
-        const dateCell = row.cells[3].textContent;
-        const statusCell = row.cells[5].textContent.toLowerCase().trim();
-        
-        let showRow = true;
-        
-        if (filterDate) {
-            const rowDate = new Date(dateCell.split('/').reverse().join('-'));
-            const filterDateObj = new Date(filterDate);
-            showRow = showRow && (rowDate.toDateString() === filterDateObj.toDateString());
-        }
-        
-        if (filterStatus) {
-            showRow = showRow && statusCell.includes(filterStatus.toLowerCase());
-        }
-        
-        row.style.display = showRow ? '' : 'none';
-    });
+    const dateFilter = document.getElementById("filterDate")?.value;
+    const statusFilter = document.getElementById("filterStatus")?.value;
+    const doctorFilter = document.getElementById("filterDoctor")?.value;
+
+    const formData = new FormData();
+    formData.append("action", "get_appointments");
+
+    if (dateFilter) formData.append("date_filter", dateFilter);
+    if (statusFilter) formData.append("status_filter", statusFilter);
+    if (doctorFilter) formData.append("doctor_filter", doctorFilter);
+
+    const appointmentsContainer = document.getElementById(
+        "appointmentsContainer"
+    );
+    appointmentsContainer.innerHTML = `
+        <div class="loading-container">
+            <i class="fa fa-spinner fa-spin fa-2x"></i>
+            <p>Filtering appointments...</p>
+        </div>
+    `;
+
+    fetch("api.php", {
+        method: "POST",
+        body: formData,
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            if (data.success && data.appointments) {
+                displayAppointments(data.appointments);
+            } else {
+                appointmentsContainer.innerHTML = `
+                    <div class="no-data-container">
+                        <i class="fa fa-filter"></i>
+                        <h3>No appointments match your filters</h3>
+                        <p>Try adjusting your filter criteria.</p>
+                    </div>
+                `;
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            appointmentsContainer.innerHTML = `
+                <div class="error-container">
+                    <i class="fa fa-exclamation-triangle fa-2x"></i>
+                    <p>Failed to filter appointments: ${error.message}</p>
+                </div>
+            `;
+        });
 }
 
-function showMessage(message, type = 'info') {
-    const messageDiv = document.getElementById('message');
-    if (!messageDiv) return;
-    
-    messageDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
-    messageDiv.style.display = 'block';
-    
-    setTimeout(() => messageDiv.style.display = 'none', 5000);
+function clearFilters() {
+    // Clear filter inputs
+    const filterDate = document.getElementById("filterDate");
+    const filterStatus = document.getElementById("filterStatus");
+    const filterDoctor = document.getElementById("filterDoctor");
+
+    if (filterDate) filterDate.value = "";
+    if (filterStatus) filterStatus.value = "";
+    if (filterDoctor) filterDoctor.value = ""; // Fixed typo here
+
+    // Reload all appointments
+    loadAppointments();
+}
+
+// Modal Functions
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = "none";
+
+        // Clear form data if it's a form modal
+        if (modalId === "statusModal") {
+            const form = document.getElementById("statusUpdateForm");
+            if (form) form.reset();
+        }
+    }
+}
+
+function closeAppointmentModal() {
+    closeModal("appointmentModal");
+}
+
+function closeAllModals() {
+    const modals = [
+        "appointmentModal",
+        "statusModal",
+        "doctorModal",
+        "bookingModal",
+    ];
+    modals.forEach((modalId) => closeModal(modalId));
+}
+
+// Utility Functions
+function getStatusClass(status) {
+    const statusClasses = {
+        pending: "status-pending",
+        confirmed: "status-confirmed",
+        completed: "status-completed",
+        cancelled: "status-cancelled",
+        "no-show": "status-no-show",
+    };
+    return statusClasses[status?.toLowerCase()] || "status-unknown";
+}
+
+function getStatusIcon(status) {
+    const statusIcons = {
+        pending: "fa fa-clock",
+        confirmed: "fa fa-check-circle",
+        completed: "fa fa-check-double",
+        cancelled: "fa fa-times-circle",
+        "no-show": "fa fa-user-times",
+    };
+    return statusIcons[status?.toLowerCase()] || "fa fa-question-circle";
+}
+
+function showNotification(message, type = "info") {
+    // Create notification element
+    const notification = document.createElement("div");
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fa ${
+                type === "success"
+                    ? "fa-check-circle"
+                    : type === "error"
+                    ? "fa-exclamation-circle"
+                    : "fa-info-circle"
+            }"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fa fa-times"></i>
+        </button>
+    `;
+
+    // Add to page
+    document.body.appendChild(notification);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Doctor section functions
+function loadDoctors() {
+    const doctorsContainer = document.getElementById("doctorsContainer");
+
+    if (!doctorsContainer) return;
+
+    doctorsContainer.innerHTML = `
+        <div class="loading-container">
+            <i class="fa fa-spinner fa-spin fa-2x"></i>
+            <p>Loading doctors...</p>
+        </div>
+    `;
+
+    const formData = new FormData();
+    formData.append("action", "get_doctors");
+
+    fetch("api.php", {
+        method: "POST",
+        body: formData,
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            if (data.success && data.doctors) {
+                displayDoctors(data.doctors);
+            } else {
+                doctorsContainer.innerHTML = `
+                    <div class="no-data-container">
+                        <i class="fa fa-user-md fa-3x"></i>
+                        <h3>No doctors found</h3>
+                        <p>${
+                            data.message || "There are no doctors to display."
+                        }</p>
+                    </div>
+                `;
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            doctorsContainer.innerHTML = `
+                <div class="error-container">
+                    <i class="fa fa-exclamation-triangle fa-2x"></i>
+                    <p>Failed to load doctors: ${error.message}</p>
+                    <button class="btn btn-primary" onclick="loadDoctors()">
+                        <i class="fa fa-refresh"></i> Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+function displayDoctors(doctors) {
+    const doctorsContainer = document.getElementById("doctorsContainer");
+
+    if (!doctors || doctors.length === 0) {
+        doctorsContainer.innerHTML = `
+            <div class="no-data-container">
+                <i class="fa fa-user-md fa-3x"></i>
+                <h3>No doctors found</h3>
+                <p>There are no doctors to display.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const doctorsHTML = doctors
+        .map(
+            (doctor) => `
+        <div class="doctor-card">
+            <div class="doctor-avatar">
+                ${
+                    doctor.doc_name || doctor.name
+                        ? (doctor.doc_name || doctor.name)
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                        : "DR"
+                }
+            </div>
+            <div class="doctor-info">
+                <h4>${doctor.doc_name || doctor.name || "Unknown Doctor"}</h4>
+                <p class="specialty">${
+                    doctor.doc_specia || doctor.specialty || "General Practice"
+                }</p>
+                <p class="contact">
+                    <i class="fa fa-phone"></i>
+                    ${doctor.contact_number || "No contact provided"}
+                </p>
+                <p class="email">
+                    <i class="fa fa-envelope"></i>
+                    ${doctor.doc_email || doctor.email || "No email provided"}
+                </p>
+                ${
+                    doctor.experience
+                        ? `<p class="experience">
+                    <i class="fa fa-star"></i>
+                    ${doctor.experience} years experience
+                </p>`
+                        : ""
+                }
+                ${
+                    doctor.location
+                        ? `<p class="location">
+                    <i class="fa fa-map-marker"></i>
+                    ${doctor.location}
+                </p>`
+                        : ""
+                }
+            </div>
+        </div>
+    `
+        )
+        .join("");
+
+    doctorsContainer.innerHTML = doctorsHTML;
 }

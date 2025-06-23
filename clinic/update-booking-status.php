@@ -1,9 +1,12 @@
 <?php
 session_start();
 
+// Set content type for JSON response
+header('Content-Type: application/json');
+
 // Check if clinic is logged in
 if (!isset($_SESSION['clinic_id'])) {
-    header("Location: login.php");
+    echo json_encode(['success' => false, 'message' => 'Session expired. Please login again.']);
     exit();
 }
 
@@ -20,7 +23,8 @@ try {
     }
     $conn->set_charset("utf8");
 } catch (Exception $e) {
-    die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
+    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+    exit();
 }
 
 $clinic_id = (int)$_SESSION['clinic_id'];
@@ -34,21 +38,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_id'], $_POST[
     $valid_statuses = ['Pending', 'Confirmed', 'Sample Collected', 'In Progress', 'Completed', 'Cancelled', 'Upload Done'];
     
     if (!in_array($new_status, $valid_statuses)) {
-        $_SESSION['error'] = "Invalid status selected.";
-        header("Location: lab-bookings.php");
+        echo json_encode(['success' => false, 'message' => 'Invalid status selected.']);
         exit();
     }
     
     // Verify booking belongs to this clinic
-    $verify_sql = "SELECT id FROM lab_orders WHERE id = ? AND clinic_id = ?";
+    $verify_sql = "SELECT id, status FROM lab_orders WHERE id = ? AND clinic_id = ?";
     $verify_stmt = $conn->prepare($verify_sql);
     $verify_stmt->bind_param("ii", $booking_id, $clinic_id);
     $verify_stmt->execute();
     $verify_result = $verify_stmt->get_result();
     
     if ($verify_result->num_rows === 0) {
-        $_SESSION['error'] = "Booking not found or access denied.";
-        header("Location: lab-bookings.php");
+        echo json_encode(['success' => false, 'message' => 'Booking not found or access denied.']);
+        exit();
+    }
+    
+    $booking_data = $verify_result->fetch_assoc();
+    $current_status = $booking_data['status'];
+    
+    // Check if status is actually changing
+    if ($current_status === $new_status) {
+        echo json_encode(['success' => true, 'message' => 'Status is already set to: ' . $new_status]);
         exit();
     }
     
@@ -58,18 +69,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_id'], $_POST[
     $update_stmt->bind_param("sii", $new_status, $booking_id, $clinic_id);
     
     if ($update_stmt->execute()) {
-        $_SESSION['success'] = "Booking status updated successfully to: " . $new_status;
-        
-        // If status is 'Completed', redirect to upload report page
-        if ($new_status === 'Completed') {
-            header("Location: upload-report.php?booking_id=" . $booking_id);
-            exit();
+        // Check if any row was actually affected
+        if ($update_stmt->affected_rows > 0) {
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Booking status updated successfully to: ' . $new_status,
+                'new_status' => $new_status,
+                'booking_id' => $booking_id
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No changes were made to the booking status.']);
         }
     } else {
-        $_SESSION['error'] = "Failed to update booking status. Please try again.";
+        echo json_encode(['success' => false, 'message' => 'Failed to update booking status. Database error occurred.']);
     }
     
-    header("Location: lab-bookings.php");
+    $conn->close();
     exit();
 }
 
@@ -84,16 +99,16 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_booking_for_update' && isset(
     $result = $stmt->get_result();
     
     if ($booking = $result->fetch_assoc()) {
-        header('Content-Type: application/json');
-        echo json_encode($booking);
+        echo json_encode(['success' => true, 'data' => $booking]);
     } else {
-        http_response_code(404);
-        echo json_encode(['error' => 'Booking not found']);
+        echo json_encode(['success' => false, 'message' => 'Booking not found']);
     }
+    $conn->close();
     exit();
 }
 
-// If direct access, redirect to lab bookings
-header("Location: lab-bookings.php");
+// Handle invalid requests
+echo json_encode(['success' => false, 'message' => 'Invalid request method or missing parameters.']);
+$conn->close();
 exit();
 ?>
