@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 <?php
     // Start session and include API functions
     session_start();
@@ -8,7 +6,6 @@
         exit();
     }
 ?>
->>>>>>> 860a47c5a1bbfafa34d82ce525f8de395d08e09d
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,8 +17,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-     <?php include './include/top-header.php'; ?>
-    
+    <?php include './include/top-header.php'; ?>
+
     <div class="container">
         <?php include './include/sidebar.php'; ?>
         
@@ -59,10 +56,6 @@
                                 </select>
                                 <select id="filterDoctor">
                                     <option value="">All Doctors</option>
-<<<<<<< HEAD
-                                    <!-- Doctor options will be populated by JavaScript -->
-=======
->>>>>>> 860a47c5a1bbfafa34d82ce525f8de395d08e09d
                                 </select>
                                 <button id="filterBtn" class="filter-btn">
                                     <i class="fa fa-filter"></i> Filter
@@ -72,43 +65,14 @@
                                 </button>
                             </div>
                         </div>
-<<<<<<< HEAD
-                        <div class="appointments-table">
-                            <table id="appointmentsTable">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Patient Name</th>
-                                        <th>Doctor</th>
-                                        <th>Date</th>
-                                        <th>Time</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="appointmentsTableBody">
-                                    <!-- Appointments will be populated by JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-=======
                         <div id="appointmentsContainer" class="appointments-table"></div>
->>>>>>> 860a47c5a1bbfafa34d82ce525f8de395d08e09d
                     </div>
                 </div>
 
                 <!-- All Doctors Section -->
                 <div id="doctorsSection" class="section-content" style="display: none;">
                     <h2>Clinic Doctors</h2>
-<<<<<<< HEAD
-                    <div class="doctors-container">
-                        <div class="doctors-grid" id="doctorsGrid">
-                            <!-- Doctors will be populated by JavaScript -->
-                        </div>
-                    </div>
-=======
                     <div id="doctorsContainer" class="doctors-container"></div>
->>>>>>> 860a47c5a1bbfafa34d82ce525f8de395d08e09d
                 </div>
 
                 <!-- View Appointment Modal -->
@@ -219,7 +183,7 @@
                                     <div class="form-row">
                                         <div class="form-group col-md-6">
                                             <label for="appointmentDate" class="required">Appointment Date:</label>
-                                            <input type="date" id="appointmentDate" name="appointment_date" required>
+                                            <input type="date" id="appointmentDate" name="appointment_date" required min="<?php echo date('Y-m-d'); ?>">
                                         </div>
                                         <div class="form-group col-md-6">
                                             <label for="appointmentTime" class="required">Appointment Time:</label>
@@ -247,20 +211,5 @@
     </div>
     
     <script src="script.js"></script>
-<<<<<<< HEAD
-    <script src="add_script.js"></script>
-    
-    <script>
-        // Set minimum date to today for appointment booking
-        document.addEventListener('DOMContentLoaded', function() {
-            const today = new Date().toISOString().split('T')[0];
-            const appointmentDateInput = document.getElementById('appointmentDate');
-            if (appointmentDateInput) {
-                appointmentDateInput.setAttribute('min', today);
-            }
-        });
-    </script>
-=======
->>>>>>> 860a47c5a1bbfafa34d82ce525f8de395d08e09d
 </body>
 </html>
