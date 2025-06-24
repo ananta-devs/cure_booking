@@ -357,7 +357,7 @@ if (session_status() == PHP_SESSION_NONE) {
                 <li><a href="#">Telemedicine</a></li>
                 <li><a href="http://localhost/cure_booking/medicines/medicines.php">Medicines</a></li>
                 <li><a href="http://localhost/cure_booking/lab-new/lab.php">Lab Tests</a></li>
-                <li><a href="#">Clinics</a></li>
+                <li><a href="http://localhost/cure_booking/find-clinic/clinics.php">Clinics</a></li>
             </ul>
         </div>
         <div class="header-right">
