@@ -27,6 +27,66 @@
     $clinic_id = (int)$_SESSION['clinic_id'];
     $clinic_name = $_SESSION['clinic_name'] ?? 'Unknown Clinic';
 
+    // Handle report upload AJAX request
+    if (isset($_POST['ajax']) && $_POST['ajax'] === 'upload_report') {
+        $booking_id = (int)$_POST['booking_id'];
+        
+        // Verify booking belongs to clinic and has correct status
+        $verify_sql = "SELECT id, booking_id, customer_name FROM lab_orders WHERE id = ? AND clinic_id = ? AND status = 'Sample Collected'";
+        $verify_stmt = $conn->prepare($verify_sql);
+        $verify_stmt->bind_param("ii", $booking_id, $clinic_id);
+        $verify_stmt->execute();
+        $booking = $verify_stmt->get_result()->fetch_assoc();
+        
+        if (!$booking) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid booking or status']);
+            exit();
+        }
+        
+        // Handle file upload
+        if (isset($_FILES['report_file']) && $_FILES['report_file']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = 'uploads/reports/';
+            
+            // Create directory if it doesn't exist
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            $file_extension = strtolower(pathinfo($_FILES['report_file']['name'], PATHINFO_EXTENSION));
+            $allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+            
+            if (!in_array($file_extension, $allowed_extensions)) {
+                echo json_encode(['success' => false, 'message' => 'Invalid file type. Allowed: PDF, JPG, PNG, DOC, DOCX']);
+                exit();
+            }
+            
+            // Generate unique filename
+            $filename = 'report_' . $booking_id . '_' . time() . '.' . $file_extension;
+            $filepath = $upload_dir . $filename;
+            
+            if (move_uploaded_file($_FILES['report_file']['tmp_name'], $filepath)) {
+                // Update database
+                $update_sql = "UPDATE lab_orders SET report_file = ?, status = 'Upload Done', updated_at = NOW() WHERE id = ? AND clinic_id = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("sii", $filename, $booking_id, $clinic_id);
+                
+                if ($update_stmt->execute()) {
+                    echo json_encode(['success' => true, 'message' => 'Report uploaded successfully']);
+                } else {
+                    // Delete uploaded file if database update fails
+                    unlink($filepath);
+                    echo json_encode(['success' => false, 'message' => 'Database update failed']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'File upload failed']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No file selected or upload error']);
+        }
+        exit();
+    }
+
     // Handle AJAX request for booking details
     if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_booking_details' && isset($_GET['booking_id'])) {
         $booking_id = (int)$_GET['booking_id'];
@@ -160,8 +220,7 @@
     <title>Lab Bookings</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="style_lab.css">
-
+    <link rel="stylesheet" href="sty_lab.css">
 </head>
 <body>
     <div class="refresh-indicator" id="refreshIndicator">
@@ -185,77 +244,258 @@
         </div>
     </div>
 
+    <!-- Report Upload Modal -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content upload-modal-content">
+            <div class="modal-header">
+                <h2><i class="fa fa-upload"></i> Upload Lab Report</h2>
+                <button class="modal-close" onclick="closeUploadModal()">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-booking-info" id="uploadBookingInfo">
+                    <!-- Booking info will be populated here -->
+                </div>
+                
+                <form id="uploadReportForm" enctype="multipart/form-data">
+                    <input type="hidden" id="uploadBookingId" name="booking_id" value="">
+                    <input type="hidden" name="ajax" value="upload_report">
+                    
+                    <div class="upload-form-group">
+                        <label for="reportFile" class="upload-label">
+                            <i class="fa fa-file"></i> Select Report File
+                        </label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="reportFile" name="report_file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                            <div class="file-upload-display">
+                                <div class="file-upload-placeholder">
+                                    <i class="fa fa-cloud-upload-alt fa-2x"></i>
+                                    <p>Click to select file or drag and drop</p>
+                                    <small>Supported formats: PDF, JPG, PNG, DOC, DOCX (Max 10MB)</small>
+                                </div>
+                                <div class="file-selected" style="display: none;">
+                                    <i class="fa fa-file-alt"></i>
+                                    <span class="file-name"></span>
+                                    <button type="button" class="remove-file" onclick="removeSelectedFile()">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <div class="progress-text">Uploading... 0%</div>
+                    </div>
+                    
+                    <div class="upload-buttons">
+                        <button type="button" class="upload-btn upload-btn-cancel" onclick="closeUploadModal()">
+                            <i class="fa fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="upload-btn upload-btn-submit">
+                            <i class="fa fa-upload"></i> Upload Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Update Modal -->
+    <div class="status-update-modal" id="statusUpdateModal">
+        <div class="status-modal-content">
+            <div class="status-modal-header">
+                <h3><i class="fa fa-edit"></i> Update Booking Status</h3>
+                <button class="status-close-btn" onclick="closeStatusModal()">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="booking-info" id="statusBookingInfo">
+                <!-- Booking info will be populated here -->
+            </div>
+
+            <form id="statusUpdateForm" method="POST" action="update-booking-status.php">
+                <input type="hidden" id="statusBookingId" name="booking_id" value="">
+                
+                <div class="status-form-group">
+                    <label for="statusSelect">Select New Status:</label>
+                    <select id="statusSelect" name="status" class="status-select" required>
+                        <option value="">-- Select Status --</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Sample Collected">Sample Collected</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Upload Done">Upload Done</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="status-buttons">
+                    <button type="button" class="status-btn status-btn-cancel" onclick="closeStatusModal()">
+                        <i class="fa fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="status-btn status-btn-update">
+                        <i class="fa fa-check"></i> Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="container">
         <?php include './include/sidebar.php'; ?>
         
         <main class="main-content">
             <div id="lab-bookings-section" class="content-section active">
-                <div class="header">
-                    <h1>Lab Bookings</h1>
-                    <p>Manage laboratory test bookings and results for <?php echo htmlspecialchars($clinic_name); ?></p>
-                </div>
+                    <div class="header">
+                        <h1>Lab Bookings</h1>
+                        <p>Manage laboratory test bookings and results for <?php echo htmlspecialchars($clinic_name); ?></p>
+                    </div>
+            </div>
 
-                <div id="scheduleContainer" class="schedule-container">
+                <div id="scheduleContainer" class="schedule-Container">
                     <?php if ($bookings_result->num_rows > 0): ?>
-                        <table class="bookings-table">
-                            <thead>
-                                <tr>
-                                    <th>Booking ID</th>
-                                    <th>Patient Name</th>
-                                    <th>Phone</th>
-                                    <th>Collection Date</th>
-                                    <th>Time Slot</th>
-                                    <th>Tests</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($booking = $bookings_result->fetch_assoc()): ?>
-                                <tr>
-                                    <td><strong><?php echo htmlspecialchars($booking['booking_id']); ?></strong></td>
-                                    <td><?php echo htmlspecialchars($booking['customer_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($booking['phone']); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($booking['sample_collection_date'])); ?></td>
-                                    <td><?php echo htmlspecialchars($booking['time_slot']); ?></td>
-                                    <td>
-                                        <small title="<?php echo htmlspecialchars($booking['test_names']); ?>">
-                                            <?php echo $booking['test_count']; ?> test(s)
-                                        </small>
-                                    </td>
-                                    <td>₹<?php echo number_format($booking['total_amount'], 2); ?></td>
-                                    <td>
-                                        <span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $booking['status'])); ?>">
-                                            <?php echo htmlspecialchars($booking['status']); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-sm btn-view" onclick="viewBooking(<?php echo $booking['id']; ?>)" title="View Details">
-                                                <i class="fa fa-eye"></i>
-                                            </button>
-                                            <button class="btn-sm btn-edit" onclick="updateStatus(<?php echo $booking['id']; ?>, '<?php echo htmlspecialchars($booking['status']); ?>')" title="Update Status">
-                                                <i class="fa fa-edit"></i>
-                                            </button>
-                                            <?php if ($booking['status'] === 'Sample Collected'): ?>
-                                                <a href="upload_report.php?booking_id=<?php echo $booking['id']; ?>" class="upload-btn" title="Upload Report">
-                                                    <i class="fa fa-upload"></i> Upload
-                                                </a>
-                                            <?php endif; ?>
-                                            <?php if ($booking['status'] === 'Upload Done' && !empty($booking['report_file'])): ?>
-                                                <a href="uploads/reports/<?php echo htmlspecialchars($booking['report_file']); ?>" 
-                                                   class="btn-sm" style="background: #17a2b8; color: white;" 
-                                                   target="_blank" title="View Report">
-                                                    <i class="fa fa-file-alt"></i>
-                                                </a>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
+                        
+                        <!-- Responsive table wrapper -->
+                        <div class="table-responsive">
+                            <table class="bookings-table">
+                                <thead>
+                                    <tr>
+                                        <th>Booking ID</th>
+                                        <th>Patient Name</th>
+                                        <th>Phone</th>
+                                        <th>Collection Date</th>
+                                        <th>Time Slot</th>
+                                        <th>Tests</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while ($booking = $bookings_result->fetch_assoc()): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($booking['booking_id']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($booking['customer_name']); ?></td>
+                                        <td><?php echo htmlspecialchars($booking['phone']); ?></td>
+                                        <td><?php echo date('M d, Y', strtotime($booking['sample_collection_date'])); ?></td>
+                                        <td><?php echo htmlspecialchars($booking['time_slot']); ?></td>
+                                        <td>
+                                            <small title="<?php echo htmlspecialchars($booking['test_names']); ?>">
+                                                <?php echo $booking['test_count']; ?> test(s)
+                                            </small>
+                                        </td>
+                                        <td>₹<?php echo number_format($booking['total_amount'], 2); ?></td>
+                                        <td>
+                                            <span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $booking['status'])); ?>">
+                                                <?php echo htmlspecialchars($booking['status']); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="btn-sm btn-view" onclick="viewBooking(<?php echo $booking['id']; ?>)" title="View Details">
+                                                    <i class="fa fa-eye"></i>
+                                                </button>
+                                                <?php if ($booking['status'] !== 'Cancelled' && $booking['status'] !== 'Completed'): ?>
+                                                    <button class="btn-sm btn-cancel" onclick="cancelBooking(<?php echo $booking['id']; ?>, '<?php echo htmlspecialchars($booking['booking_id']); ?>')" title="Cancel Booking">
+                                                        <i class="fa fa-times"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                                <?php if ($booking['status'] === 'Sample Collected'): ?>
+                                                    <button class="btn-sm upload-btn" onclick="openUploadModal(<?php echo $booking['id']; ?>, '<?php echo htmlspecialchars($booking['booking_id']); ?>', '<?php echo htmlspecialchars($booking['customer_name']); ?>')" title="Upload Report">
+                                                        <i class="fa fa-upload"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                                <?php if ($booking['status'] === 'Upload Done' && !empty($booking['report_file'])): ?>
+                                                    <a href="uploads/reports/<?php echo htmlspecialchars($booking['report_file']); ?>" 
+                                                    class="btn-sm" style="background: #17a2b8; color: white;" 
+                                                    target="_blank" title="View Report">
+                                                        <i class="fa fa-file-alt"></i>
+                                                    </a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Alternative card layout for very small screens -->
+                        <div class="bookings-cards">
+                            <?php 
+                            // Reset result pointer for card layout
+                            $bookings_result->data_seek(0);
+                            while ($booking = $bookings_result->fetch_assoc()): 
+                            ?>
+                            <div class="booking-card">
+                                <div class="booking-card-header">
+                                    <div class="booking-card-title">
+                                        <?php echo htmlspecialchars($booking['booking_id']); ?>
+                                    </div>
+                                    <span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $booking['status'])); ?>">
+                                        <?php echo htmlspecialchars($booking['status']); ?>
+                                    </span>
+                                </div>
+                                
+                                <div class="booking-card-body">
+                                    <div class="booking-card-row">
+                                        <span class="booking-card-label">Patient:</span>
+                                        <span class="booking-card-value"><?php echo htmlspecialchars($booking['customer_name']); ?></span>
+                                    </div>
+                                    <div class="booking-card-row">
+                                        <span class="booking-card-label">Phone:</span>
+                                        <span class="booking-card-value"><?php echo htmlspecialchars($booking['phone']); ?></span>
+                                    </div>
+                                    <div class="booking-card-row">
+                                        <span class="booking-card-label">Date:</span>
+                                        <span class="booking-card-value"><?php echo date('M d, Y', strtotime($booking['sample_collection_date'])); ?></span>
+                                    </div>
+                                    <div class="booking-card-row">
+                                        <span class="booking-card-label">Time:</span>
+                                        <span class="booking-card-value"><?php echo htmlspecialchars($booking['time_slot']); ?></span>
+                                    </div>
+                                    <div class="booking-card-row">
+                                        <span class="booking-card-label">Tests:</span>
+                                        <span class="booking-card-value"><?php echo $booking['test_count']; ?> test(s)</span>
+                                    </div>
+                                    <div class="booking-card-row">
+                                        <span class="booking-card-label">Amount:</span>
+                                        <span class="booking-card-value">₹<?php echo number_format($booking['total_amount'], 2); ?></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="booking-card-actions">
+                                    <button class="btn-sm btn-view" onclick="viewBooking(<?php echo $booking['id']; ?>)" title="View Details">
+                                        <i class="fa fa-eye"></i> View
+                                    </button>
+                                    <?php if ($booking['status'] !== 'Cancelled' && $booking['status'] !== 'Completed'): ?>
+                                        <button class="btn-sm btn-cancel" onclick="cancelBooking(<?php echo $booking['id']; ?>, '<?php echo htmlspecialchars($booking['booking_id']); ?>')" title="Cancel Booking">
+                                            <i class="fa fa-times"></i> Cancel
+                                        </button>
+                                    <?php endif; ?>
+                                    <?php if ($booking['status'] === 'Sample Collected'): ?>
+                                        <button class="btn-sm upload-btn" onclick="openUploadModal(<?php echo $booking['id']; ?>, '<?php echo htmlspecialchars($booking['booking_id']); ?>', '<?php echo htmlspecialchars($booking['customer_name']); ?>')" title="Upload Report">
+                                            <i class="fa fa-upload"></i> Upload
+                                        </button>
+                                    <?php endif; ?>
+                                    <?php if ($booking['status'] === 'Upload Done' && !empty($booking['report_file'])): ?>
+                                        <a href="uploads/reports/<?php echo htmlspecialchars($booking['report_file']); ?>" 
+                                        class="btn-sm" style="background: #17a2b8; color: white;" 
+                                        target="_blank" title="View Report">
+                                            <i class="fa fa-file-alt"></i> Report
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endwhile; ?>
+                        </div>
 
                         <?php if ($total_pages > 1): ?>
                         <div class="pagination">
@@ -307,7 +547,6 @@
                         </div>
                     <?php endif; ?>
                 </div>
-            </div>
         </main>
     </div>
 
@@ -381,7 +620,175 @@
             startAutoRefresh();
         });
 
-        // Modal functions
+        // Upload Modal Functions
+        function openUploadModal(bookingId, bookingIdStr, customerName) {
+            const modal = document.getElementById('uploadModal');
+            const bookingInfo = document.getElementById('uploadBookingInfo');
+            const bookingIdInput = document.getElementById('uploadBookingId');
+
+            // Populate booking info
+            bookingInfo.innerHTML = `
+                <div class="upload-info-card">
+                    <h4><i class="fa fa-vial"></i> Booking ID: ${bookingIdStr}</h4>
+                    <p><strong>Patient:</strong> ${customerName}</p>
+                    <p><strong>Status:</strong> <span class="status-badge status-sample-collected">Sample Collected</span></p>
+                </div>
+            `;
+
+            // Set booking ID
+            bookingIdInput.value = bookingId;
+
+            // Reset form
+            document.getElementById('uploadReportForm').reset();
+            resetFileUpload();
+
+            // Show modal
+            modal.classList.add('show');
+        }
+
+        function closeUploadModal() {
+            const modal = document.getElementById('uploadModal');
+            modal.classList.remove('show');
+            resetFileUpload();
+        }
+
+        // File Upload Handling
+        document.getElementById('reportFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const fileDisplay = document.querySelector('.file-upload-display');
+            const placeholder = document.querySelector('.file-upload-placeholder');
+            const selectedDiv = document.querySelector('.file-selected');
+            const fileName = document.querySelector('.file-name');
+
+            if (file) {
+                // Check file size (10MB limit)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File size must be less than 10MB');
+                    this.value = '';
+                    return;
+                }
+
+                fileName.textContent = file.name;
+                placeholder.style.display = 'none';
+                selectedDiv.style.display = 'flex';
+                fileDisplay.classList.add('file-selected-state');
+            }
+        });
+
+        function removeSelectedFile() {
+            document.getElementById('reportFile').value = '';
+            resetFileUpload();
+        }
+
+        function resetFileUpload() {
+            const fileDisplay = document.querySelector('.file-upload-display');
+            const placeholder = document.querySelector('.file-upload-placeholder');
+            const selectedDiv = document.querySelector('.file-selected');
+            
+            placeholder.style.display = 'block';
+            selectedDiv.style.display = 'none';
+            fileDisplay.classList.remove('file-selected-state');
+            
+            // Hide progress
+            document.getElementById('uploadProgress').style.display = 'none';
+        }
+
+        // Handle form submission
+        document.getElementById('uploadReportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('.upload-btn-submit');
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.querySelector('.progress-fill');
+            const progressText = document.querySelector('.progress-text');
+            
+            // Show progress
+            progressDiv.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...';
+            
+            // Create XMLHttpRequest for progress tracking
+            const xhr = new XMLHttpRequest();
+            
+            // Track upload progress
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
+                }
+            });
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            progressText.textContent = 'Upload Complete!';
+                            progressBar.style.background = '#28a745';
+                            
+                            setTimeout(() => {
+                                closeUploadModal();
+                                location.reload(); // Refresh to show updated status
+                            }, 1500);
+                        } else {
+                            alert('Upload failed: ' + response.message);
+                            resetUploadForm();
+                        }
+                    } catch (e) {
+                        alert('Upload failed: Invalid response');
+                        resetUploadForm();
+                    }
+                } else {
+                    alert('Upload failed: Server error');
+                    resetUploadForm();
+                }
+            };
+            
+            xhr.onerror = function() {
+                alert('Upload failed: Network error');
+                resetUploadForm();
+            };
+            
+            function resetUploadForm() {
+                progressDiv.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-upload"></i> Upload Report';
+                progressBar.style.width = '0%';
+                progressBar.style.background = '#007bff';
+                progressText.textContent = 'Uploading... 0%';
+            }
+            
+            xhr.open('POST', window.location.href);
+            xhr.send(formData);
+        });
+
+        // Drag and drop functionality
+        const fileUploadWrapper = document.querySelector('.file-upload-wrapper');
+        
+        fileUploadWrapper.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+        
+        fileUploadWrapper.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+        });
+        
+        fileUploadWrapper.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('reportFile').files = files;
+                document.getElementById('reportFile').dispatchEvent(new Event('change'));
+            }
+        });
+
+// Modal functions
         function viewBooking(bookingId) {
             if (!bookingId) {
                 alert('Please select a booking to view');
@@ -390,18 +797,19 @@
 
             const modal = document.getElementById('bookingModal');
             const modalBody = document.getElementById('modalBody');
-            const modalTitle = document.getElementById('modalTitle');
-
-            // Show modal with loading spinner
+            
+            // Show loading spinner
             modalBody.innerHTML = `
                 <div class="loading-spinner">
                     <div class="spinner"></div>
+                    <p>Loading booking details...</p>
                 </div>
             `;
+            
+            // Show modal
             modal.classList.add('show');
-            modalTitle.textContent = 'Loading Booking Details...';
-
-            // Fetch booking details via AJAX
+            
+            // Fetch booking details
             fetch(`?ajax=get_booking_details&booking_id=${bookingId}`)
                 .then(response => {
                     if (!response.ok) {
@@ -413,167 +821,107 @@
                     displayBookingDetails(data);
                 })
                 .catch(error => {
-                    console.error('Error:', error);
                     modalBody.innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: #dc3545;">
-                            <i class="fa fa-exclamation-triangle fa-3x" style="margin-bottom: 20px;"></i>
-                            <h3>Error Loading Details</h3>
-                            <p>Unable to load booking details. Please try again.</p>
-                            <button onclick="viewBooking(${bookingId})" class="filter-btn" style="margin-top: 15px;">
-                                <i class="fa fa-refresh"></i> Retry
-                            </button>
+                        <div class="error-message">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            <p>Error loading booking details: ${error.message}</p>
+                            <button onclick="closeModal()" class="btn-primary">Close</button>
                         </div>
                     `;
-                    modalTitle.textContent = 'Error';
                 });
         }
 
         function displayBookingDetails(booking) {
             const modalBody = document.getElementById('modalBody');
-            const modalTitle = document.getElementById('modalTitle');
-
-            modalTitle.textContent = `Booking Information`;
-
+            
             // Parse test details
-            let testsList = '';
+            let testDetailsHtml = '';
             if (booking.test_details) {
                 const tests = booking.test_details.split('|');
-                testsList = tests.map(test => {
-                    const [name, price] = test.split(' - ');
-                    return `
-                        <li class="test-item">
-                            <span class="test-name">${name}</span>
-                            <span class="test-price">${price}</span>
-                        </li>
-                    `;
-                }).join('');
+                testDetailsHtml = tests.map(test => `<li>${test}</li>`).join('');
             }
-
+            
             modalBody.innerHTML = `
                 <div class="booking-details">
-                    <!-- Patient Information -->
                     <div class="detail-section">
                         <h3><i class="fa fa-user"></i> Patient Information</h3>
                         <div class="detail-grid">
                             <div class="detail-item">
-                                <span class="detail-label">Patient Name</span>
-                                <span class="detail-value">${booking.customer_name || 'N/A'}</span>
+                                <label>Name:</label>
+                                <span>${booking.customer_name || 'N/A'}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Phone Number</span>
-                                <span class="detail-value">${booking.phone || 'N/A'}</span>
+                                <label>Phone:</label>
+                                <span>${booking.phone || 'N/A'}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Email</span>
-                                <span class="detail-value">${booking.email || 'N/A'}</span>
+                                <label>Email:</label>
+                                <span>${booking.email || 'N/A'}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Gender</span>
-                                <span class="detail-value">${booking.gender || 'N/A'}</span>
+                                <label>Age:</label>
+                                <span>${booking.age || 'N/A'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Gender:</label>
+                                <span>${booking.gender || 'N/A'}</span>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Booking Information -->
+                    
                     <div class="detail-section">
                         <h3><i class="fa fa-calendar"></i> Booking Information</h3>
                         <div class="detail-grid">
                             <div class="detail-item">
-                                <span class="detail-label">Booking ID</span>
-                                <span class="detail-value">${booking.booking_id}</span>
+                                <label>Booking ID:</label>
+                                <span class="booking-id">${booking.booking_id}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Collection Date</span>
-                                <span class="detail-value">${new Date(booking.sample_collection_date).toLocaleDateString('en-US', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}</span>
+                                <label>Collection Date:</label>
+                                <span>${new Date(booking.sample_collection_date).toLocaleDateString()}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Time Slot</span>
-                                <span class="detail-value">${booking.time_slot || 'N/A'}</span>
+                                <label>Time Slot:</label>
+                                <span>${booking.time_slot}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Status</span>
-                                <span class="detail-value">
-                                    <span class="status-badge status-${booking.status.toLowerCase().replace(' ', '-')}">
-                                        ${booking.status}
-                                    </span>
-                                </span>
+                                <label>Status:</label>
+                                <span class="status-badge status-${booking.status.toLowerCase().replace(/\s+/g, '-')}">${booking.status}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Booking Date</span>
-                                <span class="detail-value">${new Date(booking.created_at).toLocaleDateString('en-US')} at ${new Date(booking.created_at).toLocaleTimeString('en-US')}</span>
+                                <label>Created:</label>
+                                <span>${new Date(booking.created_at).toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Address Information -->
+                    
                     <div class="detail-section">
-                        <h3><i class="fa fa-map-marker-alt"></i> Address Information</h3>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <span class="detail-label">Collection Address</span>
-                                <span class="detail-value">${booking.address || 'N/A'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Area</span>
-                                <span class="detail-value">${booking.area || 'N/A'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Pincode</span>
-                                <span class="detail-value">${booking.pincode || 'N/A'}</span>
-                            </div>
+                        <h3><i class="fa fa-vial"></i> Test Information</h3>
+                        <div class="test-details">
+                            ${testDetailsHtml ? `<ul class="test-list">${testDetailsHtml}</ul>` : '<p>No test details available</p>'}
+                        </div>
+                        <div class="detail-item">
+                            <label>Total Amount:</label>
+                            <span class="amount">₹${parseFloat(booking.total_amount).toFixed(2)}</span>
                         </div>
                     </div>
-
-                    <!-- Test Information -->
+                    
+                    ${booking.address ? `
                     <div class="detail-section">
-                        <h3><i class="fa fa-flask"></i> Test Information</h3>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <span class="detail-label">Total Amount</span>
-                                <span class="detail-value" style="font-size: 1.2rem; color: #007bff; font-weight: 600;">
-                                    ₹${parseFloat(booking.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}
-                                </span>
-                            </div>
-                        </div>
-                        ${testsList ? `
-                            <div style="margin-top: 20px;">
-                                <span class="detail-label">Tests Ordered</span>
-                                <ul class="test-list">
-                                    ${testsList}
-                                </ul>
-                            </div>
-                        ` : ''}
-                    </div>
-
-                    ${booking.special_instructions ? `
-                    <!-- Special Instructions -->
-                    <div class="detail-section">
-                        <h3><i class="fa fa-sticky-note"></i> Special Instructions</h3>
-                        <div class="detail-value" style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef;">
-                            ${booking.special_instructions}
-                        </div>
+                        <h3><i class="fa fa-map-marker"></i> Address</h3>
+                        <p class="address">${booking.address}</p>
                     </div>
                     ` : ''}
-
-                    <!-- Action Buttons -->
-                    <div class="detail-section">
-                        <h3><i class="fa fa-cogs"></i> Actions</h3>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button onclick="updateStatus(${booking.id}, '${booking.status}')" class="filter-btn">
-                                <i class="fa fa-edit"></i> Update Status
-                            </button>
-                            ${booking.status === 'Completed' ? `
-                                <button onclick="viewReport(${booking.id})" class="filter-btn" style="background: #17a2b8;">
-                                    <i class="fa fa-file-medical"></i> View Report
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
+                    
+                </div>
+                
+                <div class="modal-actions">
+                    <button onclick="closeModal()" class="btn-secondary">Close</button>
+                    ${booking.status !== 'Cancelled' && booking.status !== 'Completed' ? `
+                        <button onclick="openStatusUpdateModal(${booking.id}, '${booking.booking_id}', '${booking.customer_name}', '${booking.status}')" class="btn-primary">
+                            <i class="fa fa-edit"></i> Update Status
+                        </button>
+                    ` : ''}
                 </div>
             `;
         }
@@ -583,73 +931,148 @@
             modal.classList.remove('show');
         }
 
+        // Status Update Modal Functions
+        function openStatusUpdateModal(bookingId, bookingIdStr, customerName, currentStatus) {
+            const modal = document.getElementById('statusUpdateModal');
+            const bookingInfo = document.getElementById('statusBookingInfo');
+            const bookingIdInput = document.getElementById('statusBookingId');
+            const statusSelect = document.getElementById('statusSelect');
 
-        // Close modal when clicking outside
-        document.getElementById('bookingModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
+            // Populate booking info
+            bookingInfo.innerHTML = `
+                <div class="status-info-card">
+                    <h4><i class="fa fa-vial"></i> Booking ID: ${bookingIdStr}</h4>
+                    <p><strong>Patient:</strong> ${customerName}</p>
+                    <p><strong>Current Status:</strong> <span class="status-badge status-${currentStatus.toLowerCase().replace(/\s+/g, '-')}">${currentStatus}</span></p>
+                </div>
+            `;
+
+            // Set booking ID
+            bookingIdInput.value = bookingId;
+
+            // Set current status as selected
+            statusSelect.value = currentStatus;
+
+            // Show modal
+            modal.classList.add('show');
+        }
+
+        function closeStatusModal() {
+            const modal = document.getElementById('statusUpdateModal');
+            modal.classList.remove('show');
+        }
+
+        // Handle status update form submission
+        document.getElementById('statusUpdateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('.status-btn-update');
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Updating...';
+            
+            fetch('update-booking-status.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeStatusModal();
+                    location.reload(); // Refresh to show updated status
+                } else {
+                    alert('Update failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Update failed: ' + error.message);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-check"></i> Update Status';
+            });
         });
 
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeModal();
-            }
-        });
-        
-        // Other existing functions
-        function updateStatus(bookingId, currentStatus) {
-            if (!bookingId) {
-                alert('Invalid booking ID');
-                return;
-            }
-            
-            const statuses = ['Pending', 'Confirmed', 'Sample Collected', 'In Progress', 'Completed', 'Cancelled'];
-            const newStatus = prompt(`Update status for booking ${bookingId}:\n\nCurrent Status: ${currentStatus}\n\nEnter new status (${statuses.join(', ')}):`, currentStatus);
-            
-            if (newStatus && newStatus !== currentStatus && statuses.includes(newStatus)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'update-booking-status.php';
+        // Cancel booking function
+        function cancelBooking(bookingId, bookingIdStr) {
+            if (confirm(`Are you sure you want to cancel booking ${bookingIdStr}?`)) {
+                const formData = new FormData();
+                formData.append('booking_id', bookingId);
+                formData.append('status', 'Cancelled');
                 
-                const bookingIdInput = document.createElement('input');
-                bookingIdInput.type = 'hidden';
-                bookingIdInput.name = 'booking_id';
-                bookingIdInput.value = bookingId;
-                
-                const statusInput = document.createElement('input');
-                statusInput.type = 'hidden';
-                statusInput.name = 'status';
-                statusInput.value = newStatus;
-                
-                form.appendChild(bookingIdInput);
-                form.appendChild(statusInput);
-                document.body.appendChild(form);
-                form.submit();
-            } else if (newStatus && !statuses.includes(newStatus)) {
-                alert('Invalid status. Please choose from: ' + statuses.join(', '));
+                fetch('update-booking-status.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Cancel failed: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Cancel failed: ' + error.message);
+                });
             }
         }
-        
-        function clearFilters() {
-            window.location.href = window.location.pathname;
-        }
-        
+
+        // Pagination function
         function goToPage(page) {
             const url = new URL(window.location);
             url.searchParams.set('page', page);
             window.location.href = url.toString();
         }
-        
-        function refreshBookings() {
-            showRefreshIndicator();
-            setTimeout(() => location.reload(), 500);
+
+        // Clear filters function
+        function clearFilters() {
+            const url = new URL(window.location);
+            url.searchParams.delete('search');
+            url.searchParams.delete('date_filter');
+            url.searchParams.delete('status_filter');
+            url.searchParams.delete('page');
+            window.location.href = url.toString();
         }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(e) {
+            const bookingModal = document.getElementById('bookingModal');
+            const uploadModal = document.getElementById('uploadModal');
+            const statusModal = document.getElementById('statusUpdateModal');
+            
+            if (e.target === bookingModal) {
+                closeModal();
+            }
+            if (e.target === uploadModal) {
+                closeUploadModal();
+            }
+            if (e.target === statusModal) {
+                closeStatusModal();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeUploadModal();
+                closeStatusModal();
+            }
+        });
+
+        // Initialize tooltips and other UI enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add any initialization code here
+            console.log('Lab booking system initialized');
+        });
     </script>
+
+    <!-- Add the closing tags -->
 </body>
 </html>
 
 <?php
-$conn->close();
+    $conn->close();
 ?>

@@ -24,6 +24,9 @@
         case 'get_doctor_availability':
             getDoctorAvailability($conn);
             break;
+        case 'check_daily_bookings':
+            checkDailyBookings($conn);
+            break;
         default:
             echo json_encode(['success' => false, 'message' => 'Invalid action']);
     }
@@ -208,7 +211,7 @@
             return;
         }
 
-        // Check for duplicate booking by same patient
+        // Check for duplicate booking by same patient with same doctor on same date
         $duplicate_stmt = $conn->prepare("SELECT id FROM appointments 
                                         WHERE patient_email = ? AND doctor_id = ? 
                                         AND appointment_date = ? AND status != 'cancelled'");
@@ -220,15 +223,15 @@
             return;
         }
 
-        // Rate limiting - check recent bookings by email
-        $rate_stmt = $conn->prepare("SELECT COUNT(*) as count FROM appointments 
-                                    WHERE patient_email = ? AND booking_date >= DATE_SUB(NOW(), INTERVAL 1 HOUR)");
-        $rate_stmt->bind_param("s", $data['email']);
-        $rate_stmt->execute();
-        $rate_data = $rate_stmt->get_result()->fetch_assoc();
+        // UPDATED: Daily booking limit - check appointments for the same day (4 appointments per day limit)
+        $daily_limit_stmt = $conn->prepare("SELECT COUNT(*) as count FROM appointments 
+                                          WHERE patient_email = ? AND appointment_date = ? AND status != 'cancelled'");
+        $daily_limit_stmt->bind_param("ss", $data['email'], $data['date']);
+        $daily_limit_stmt->execute();
+        $daily_data = $daily_limit_stmt->get_result()->fetch_assoc();
         
-        if ($rate_data['count'] >= 3) {
-            echo json_encode(['success' => false, 'message' => 'Too many bookings in the last hour. Please wait before booking again.']);
+        if ($daily_data['count'] >= 4) {
+            echo json_encode(['success' => false, 'message' => 'You have reached the maximum limit of 4 appointments per day. Please choose a different date.']);
             return;
         }
 
@@ -275,6 +278,13 @@
         );
         
         if ($insert_stmt->execute()) {
+            // Get current appointment count for the day to show in response
+            $count_stmt = $conn->prepare("SELECT COUNT(*) as count FROM appointments 
+                                        WHERE patient_email = ? AND appointment_date = ? AND status != 'cancelled'");
+            $count_stmt->bind_param("ss", $data['email'], $data['date']);
+            $count_stmt->execute();
+            $current_count = $count_stmt->get_result()->fetch_assoc()['count'];
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'Appointment booked successfully!',
@@ -284,7 +294,9 @@
                     'doctor_name' => $info['doc_name'],
                     'appointment_date' => date('M d, Y', strtotime($data['date'])),
                     'appointment_time' => date('h:i A', strtotime($data['time'])),
-                    'clinic_name' => $data['clinic']
+                    'clinic_name' => $data['clinic'],
+                    'daily_appointments_count' => $current_count,
+                    'remaining_slots_today' => 4 - $current_count
                 ]
             ]);
         } else {
@@ -337,6 +349,36 @@
             'success' => true,
             'availability' => $availability,
             'doctor_id' => $doctor_id
+        ]);
+    }
+
+    function checkDailyBookings($conn) {
+        $email = $_GET['email'] ?? '';
+        $date = $_GET['date'] ?? '';
+        
+        if (!$email || !$date) {
+            echo json_encode(['success' => false, 'message' => 'Email and date are required']);
+            return;
+        }
+        
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid email address']);
+            return;
+        }
+        
+        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM appointments 
+                              WHERE patient_email = ? AND appointment_date = ? AND status != 'cancelled'");
+        $stmt->bind_param("ss", $email, $date);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = $result->fetch_assoc();
+        
+        echo json_encode([
+            'success' => true,
+            'daily_count' => intval($data['count']),
+            'remaining_slots' => 4 - intval($data['count']),
+            'limit_reached' => intval($data['count']) >= 4,
+            'date' => $date
         ]);
     }
 ?>

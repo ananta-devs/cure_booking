@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Database connection
 $host = 'localhost';
 $dbname = 'cure_booking';
@@ -6,8 +10,9 @@ $username = 'root';
 $password = '';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     sendResponse('error', 'Database connection failed: ' . $e->getMessage());
     exit;
@@ -43,7 +48,7 @@ switch ($action) {
 
 function fetchSpecialities($pdo) {
     try {
-        $stmt = $pdo->prepare("SELECT DISTINCT doc_specia FROM doctor ORDER BY doc_specia");
+        $stmt = $pdo->prepare("SELECT DISTINCT doc_specia FROM doctor WHERE doc_specia IS NOT NULL AND doc_specia != '' ORDER BY doc_specia");
         $stmt->execute();
         $specialities = $stmt->fetchAll(PDO::FETCH_ASSOC);
         sendResponse('success', 'Specialities fetched successfully', $specialities);
@@ -221,6 +226,9 @@ function fetchAvailableSlots($pdo, $doctorId, $clinicId, $date) {
 }
 
 function saveAppointment($pdo) {
+    // Log the received data for debugging
+    error_log("Received POST data: " . print_r($_POST, true));
+    
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         sendResponse('error', 'Invalid request method.');
         return;
@@ -229,23 +237,32 @@ function saveAppointment($pdo) {
     try {
         // Validate required fields
         $requiredFields = ['firstName', 'gender', 'phone', 'email', 'specialityType', 'doctor', 'preferredDate', 'time'];
+        $missingFields = [];
+        
         foreach ($requiredFields as $field) {
-            if (empty($_POST[$field])) {
-                sendResponse('error', ucfirst(str_replace(['_', 'firstName'], [' ', 'name'], $field)) . ' is required.');
-                return;
+            if (!isset($_POST[$field]) || trim($_POST[$field]) === '') {
+                $missingFields[] = $field;
             }
         }
         
+        if (!empty($missingFields)) {
+            sendResponse('error', 'Missing required fields: ' . implode(', ', $missingFields));
+            return;
+        }
+        
+        // Validate email format
         if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
             sendResponse('error', 'Please enter a valid email address.');
             return;
         }
         
+        // Validate date
         if ($_POST['preferredDate'] < date('Y-m-d')) {
             sendResponse('error', 'Please select a future date.');
             return;
         }
         
+        // Extract and validate data
         $doctorId = intval($_POST['doctor']);
         $clinicId = !empty($_POST['clinic']) ? intval($_POST['clinic']) : null;
         $appointmentDate = $_POST['preferredDate'];
@@ -259,17 +276,16 @@ function saveAppointment($pdo) {
         ];
         
         if (!isset($timeSlotMapping[$appointmentTime])) {
-            sendResponse('error', 'Invalid time slot selected.');
+            sendResponse('error', 'Invalid time slot selected: ' . $appointmentTime);
             return;
         }
         
         $actualTime = $timeSlotMapping[$appointmentTime];
         
-        // Verify doctor exists (using doc_id as primary key)
+        // Verify doctor exists
         $stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia FROM doctor WHERE doc_id = :id");
-        $stmt->bindParam(':id', $doctorId, PDO::PARAM_INT);
-        $stmt->execute();
-        $doctor = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->execute([':id' => $doctorId]);
+        $doctor = $stmt->fetch();
         
         if (!$doctor) {
             sendResponse('error', "Selected doctor does not exist. Doctor ID: $doctorId");
@@ -280,9 +296,8 @@ function saveAppointment($pdo) {
         $clinic = null;
         if ($clinicId) {
             $stmt = $pdo->prepare("SELECT clinic_id, clinic_name FROM clinics WHERE clinic_id = :id AND status = 'active'");
-            $stmt->bindParam(':id', $clinicId, PDO::PARAM_INT);
-            $stmt->execute();
-            $clinic = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->execute([':id' => $clinicId]);
+            $clinic = $stmt->fetch();
             
             if (!$clinic) {
                 sendResponse('error', "Selected clinic does not exist or is not active. Clinic ID: $clinicId");
@@ -290,13 +305,8 @@ function saveAppointment($pdo) {
             }
             
             // Verify doctor-clinic assignment
-            $stmt = $pdo->prepare("
-                SELECT COUNT(*) FROM doctor_clinic_assignments 
-                WHERE doctor_id = :doctor_id AND clinic_id = :clinic_id
-            ");
-            $stmt->bindParam(':doctor_id', $doctorId, PDO::PARAM_INT);
-            $stmt->bindParam(':clinic_id', $clinicId, PDO::PARAM_INT);
-            $stmt->execute();
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM doctor_clinic_assignments WHERE doctor_id = :doctor_id AND clinic_id = :clinic_id");
+            $stmt->execute([':doctor_id' => $doctorId, ':clinic_id' => $clinicId]);
             $assignmentExists = $stmt->fetchColumn();
             
             if ($assignmentExists == 0) {
@@ -305,35 +315,17 @@ function saveAppointment($pdo) {
             }
         }
         
-        // Check if slot is already booked
+        // Modified conflict check - remove the unique constraint check that was causing issues
+        $conflictQuery = "SELECT COUNT(*) FROM appointments WHERE doctor_id = :doctor_id AND appointment_date = :date AND appointment_time = :time AND status NOT IN ('cancelled')";
+        $conflictParams = [':doctor_id' => $doctorId, ':date' => $appointmentDate, ':time' => $actualTime];
+        
         if ($clinicId) {
-            $stmt = $pdo->prepare("
-                SELECT COUNT(*) FROM appointments 
-                WHERE doctor_id = :doctor_id 
-                AND clinic_id = :clinic_id 
-                AND appointment_date = :date 
-                AND appointment_time = :time 
-                AND status NOT IN ('cancelled')
-            ");
-            $stmt->bindParam(':doctor_id', $doctorId, PDO::PARAM_INT);
-            $stmt->bindParam(':clinic_id', $clinicId, PDO::PARAM_INT);
-            $stmt->bindParam(':date', $appointmentDate);
-            $stmt->bindParam(':time', $actualTime);
-        } else {
-            $stmt = $pdo->prepare("
-                SELECT COUNT(*) FROM appointments 
-                WHERE doctor_id = :doctor_id 
-                AND appointment_date = :date 
-                AND appointment_time = :time 
-                AND status NOT IN ('cancelled')
-                AND clinic_id IS NULL
-            ");
-            $stmt->bindParam(':doctor_id', $doctorId, PDO::PARAM_INT);
-            $stmt->bindParam(':date', $appointmentDate);
-            $stmt->bindParam(':time', $actualTime);
+            $conflictQuery .= " AND clinic_id = :clinic_id";
+            $conflictParams[':clinic_id'] = $clinicId;
         }
         
-        $stmt->execute();
+        $stmt = $pdo->prepare($conflictQuery);
+        $stmt->execute($conflictParams);
         $existingCount = $stmt->fetchColumn();
         
         if ($existingCount > 0) {
@@ -348,7 +340,7 @@ function saveAppointment($pdo) {
         $bookedByEmail = $_SESSION['adm_email'] ?? 'admin@system.com';
         $bookedByName = $_SESSION['adm_name'] ?? 'System Admin';
         
-        // Prepare the insert statement
+        // Insert appointment
         $sql = "INSERT INTO appointments (
             doctor_id, 
             doctor_name, 
@@ -358,7 +350,7 @@ function saveAppointment($pdo) {
             patient_name, 
             patient_phone, 
             patient_email, 
-            patient_gender,
+            gender,
             appointment_date, 
             appointment_time, 
             booked_by_email, 
@@ -389,40 +381,44 @@ function saveAppointment($pdo) {
         if ($result) {
             $appointmentId = $pdo->lastInsertId();
             
-            // Prepare success message with appointment details
+            // Prepare success message
             $clinicText = $clinic ? " at " . $clinic['clinic_name'] : "";
             $timeText = date('g:i A', strtotime($actualTime));
             $dateText = date('F j, Y', strtotime($appointmentDate));
             
-            $message = "Your appointment has been booked successfully! " .
-                      "Appointment ID: $appointmentId. " .
+            $message = "Appointment booked successfully! " .
+                      "ID: $appointmentId | " .
                       "Dr. {$doctor['doc_name']} ({$doctor['doc_specia']}) " .
-                      "on $dateText at $timeText$clinicText.";
+                      "on $dateText at $timeText$clinicText";
             
             sendResponse('success', $message);
         } else {
             $errorInfo = $stmt->errorInfo();
-            sendResponse('error', 'Failed to book appointment. Error: ' . implode(' ', $errorInfo));
+            error_log("SQL Error: " . print_r($errorInfo, true));
+            sendResponse('error', 'Failed to book appointment. SQL Error: ' . implode(' ', $errorInfo));
         }
         
     } catch (PDOException $e) {
         error_log("Database error in saveAppointment: " . $e->getMessage());
+        error_log("SQL State: " . $e->getCode());
         
-        // Handle specific foreign key constraint errors
+        // Handle specific database errors
         if ($e->getCode() == '23000') {
-            if (strpos($e->getMessage(), 'fk_appointments_doctor') !== false) {
-                sendResponse('error', 'Selected doctor is not valid. Please refresh the page and try again.');
+            if (strpos($e->getMessage(), 'unique_appointment_slot') !== false) {
+                sendResponse('error', 'This time slot is already booked. Please select another time.');
+            } elseif (strpos($e->getMessage(), 'fk_appointments_doctor') !== false) {
+                sendResponse('error', 'Selected doctor is not valid. Please refresh and try again.');
             } elseif (strpos($e->getMessage(), 'fk_appointments_clinic') !== false) {
-                sendResponse('error', 'Selected clinic is not valid. Please refresh the page and try again.');
+                sendResponse('error', 'Selected clinic is not valid. Please refresh and try again.');
             } else {
-                sendResponse('error', 'Invalid data provided. Please check your selections and try again.');
+                sendResponse('error', 'Database constraint error: ' . $e->getMessage());
             }
         } else {
-            sendResponse('error', 'Database error occurred. Please try again later.');
+            sendResponse('error', 'Database error: ' . $e->getMessage());
         }
     } catch (Exception $e) {
         error_log("General error in saveAppointment: " . $e->getMessage());
-        sendResponse('error', 'An unexpected error occurred. Please try again later.');
+        sendResponse('error', 'An unexpected error occurred: ' . $e->getMessage());
     }
 }
 
@@ -438,11 +434,9 @@ function fetchDoctorClinicSchedule($pdo, $doctorId, $clinicId) {
             FROM doctor_clinic_assignments 
             WHERE doctor_id = :doctor_id AND clinic_id = :clinic_id
         ");
-        $stmt->bindParam(':doctor_id', $doctorId);
-        $stmt->bindParam(':clinic_id', $clinicId);
-        $stmt->execute();
+        $stmt->execute([':doctor_id' => $doctorId, ':clinic_id' => $clinicId]);
         
-        $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
+        $schedule = $stmt->fetch();
         
         if ($schedule) {
             sendResponse('success', 'Doctor-clinic schedule fetched successfully', $schedule);
@@ -457,7 +451,18 @@ function fetchDoctorClinicSchedule($pdo, $doctorId, $clinicId) {
 
 function sendResponse($status, $message, $data = null) {
     header('Content-Type: application/json');
-    echo json_encode(['status' => $status, 'message' => $message, 'data' => $data]);
+    header('Cache-Control: no-cache, must-revalidate');
+    
+    $response = [
+        'status' => $status, 
+        'message' => $message
+    ];
+    
+    if ($data !== null) {
+        $response['data'] = $data;
+    }
+    
+    echo json_encode($response);
     exit;
 }
 ?>
