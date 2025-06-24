@@ -136,7 +136,7 @@
                                     <div class="form-row">
                                         <div class="form-group col-md-6">
                                             <label for="bookingClinicName">Clinic Name:</label>
-                                            <input type="text" id="bookingClinicName" name="clinic_name" readonly class="form-control-readonly">
+                                            <input type="text" id="bookingClinicName" name="clinic_name" readonly class="form-control-readonly" placeholder="Current Clinic">
                                         </div>
                                         <div class="form-group col-md-6">
                                             <label for="bookingDoctorName">Doctor Name:</label>
