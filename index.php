@@ -1,59 +1,66 @@
 <?php
-    // Database connection
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "cure_booking";
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "cure_booking";
 
-    try {
-        $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    } catch(PDOException $e) {
-        die("Connection failed: " . $e->getMessage());
-    }
+try {
+    $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
+}
 
-    // Fetch doctors from database (limit to 6 for the homepage)
-    $stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia, doc_img, fees FROM doctor LIMIT 6");
-    $stmt->execute();
-    $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Fetch doctors from database (limit to 6 for the homepage)
+$stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia, doc_img, fees FROM doctor LIMIT 6");
+$stmt->execute();
+$doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CureBooking | Find Doctors & Book Appointments Online</title>
-    <!-- <link rel="icon" href="assets/logo.png"> -->
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="chatbot.css">
-
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <?php include './include/header.php'; ?>
-    
+
     <!-- Hero Section -->
     <section class="hero">
-        <div class="container">
-            <div class="hero-content">
+        <div class="container hero-inner">
+            <div class="hero-content" data-aos="fade-up">
                 <h1>Your Health, Our Priority</h1>
                 <p>Find and book appointments with doctors, get online consultation, order medicines, book lab tests, and more.</p>
-                
-                <div class="search-box">
+
+                <div class="search-box" data-aos="flip-down">
                     <input type="text" class="search-input" placeholder="Search doctors, clinics etc.">
                     <button class="search-btn">Search</button>
                 </div>
             </div>
+
+            <div class="model" data-aos="fade-left">
+                <img src="http://localhost/cure_booking/assets/appointment_img2.png" />
+            </div>
         </div>
     </section>
 
+
     <!-- Services Section -->
-    <section class="services">
+    <section class="services" data-aos="fade-up">
         <div class="container">
             <h2 class="section-title">Our Services</h2>
             <div class="services-grid">
-                <div class="service-card">
+                <div class="service-card" data-aos="fade-up">
                     <a href="http://localhost/cure_booking/find-doctor/doctors.php">
                         <div class="service-img">
                             <img src="http://localhost/cure_booking/assets/doctor-img.jpg" alt="Find Doctors Near You">
@@ -64,8 +71,8 @@
                         </div>
                     </a>
                 </div>
-                
-                <div class="service-card">
+
+                <div class="service-card" data-aos="fade-up">
                     <a href="http://localhost/cure_booking/medicines/medicines.php">
                         <div class="service-img">
                             <img src="http://localhost/cure_booking/assets/medicine-img.jpg" alt="Medicines">
@@ -76,8 +83,8 @@
                         </div>
                     </a>
                 </div>
-                
-                <div class="service-card">
+
+                <div class="service-card" data-aos="fade-up">
                     <a href="http://localhost/cure_booking/find-doctor/doctors.php">
                         <div class="service-img">
                             <img src="http://localhost/cure_booking/assets/lab-img.jpg" alt="Lab Tests">
@@ -89,7 +96,7 @@
                     </a>
                 </div>
 
-                <div class="service-card">
+                <div class="service-card" data-aos="fade-up">
                     <a href="http://localhost/cure_booking/surgery/surgery.php">
                         <div class="service-img">
                             <img src="http://localhost/cure_booking/assets/surgery-img.jpg" alt="Surgery">
@@ -105,16 +112,16 @@
     </section>
 
     <!-- Doctors Section -->
-    <section class="doctors">
+    <section class="doctors" data-aos="fade-up">
         <div class="container">
             <h2 class="section-title">Popular Doctors</h2>
             <div class="doctors-grid">
                 <?php if (!empty($doctors)): ?>
                     <?php foreach ($doctors as $doctor): ?>
-                        <div class="doctor-card">
+                        <div class="doctor-card" data-aos="fade-up">
                             <div class="doctor-img">
                                 <?php if (!empty($doctor['doc_img'])): ?>
-                                    <img src="http://localhost/adminhub/manage-doctors/uploads/<?php echo htmlspecialchars($doctor['doc_img']); ?>" 
+                                    <img src="http://localhost/adminhub/manage-doctors/uploads/<?php echo htmlspecialchars($doctor['doc_img']); ?>"
                                         alt="<?php echo htmlspecialchars($doctor['doc_name']); ?>">
                                 <?php endif; ?>
                             </div>
@@ -125,7 +132,7 @@
                         </div>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <div class="doctor-card">
+                    <div class="doctor-card" data-aos="fade-up">
                         <div class="doctor-img">
                             <img src="assets/icons/cardiology.png" alt="Doctor">
                         </div>
@@ -135,7 +142,13 @@
                     </div>
                 <?php endif; ?>
             </div>
-            <a href="http://localhost/cure_booking/find-doctor/doctors.php" class="all-docs-btn"><u>View All Doctors</u></a>
+            <div class="all-docs-wrapper" data-aos="fade-up">
+                <form action="http://localhost/cure_booking/find-doctor/doctors.php" method="get">
+                    <button type="submit" class="all-docs-btn">View All Doctors</button>
+                </form>
+            </div>
+
+            <!----<a href="http://localhost/cure_booking/find-doctor/doctors.php" class="all-docs-btn" data-aos="fade-up"><u>View All Doctors</u></a>--->
         </div>
     </section>
 
@@ -144,7 +157,7 @@
         <div class="container app-container">
             <div class="app-content">
                 <h2>Download the CureBooking App</h2>
-                <p>Book appointments, order medicines, consult with doctors, 
+                <p>Book appointments, order medicines, consult with doctors,
                     and manage your health records - all from the convenience of your smartphone.</p>
                 <div class="app-buttons">
                     <a href="#" class="app-btn">
@@ -168,7 +181,12 @@
     </section>
 
     <!-- Chatbot -->
-    <div class="chatbot-container">
+    <div class="chatbot-container"
+        data-aos="fade-left"
+        data-aos-duration="1000"
+        data-aos-once="true"
+        data-aos-offset="0"
+        data-aos-anchor-placement="top-bottom">
         <button class="chatbot-toggle" id="chatbotToggle">💬</button>
         <div class="chatbot-window" id="chatbotWindow">
             <div class="chatbot-header">
@@ -205,6 +223,13 @@
     </div>
 
     <?php include './include/footer.php'; ?>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            once: true,
+            duration: 1000
+        });
+    </script>
     <script>
         class Chatbot {
             constructor() {
@@ -287,8 +312,8 @@
 
                 // Close chatbot when clicking outside
                 document.addEventListener('click', (e) => {
-                    if (!this.chatbotWindow.contains(e.target) && 
-                        !this.chatbotToggle.contains(e.target) && 
+                    if (!this.chatbotWindow.contains(e.target) &&
+                        !this.chatbotToggle.contains(e.target) &&
                         this.chatbotWindow.classList.contains('open')) {
                         this.closeChatbot();
                     }
@@ -317,7 +342,7 @@
 
             sendQuickMessage(message) {
                 if (!message) return;
-                
+
                 this.addMessage(message, 'user');
                 this.showTypingAndRespond(message);
             }
@@ -346,7 +371,7 @@
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${sender}`;
                 messageDiv.innerHTML = `<div class="message-content">${message}</div>`;
-                
+
                 this.chatbotMessages.appendChild(messageDiv);
                 this.scrollToBottom();
             }
@@ -369,11 +394,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing chatbot...');
             const chatbot = new Chatbot();
-            
+
             // Make it globally available for debugging
             window.chatbot = chatbot;
             console.log('Chatbot initialized successfully');
         });
     </script>
 </body>
+
 </html>

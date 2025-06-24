@@ -5,20 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy - CureBooking</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
 </head>
 <body>
     <?php include '../include/header.php'; ?>
     <div class="container">
         <div class="content-wrapper">
-            <h2 class="section-title">Privacy Policy</h2>
+            <h2 class="section-title" data-aos="fade-up">Privacy Policy</h2>
             
-            <div class="highlight-box">
+            <div class="highlight-box" data-aos="fade-up">
                 <h4>🔒 Our Healthcare Privacy Commitment</h4>
                 <p>At CureBooking, we are committed to protecting your health information and personal data in accordance with HIPAA, GDPR, and other applicable privacy laws. This policy explains how we collect, use, and safeguard your medical and personal information when you use our healthcare appointment booking platform.</p>
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>1. Overview</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -29,7 +30,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>2. Health Information We Collect</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -59,7 +60,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>3. How We Use Your Health Information</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -82,7 +83,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>4. Health Information Sharing</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -102,7 +103,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>5. Healthcare Data Security</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -125,7 +126,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>6. Your Healthcare Privacy Rights</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -146,7 +147,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>7. Telehealth & Remote Monitoring</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -164,7 +165,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>8. Minors and Healthcare Privacy</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -177,7 +178,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>9. International Health Data Transfers</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -195,7 +196,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>10. Health Data Retention</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -214,7 +215,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>11. Policy Updates & Notifications</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -231,7 +232,7 @@
             </div>
 
             <div class="privacy-item">
-                <div class="privacy-question" onclick="togglePrivacy(this)">
+                <div class="privacy-question" data-aos="fade-up" onclick="togglePrivacy(this)">
                     <span>12. Contact Information & Complaints</span>
                     <span class="privacy-icon">+</span>
                 </div>
@@ -246,7 +247,7 @@
                 </div>
             </div>
 
-            <div class="contact-info">
+            <div class="contact-info"  data-aos="fade" data-aos-delay="300">
                 <h4>Healthcare Privacy & HIPAA Compliance</h4>
                 <p>📧 Privacy Officer: privacy@curebooking.com</p>
                 <p>📧 HIPAA Compliance: hipaa@curebooking.com</p>
@@ -316,6 +317,14 @@
                     this.style.outline = 'none';
                 });
             });
+        });
+    </script>
+    <!---AOS Library --->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            once: true,
+            duration: 1000,
         });
     </script>
 </body>

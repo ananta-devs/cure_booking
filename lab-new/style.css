@@ -18,6 +18,34 @@
   gap: 10px;
 }
 
+.modal-content {
+    position: relative; 
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #fff;
+    width: 100%;
+    max-width: 500px;
+    margin: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content .close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;        
+    font-weight: bold;
+    color: #3b82f6;          
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.2s ease;
+    z-index: 1000;
+}
+
+.modal-content .close:hover {
+    color: #ef4444;           
+    transform: scale(1.2);    
+}
+
 .cart-actions {
   display: flex;
   gap: 10px;
@@ -34,12 +62,12 @@
 }
 
 .primary-btn {
-  background-color: #512da8;
+  background-color: #3b82f6;
   color: white;
 }
 
 .primary-btn:hover {
-  background-color: #351189;
+  background-color: #3b82f6;
 }
 
 .secondary-btn {
@@ -118,7 +146,7 @@
 
 .cart-item-price {
   font-weight: 600;
-  color: #512da8;
+  color: #3b82f6;
   min-width: 60px;
   text-align: right;
 }
@@ -154,7 +182,7 @@
 
 .cart-total-section h3 {
   font-size: 20px;
-  color: #512da8;
+  color: #3b82f6;
 }
 
 .cart-buttons {
@@ -195,7 +223,7 @@
   border-top: 2px solid #ddd;
   text-align: center;
   font-size: 18px;
-  color: #512da8;
+  color: #3b82f6;
 }
 
 /* Button Container */
@@ -207,7 +235,7 @@
 
 .add-to-cart-btn {
   flex: 1;
-  background-color: #512da8;
+  background-color: #3b82f6;
   color: white;
   border: none;
   padding: 12px;
@@ -218,7 +246,7 @@
 }
 
 .add-to-cart-btn:hover {
-  background-color: #351189;
+  background-color: #3b82f6;
 }
 
 /* Notification Styles */

@@ -6,12 +6,13 @@
     <title>Contact Us | CureBooking</title>
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="stylesheet" href="style.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
 <body>
     <?php include '../include/header.php'; ?> 
 
     <!-- Hero Section -->
-    <section class="hero">
+    <section class="hero" data-aos="fade-up">
         <div class="container">
             <h1>Contact Us</h1>
             <p>We're here to help you with any questions or concerns. Get in touch with our support team.</p>
@@ -23,11 +24,11 @@
         <div class="container">
             <div class="contact-grid">
                 <!-- Contact Information -->
-                <div class="contact-info-wrapper">
+                <div class="contact-info-wrapper" data-aos="fade-right">
                     <div class="contact-info">
                         <h3>Get in Touch</h3>
                         
-                        <div class="contact-item">
+                        <div class="contact-item" data-aos="fade-up">
                             <div class="contact-icon">📍</div>
                             <div class="contact-details">
                                 <h4>Our Office</h4>
@@ -35,7 +36,7 @@
                             </div>
                         </div>
 
-                        <div class="contact-item">
+                        <div class="contact-item" data-aos="fade-up" data-aos-delay="100">
                             <div class="contact-icon">📞</div>
                             <div class="contact-details">
                                 <h4>Phone Support</h4>
@@ -43,7 +44,7 @@
                             </div>
                         </div>
 
-                        <div class="contact-item">
+                        <div class="contact-item" data-aos="fade-up" data-aos-delay="200">
                             <div class="contact-icon">📧</div>
                             <div class="contact-details">
                                 <h4>Email Support</h4>
@@ -51,7 +52,7 @@
                             </div>
                         </div>
 
-                        <div class="contact-item">
+                        <div class="contact-item" data-aos="fade-up" data-aos-delay="300">
                             <div class="contact-icon">💬</div>
                             <div class="contact-details">
                                 <h4>Live Chat</h4>
@@ -62,7 +63,7 @@
                 </div>
 
                 <!-- Contact Form -->
-                <div class="contact-form">
+                <div class="contact-form" data-aos="fade-left">
                     <h3>Send Us a Message</h3>
                     <form id="contactForm">
                         <div class="form-row">
@@ -115,7 +116,10 @@
     
     <?php include '../include/footer.php'; ?>
 
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
+        AOS.init({ duration: 1000, once: true });
+
         // Contact Form Submission
         document.getElementById('contactForm').addEventListener('submit', function(e) {
             e.preventDefault();

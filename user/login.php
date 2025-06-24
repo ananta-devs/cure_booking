@@ -67,7 +67,7 @@
         }
 
         .container button {
-        background-color: #512da8;
+        background-color: #3b82f6;
         color: #fff;
         font-size: 12px;
         padding: 10px 45px;
@@ -175,12 +175,12 @@
         }
 
         .otp-input:focus {
-        border-color: #512da8;
+        border-color: #3b82f6;
         background-color: #fff;
         }
 
         .resend-otp {
-        color: #512da8;
+        color: #3b82f6;
         text-decoration: underline;
         cursor: pointer;
         font-size: 12px;
@@ -188,7 +188,7 @@
         }
 
         .resend-otp:hover {
-        color: #3f1a8b;
+        color: #3b82f6;
         }
 
         .timer {
@@ -243,9 +243,9 @@
         }
 
         .toggle {
-        background-color: #512da8;
+        background-color: #3b82f6;
         height: 100%;
-        background: linear-gradient(to right, #5c6bc0, #512da8);
+        background: linear-gradient(to right, #3b82f6, #2563eb);
         color: #fff;
         position: relative;
         left: -100%;
@@ -359,7 +359,7 @@
         }
 
         .mobile-toggle a {
-            color: #512da8;
+            color: #3b82f6;
             font-weight: 600;
         }
 
