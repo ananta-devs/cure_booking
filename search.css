@@ -1,0 +1,208 @@
+.search-box {
+    position: relative;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 8px;
+}
+
+.search-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+    background-color: #f8f9fa;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.result-info {
+    flex: 1;
+}
+
+.result-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.result-specialty {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.result-location {
+    color: #888;
+    font-size: 12px;
+}
+
+.result-type {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.result-type.clinic {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.result-fee {
+    font-weight: 600;
+    color: #2e7d32;
+}
+
+.search-loading,
+.no-results,
+.error-message {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+}
+
+.error-message {
+    color: #d32f2f;
+}
+
+.details-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.details-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.details-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 18px;
+    z-index: 1;
+}
+
+.details-card {
+    padding: 24px;
+}
+
+.details-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.details-avatar {
+    font-size: 48px;
+    margin-right: 16px;
+}
+
+.details-info h2 {
+    margin: 0;
+    color: #333;
+}
+
+.details-info p {
+    margin: 4px 0 0 0;
+    color: #666;
+}
+
+.details-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.detail-item h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.detail-item p {
+    margin: 0;
+    color: #666;
+}
+
+.clinic-list {
+    margin-top: 24px;
+}
+
+.clinic-list h3 {
+    margin: 0 0 16px 0;
+    color: #333;
+}
+
+.clinic-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.clinic-info h4 {
+    margin: 0 0 4px 0;
+    color: #333;
+}
+
+.clinic-info p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.clinic-badge {
+    background: #e8f5e8;
+    color: #2e7d32;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}

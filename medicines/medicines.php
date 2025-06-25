@@ -1,30 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search your medicines by typing brand</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
 </head>
+
 <body>
     <?php
-        session_start();
-        $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
-        include '../include/header.php';
-        include '../styles.php';
+    session_start();
+    $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
+    include '../include/header.php';
+    include '../styles.php';
     ?>
-    
+
     <script>
         const USER_LOGGED_IN = <?php echo json_encode($isLoggedIn); ?>;
     </script>
-    
-    <section class="hero">
+
+    <section class="hero" data-aos="fade-up">
         <div class="container">
             <h1>Your Trusted Partner in Health & Wellness.</h1>
             <p>Find all your prescription medications, supplements, and healthcare essentials at competitive prices.</p>
             <form class="search-container">
-                <input type="text" id="search-bar" placeholder="Search for medicines..."/>
+                <input type="text" id="search-bar" placeholder="Search for medicines..." />
                 <button type="submit" aria-label="Search"><i class="ri-search-line"></i></button>
             </form>
         </div>
@@ -40,17 +43,17 @@
                 </div>
             </div>
         </div>
-        
-        <br>            
+
+        <br>
         <div id="loading" class="loading-indicator hidden">Loading medicines data...</div>
         <div id="error-message" class="error-message hidden"></div>
         <div id="results-container" class="results-container"></div>
-        
+
         <div class="pagination-container">
             <button id="load-more-btn" class="hidden">Load More</button>
         </div>
     </div>
-    
+
     <!-- Cart Modal -->
     <div id="cartModal" class="modal">
         <div class="modal-content">
@@ -68,7 +71,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Order Modal -->
     <div id="orderModal" class="modal">
         <div class="modal-content">
@@ -96,7 +99,7 @@
             </form>
         </div>
     </div>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Cache DOM elements
@@ -118,26 +121,26 @@
                 orderSummary: $('order-summary'),
                 orderForm: $('orderForm')
             };
-            
+
             const API_ENDPOINT = 'medicine_api.php';
             let allMedicines = [];
             let currentSearchResults = [];
             let currentPage = 1;
             const itemsPerPage = 9;
             let cart = [];
-            
+
             // Initialize
             loadMedicinesData();
             updateCartDisplay();
             setupEventListeners();
-            
+
             function setupEventListeners() {
                 // Search
                 elements.searchForm?.addEventListener('submit', e => {
                     e.preventDefault();
                     initiateSearch();
                 });
-                
+
                 elements.searchInput.addEventListener('keypress', e => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -158,7 +161,7 @@
                 document.querySelectorAll('.modal .close').forEach(btn => {
                     btn.addEventListener('click', () => closeModal(btn.getAttribute('data-modal')));
                 });
-                
+
                 window.addEventListener('click', event => {
                     if (event.target === elements.cartModal) closeModal('cart');
                     else if (event.target === elements.orderModal) closeModal('order');
@@ -181,7 +184,7 @@
                 const modal = type === 'cart' ? elements.cartModal : elements.orderModal;
                 if (type === 'cart') updateCartModal();
                 else updateOrderSummary();
-                
+
                 modal.style.display = 'block';
                 document.body.style.overflow = 'hidden';
             }
@@ -194,12 +197,12 @@
 
             function handleOrderSubmit(e) {
                 e.preventDefault();
-                
+
                 if (!checkLoginStatus() || cart.length === 0) {
                     if (cart.length === 0) alert('Your cart is empty!');
                     return;
                 }
-                
+
                 const formData = new FormData(elements.orderForm);
                 formData.append('cart', JSON.stringify(cart.map(item => ({
                     name: item.name,
@@ -207,13 +210,16 @@
                     quantity: item.quantity
                 }))));
                 formData.append('totalAmount', calculateCartTotal());
-                
+
                 const submitBtn = elements.orderForm.querySelector('button[type="submit"]');
                 const originalText = submitBtn.textContent;
                 submitBtn.textContent = 'Processing...';
                 submitBtn.disabled = true;
-                
-                fetch(API_ENDPOINT, { method: 'POST', body: formData })
+
+                fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        body: formData
+                    })
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'success') {
@@ -235,7 +241,7 @@
             // Cart functions
             function addToCart(medicine) {
                 if (!checkLoginStatus()) return;
-                
+
                 const existingItem = cart.find(item => item.id === medicine.id);
                 if (existingItem) {
                     existingItem.quantity += 1;
@@ -249,7 +255,7 @@
                         quantity: 1
                     });
                 }
-                
+
                 updateCartDisplay();
                 updateAllCartButtons();
                 showNotification(`${medicine.name} added to cart!`);
@@ -261,11 +267,11 @@
                 updateCartModal();
                 updateAllCartButtons();
             }
-            
+
             function updateQuantity(medicineId, newQuantity) {
                 const item = cart.find(item => item.id === medicineId);
                 if (!item) return;
-                
+
                 if (newQuantity <= 0) {
                     removeFromCart(medicineId);
                 } else {
@@ -275,7 +281,7 @@
                     updateAllCartButtons();
                 }
             }
-            
+
             function clearCart() {
                 cart = [];
                 updateCartDisplay();
@@ -286,15 +292,15 @@
             function calculateCartTotal() {
                 return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
             }
-            
+
             function updateCartDisplay() {
                 const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
                 const total = calculateCartTotal();
-                
+
                 elements.cartCount.textContent = totalItems;
                 elements.cartTotal.textContent = total.toFixed(0);
                 elements.modalCartTotal.textContent = total.toFixed(0);
-                
+
                 elements.cartSummary.classList.toggle('hidden', totalItems === 0 || !USER_LOGGED_IN);
             }
 
@@ -311,20 +317,21 @@
                     button.classList.remove('added-to-cart');
                     return;
                 }
-                
+
                 const isInCart = cart.some(item => item.id == medicineId);
-                button.innerHTML = isInCart ? 
-                    '<i class="ri-check-line"></i> Added' : 
+                button.innerHTML = isInCart ?
+                    '<i class="ri-check-line"></i> Added' :
                     '<i class="ri-shopping-cart-line"></i> Add to Cart';
                 button.classList.toggle('added-to-cart', isInCart);
             }
-            
+
             function updateCartModal() {
                 if (cart.length === 0) {
                     elements.cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
                     return;
                 }
-                
+
+                // Inject dynamic HTML with AOS attributes
                 elements.cartItemsContainer.innerHTML = cart.map(item => `
                     <div class="cart-item">
                         <div class="cart-item-info">
@@ -339,25 +346,26 @@
                                 <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
                             </div>
                             <div class="cart-item-price">₹${(item.price * item.quantity).toFixed(0)}</div>
-                            <button class="remove-btn" onclick="removeFromCart(${item.id})">&times;</button>
+                                <button class="remove-btn" onclick="removeFromCart(${item.id})">&times;</button>
                         </div>
                     </div>
                 `).join('');
+
             }
-            
+
             function updateOrderSummary() {
                 if (cart.length === 0) {
                     elements.orderSummary.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
                     return;
                 }
-                
+
                 const itemsList = cart.map(item => `
                     <div class="order-item">
                         <span class="order-item-name">${item.name} x${item.quantity}</span>
                         <span class="order-item-price">₹${(item.price * item.quantity).toFixed(0)}</span>
                     </div>
                 `).join('');
-                
+
                 elements.orderSummary.innerHTML = `
                     <div class="order-summary-container">
                         <h3>Order Summary</h3>
@@ -368,7 +376,7 @@
                     </div>
                 `;
             }
-            
+
             function showNotification(message) {
                 const notification = document.createElement('div');
                 notification.className = 'notification';
@@ -376,7 +384,7 @@
                 document.body.appendChild(notification);
                 setTimeout(() => notification.remove(), 3000);
             }
-            
+
             // Make functions globally available
             window.updateQuantity = updateQuantity;
             window.removeFromCart = removeFromCart;
@@ -389,10 +397,10 @@
                 try {
                     const response = await fetch(API_ENDPOINT);
                     if (!response.ok) throw new Error('Failed to load medicines data');
-                    
+
                     const data = await response.json();
                     if (data.error) throw new Error(data.message || 'Error loading data');
-                    
+
                     allMedicines = data.medicines || [];
                     displayRandomMedicines();
                 } catch (error) {
@@ -416,7 +424,7 @@
                     return;
                 }
                 if (query.length < 1) return;
-                
+
                 currentPage = 1;
                 performSearch(query);
             }
@@ -424,26 +432,26 @@
             async function performSearch(query) {
                 showLoading();
                 clearError();
-                
+
                 try {
                     const response = await fetch(`${API_ENDPOINT}?query=${encodeURIComponent(query)}`);
                     if (!response.ok) throw new Error('Search request failed');
-                    
+
                     const data = await response.json();
                     if (data.error) throw new Error(data.message || 'Error during search');
-                    
+
                     currentSearchResults = data.medicines || [];
-                    
+
                     if (currentSearchResults.length === 0) {
                         showError('No medicines found. Try a different search term.');
                         clearResults();
                         elements.loadMoreBtn.classList.add('hidden');
                         return;
                     }
-                    
+
                     const resultsForPage = currentSearchResults.slice(0, itemsPerPage);
                     displayResults(resultsForPage, currentSearchResults.length, query);
-                    
+
                     elements.loadMoreBtn.classList.toggle('hidden', currentSearchResults.length <= itemsPerPage);
                 } catch (error) {
                     showError('Error performing search: ' + error.message);
@@ -457,11 +465,11 @@
                 const startIndex = (currentPage - 1) * itemsPerPage;
                 const endIndex = startIndex + itemsPerPage;
                 const nextPageResults = currentSearchResults.slice(startIndex, endIndex);
-                
+
                 nextPageResults.forEach(medicine => {
                     elements.resultsContainer.appendChild(createMedicineCard(medicine));
                 });
-                
+
                 if (endIndex >= currentSearchResults.length) {
                     elements.loadMoreBtn.classList.add('hidden');
                 }
@@ -473,17 +481,17 @@
                     showError('No medicines found. Try a different search term.');
                     return;
                 }
-                
+
                 // Only show count if there's a search query
                 if (query.trim()) {
                     displaySearchResultsCount(totalCount || medicines.length, query);
                 }
-                
+
                 medicines.forEach(medicine => {
                     elements.resultsContainer.appendChild(createMedicineCard(medicine));
                 });
             }
-            
+
             function displaySearchResultsCount(count, query = '') {
                 const resultsCount = document.createElement('div');
                 resultsCount.id = 'results-count';
@@ -496,11 +504,11 @@
                     color: #666;
                     font-size: 14px;
                 `;
-                
-                resultsCount.innerHTML = query ? 
+
+                resultsCount.innerHTML = query ?
                     `<p>Found <strong>${count}</strong> result${count !== 1 ? 's' : ''} for "<em>${query}</em>"</p>` :
                     `<p>Showing <strong>${count}</strong> medicine${count !== 1 ? 's' : ''}</p>`;
-                
+
                 elements.resultsContainer.parentNode.insertBefore(resultsCount, elements.resultsContainer);
             }
 
@@ -517,7 +525,7 @@
             function createMedicineCard(medicine) {
                 const card = document.createElement('div');
                 card.className = 'result-card';
-                
+
                 const addToCartBtn = document.createElement('button');
                 addToCartBtn.className = 'add-to-cart-btn';
                 addToCartBtn.setAttribute('data-med-id', medicine.id || '');
@@ -528,7 +536,7 @@
                 });
 
                 card.innerHTML = `
-                    <div class="details">
+                    <div class="details" data-aos="fade" data-aos-duration="1000">
                         <h3 class="name">${medicine.name}</h3>
                         <p class="medicine-manufacturer"><strong>Manufacturer:&nbsp</strong> ${medicine.manufacturer_name || 'N/A'}</p>
                         <p class="medicine-pack"><strong>Pack:</strong> ${medicine.pack_size || 'N/A'}</p>
@@ -538,22 +546,36 @@
                     </div>
                     <div class="button-container" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
                 `;
-                
+
+                // Important: Refresh AOS after DOM update
+                setTimeout(() => {
+                    AOS.refreshHard();
+                }, 0);
+
+
                 card.querySelector('.button-container').appendChild(addToCartBtn);
                 return card;
             }
 
             // Utility functions
-            function showLoading() { elements.loadingIndicator.classList.remove('hidden'); }
-            function hideLoading() { elements.loadingIndicator.classList.add('hidden'); }
+            function showLoading() {
+                elements.loadingIndicator.classList.remove('hidden');
+            }
+
+            function hideLoading() {
+                elements.loadingIndicator.classList.add('hidden');
+            }
+
             function showError(msg) {
                 elements.errorMessage.textContent = msg;
                 elements.errorMessage.classList.remove('hidden');
             }
+
             function clearError() {
                 elements.errorMessage.textContent = '';
                 elements.errorMessage.classList.add('hidden');
             }
+
             function clearResults() {
                 elements.resultsContainer.innerHTML = '';
                 const existingCount = document.getElementById('results-count');
@@ -561,5 +583,17 @@
             }
         });
     </script>
+    <!---AOS Library --->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            once: true,
+            duration: 1000,
+        });
+    </script>
+    <?php
+        include "../include/footer.php";
+    ?>
 </body>
+
 </html>

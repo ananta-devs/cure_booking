@@ -5,23 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms & Conditions - CureBooking</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
 </head>
 <body>
     <?php include '../include/header.php'; ?>
     <div class="container">
         <div class="content-wrapper">
-            <h2 class="section-title">Terms & Conditions</h2>
+            <h2 class="section-title" data-aos="fade-up">Terms & Conditions</h2>
             
-            <div class="medical-disclaimer">
+            <div class="medical-disclaimer" data-aos="fade-up">
                 <h4>⚠️ Important Medical Disclaimer</h4>
                 <p>CureBooking is a healthcare appointment booking platform. We do not provide medical advice, diagnosis, or treatment. Always consult with qualified healthcare professionals for medical concerns.</p>
             </div>
 
-            <div class="intro-text">
+            <div class="intro-text" data-aos="fade-up">
                 <p>Please read these terms carefully before using CureBooking's healthcare appointment booking services.</p>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>1. Service Description & Acceptance</span>
                     <span class="terms-icon">+</span>
@@ -32,7 +33,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>2. Patient Account Requirements</span>
                     <span class="terms-icon">+</span>
@@ -50,7 +51,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>3. Appointment Booking & Management</span>
                     <span class="terms-icon">+</span>
@@ -68,7 +69,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>4. Medical Information & Privacy</span>
                     <span class="terms-icon">+</span>
@@ -86,7 +87,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>5. Healthcare Provider Network</span>
                     <span class="terms-icon">+</span>
@@ -104,7 +105,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>6. Payment & Billing Terms</span>
                     <span class="terms-icon">+</span>
@@ -122,7 +123,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>7. Telemedicine Services</span>
                     <span class="terms-icon">+</span>
@@ -140,7 +141,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>8. Prohibited Uses</span>
                     <span class="terms-icon">+</span>
@@ -161,7 +162,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>9. Medical Disclaimers & Limitations</span>
                     <span class="terms-icon">+</span>
@@ -179,7 +180,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>10. Limitation of Liability</span>
                     <span class="terms-icon">+</span>
@@ -197,7 +198,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>11. Platform Availability & Maintenance</span>
                     <span class="terms-icon">+</span>
@@ -208,7 +209,7 @@
                 </div>
             </div>
 
-            <div class="terms-item">
+            <div class="terms-item" data-aos="fade-up">
                 <div class="terms-question" onclick="toggleTerms(this)">
                     <span>12. Changes to Terms & Termination</span>
                     <span class="terms-icon">+</span>
@@ -289,6 +290,14 @@
                     this.style.outline = 'none';
                 });
             });
+        });
+    </script>
+    <!---AOS Library --->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            once: true,
+            duration: 1000,
         });
     </script>
 </body>

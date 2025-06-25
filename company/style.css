@@ -30,7 +30,7 @@ body {
 
 /* Hero Section */
 .hero {
-  background: #512da8;
+  background: #1d4ed8;
   color: white;
   padding: 4rem 0;
   text-align: center;
@@ -52,7 +52,7 @@ body {
 /* Section Titles */
 .section-title {
   font-size: 2.5rem;
-  color: #512da8;
+  color: #1d4ed8;
   text-align: center;
   margin-bottom: 3rem;
   font-weight: 600;
@@ -83,7 +83,7 @@ body {
 }
 
 .content-card h3 {
-  color: #512da8;
+  color: #1d4ed8;
   font-size: 1.5rem;
   margin-bottom: 1rem;
 }
@@ -114,7 +114,7 @@ body {
 .stat-number {
   font-size: 3rem;
   font-weight: bold;
-  color: #512da8;
+  color: #1d4ed8;
   display: block;
 }
 
@@ -153,7 +153,7 @@ body {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background-color: #512da8;
+  background-color: #1d4ed8;
   margin: 0 auto 1rem;
   display: flex;
   align-items: center;
@@ -171,7 +171,7 @@ body {
 }
 
 .member-role {
-  color: #512da8;
+  color: #1d4ed8;
   font-weight: 500;
   margin-bottom: 1rem;
 }
@@ -222,11 +222,11 @@ body {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(135deg, #2c5aa0, #4a90e2);
+  background: linear-gradient(135deg, #1d4ed8, #4a90e2);
 }
 
 .contact-info h3 {
-  color: #512da8;
+  color: #1d4ed8;
   font-size: 2rem;
   margin-bottom: 2rem;
   text-align: center;
@@ -345,7 +345,7 @@ body {
 .form-group label {
   display: block;
   margin-bottom: 0.8rem;
-  color: #512da8;
+  color: #1d4ed8;
   font-weight: 600;
   font-size: 0.95rem;
 }
@@ -366,7 +366,7 @@ body {
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #512da8;
+  border-color: #1d4ed8;
   background: white;
   box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
   transform: translateY(-2px);

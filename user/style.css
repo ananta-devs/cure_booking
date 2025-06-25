@@ -27,9 +27,14 @@ body {
   width: 100%;
   max-width: 500px;
   min-height: 500px;
-  display: flex;
+  display: grid;
   align-items: center;
   justify-content: center;
+}
+
+.model_img img{
+  height: 30px;
+  width: 40px;
 }
 
 /* Password Reset Container */
@@ -71,7 +76,7 @@ body {
 }
 
 .step.active {
-  background-color: #512da8;
+  background-color: #3b82f6;
   color: white;
 }
 
@@ -87,7 +92,7 @@ body {
 }
 
 .step.active:not(:last-child)::after {
-  background-color: #512da8;
+  background-color: #3b82f6;
 }
 
 /* Typography */
@@ -131,14 +136,14 @@ input[type="password"] {
 input[type="email"]:focus,
 input[type="text"]:focus,
 input[type="password"]:focus {
-  border-color: #512da8;
+  border-color: #3b82f6;
   background-color: #fff;
   box-shadow: 0 0 0 3px rgba(81, 45, 168, 0.1);
 }
 
 /* Button Styles */
 button {
-  background-color: #512da8;
+  background-color: #3b82f6;
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -152,7 +157,7 @@ button {
 }
 
 button:hover {
-  background-color: #3f1a8b;
+  background-color: #3b82f6;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(81, 45, 168, 0.3);
 }
@@ -211,7 +216,7 @@ button:disabled {
 }
 
 .otp-message a {
-  color: #512da8;
+  color: #3b82f6;
   text-decoration: none;
   font-weight: 600;
 }
@@ -323,7 +328,7 @@ button:disabled {
 }
 
 .back-link a:hover {
-  color: #512da8;
+  color: #3b82f6;
 }
 
 .back-link a i {

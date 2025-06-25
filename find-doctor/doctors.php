@@ -1,51 +1,137 @@
+<?php
+    session_start();
+    $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
+    include '../include/header.php';
+    include '../styles.php';
+    ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CureBooking | Find Your Doctor</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
     <style>
+        .search-container select {
+            background: url('data:image/svg+xml;utf8,<svg fill="gray" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 12px center;
+            background-size: 16px 16px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container select {
+            flex: 1;
+            padding: 10px 12px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            background-color: #fff;
+            color: #374151;
+            appearance: none;
+        }
+
+        .search-container button {
+            background-color: #3b82f6;
+            border: none;
+            padding: 10px 16px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-container button:hover {
+            background-color: #2563eb;
+        }
+
+        .search-container select:focus {
+            outline: none;
+        }
+
+        .search-container i {
+            font-size: 18px;
+        }
+
+
         .doctor-clinics-section {
             margin-top: 25px;
             padding-top: 20px;
             border-top: 1px solid #e0e0e0;
         }
+
         .doctor-clinics-section h3 {
             color: #2c3e50;
             font-size: 1.1rem;
             margin-bottom: 15px;
             font-weight: 600;
         }
+
         .clinics-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
+
         .clinic-item {
             background-color: #f8f9fa;
             padding: 12px 15px;
             border-radius: 6px;
-            border-left: 3px solid #007bff;
+            border-left: 3px solid #3B82F6;
         }
+
         .clinic-name {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-bottom: 5px;
         }
-        .clinic-name i { color: #007bff; font-size: 0.9rem; }
-        .clinic-name strong { color: #2c3e50; font-size: 0.95rem; }
+
+        .clinic-name i {
+            color: #3B82F6;
+            font-size: 0.9rem;
+        }
+
+        .clinic-name strong {
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
         .clinic-location {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-left: 20px;
         }
-        .clinic-location i { color: #6c757d; font-size: 0.8rem; }
-        .clinic-location span { color: #6c757d; font-size: 0.85rem; }
+
+        .clinic-location i {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        .clinic-location span {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
         .clinic-availability {
             display: flex;
             align-items: center;
@@ -53,33 +139,57 @@
             margin-left: 20px;
             margin-top: 5px;
         }
-        .clinic-availability i { color: #28a745; font-size: 0.8rem; }
-        .clinic-availability span { color: #495057; font-size: 0.85rem; }
-        .clinic-availability strong { color: #2c3e50; font-weight: 600; }
-        
+
+        .clinic-availability i {
+            color:rgb(23, 176, 59);
+            font-size: 0.8rem;
+        }
+
+        .clinic-availability span {
+            color: #495057;
+            font-size: 0.85rem;
+        }
+
+        .clinic-availability strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
         @media (max-width: 768px) {
-            .clinic-availability, .clinic-location { margin-left: 15px; }
-            .clinic-availability { margin-top: 8px; }
-            .clinic-item { padding: 10px 12px; }
-            .clinic-name strong { font-size: 0.9rem; }
-            .clinic-location span, .clinic-availability span { font-size: 0.8rem; }
+
+            .clinic-availability,
+            .clinic-location {
+                margin-left: 15px;
+            }
+
+            .clinic-availability {
+                margin-top: 8px;
+            }
+
+            .clinic-item {
+                padding: 10px 12px;
+            }
+
+            .clinic-name strong {
+                font-size: 0.9rem;
+            }
+
+            .clinic-location span,
+            .clinic-availability span {
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
+
 <body>
-    <?php 
-        session_start();
-        $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
-        include '../include/header.php'; 
-        include '../styles.php'; 
-    ?>
 
     <script>
         const USER_LOGGED_IN = <?php echo $isLoggedIn ? 'true' : 'false'; ?>;
         const LOGIN_URL = '../user/login.php';
     </script>
 
-    <section class="hero">
+    <section class="hero" data-aos="fade-up">
         <div class="container">
             <h1>Find the Right Doctor for Your Needs</h1>
             <p>Connect with top healthcare specialists in your area</p>
@@ -87,16 +197,16 @@
                 <select id="search-bar">
                     <option value="">All Specializations</option>
                     <?php
-                        $conn = new mysqli("localhost", "root", "", "cure_booking");
-                        if (!$conn->connect_error) {
-                            $result = $conn->query("SELECT DISTINCT doc_specia FROM doctor ORDER BY doc_specia");
-                            if ($result && $result->num_rows > 0) {
-                                while($row = $result->fetch_assoc()) {
-                                    echo '<option value="' . htmlspecialchars($row['doc_specia']) . '">' . htmlspecialchars($row['doc_specia']) . '</option>';
-                                }
+                    $conn = new mysqli("localhost", "root", "", "cure_booking");
+                    if (!$conn->connect_error) {
+                        $result = $conn->query("SELECT DISTINCT doc_specia FROM doctor ORDER BY doc_specia");
+                        if ($result && $result->num_rows > 0) {
+                            while ($row = $result->fetch_assoc()) {
+                                echo '<option value="' . htmlspecialchars($row['doc_specia']) . '">' . htmlspecialchars($row['doc_specia']) . '</option>';
                             }
-                            $conn->close();
                         }
+                        $conn->close();
+                    }
                     ?>
                 </select>
                 <button type="submit" aria-label="Search"><i class="ri-search-line"></i></button>
@@ -105,7 +215,7 @@
     </section>
 
     <section class="doctors-section">
-        <h2>Available Doctors</h2>
+        <h2 data-aos="fade">Available Doctors</h2>
         <div id="doctors-container" class="doctors-container"></div>
     </section>
 
@@ -187,10 +297,10 @@
                 e.preventDefault();
                 filterDoctors();
             });
-            
+
             elements.closeModal.addEventListener('click', () => closeModal(elements.modal));
             elements.closeBookingModal.addEventListener('click', () => closeModal(elements.bookingModal));
-            
+
             window.addEventListener('click', (e) => {
                 if (e.target === elements.modal) closeModal(elements.modal);
                 if (e.target === elements.bookingModal) closeModal(elements.bookingModal);
@@ -208,21 +318,23 @@
 
         async function fetchDoctors(filters = {}) {
             elements.doctorsContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading doctors...</div>';
-            
-            const queryParams = new URLSearchParams({action: 'get_doctors'});
+
+            const queryParams = new URLSearchParams({
+                action: 'get_doctors'
+            });
             if (filters.specialization) queryParams.append('specialization', filters.specialization);
-            
+
             try {
                 const response = await fetch(`api.php?${queryParams.toString()}`);
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                
+
                 const responseText = await response.text();
                 const doctors = JSON.parse(responseText);
-                
+
                 if (doctors.success === false || doctors.error) {
                     throw new Error(doctors.message || doctors.error || 'Unknown error');
                 }
-                
+
                 currentDoctors = doctors;
                 displayDoctors(doctors);
             } catch (error) {
@@ -238,7 +350,9 @@
 
         function filterDoctors() {
             const specialization = elements.searchInput.value;
-            fetchDoctors({ specialization });
+            fetchDoctors({
+                specialization
+            });
         }
 
         function displayDoctors(doctorsToDisplay) {
@@ -246,7 +360,7 @@
                 elements.doctorsContainer.innerHTML = '<div class="error-message"><i class="fas fa-user-md"></i><p>No doctors found matching your criteria.</p></div>';
                 return;
             }
-            
+
             elements.doctorsContainer.innerHTML = '';
             doctorsToDisplay.forEach(doctor => {
                 elements.doctorsContainer.appendChild(createDoctorCard(doctor));
@@ -256,21 +370,26 @@
         function createDoctorCard(doctor) {
             const card = document.createElement('div');
             card.className = 'doctor-card';
-            
+
             card.innerHTML = `
                 <div class="doctor-info">
+                <div data-aos="zoom-in" data-aos-duration="800">
                     <h3 class="doctor-name">${doctor.name}</h3>
                     <p class="doctor-specialty">${doctor.specialty}</p>
                     ${doctor.location ? `<div class="doctor-location"><i class="fas fa-map-marker-alt"></i><span>${doctor.location}</span></div>` : ''}
                     ${doctor.experience ? `<div class="doctor-experience"><i class="fas fa-user-md"></i><span>${doctor.experience} Years Experience</span></div>` : ''}
                     ${doctor.fees ? `<div class="doctor-fees"><i class="fas fa-money-bill-wave"></i><span>Consultation: ${doctor.fees}/-</span></div>` : ''}
-                    <div class="doctor-actions">
+                </div>
+                    <div class="doctor-actions" data-aos="fade" data-aos-duration="800">
                         <button class="view-profile-btn" data-id="${doctor.id}">View Profile</button>
                         <button class="book-btn" data-id="${doctor.id}">Book Now</button>
                     </div>
                 </div>
             `;
-            
+            setTimeout(() => {
+                AOS.refreshHard();
+            }, 0);
+
             card.querySelector('.view-profile-btn').addEventListener('click', () => openDoctorModal(doctor.id));
             card.querySelector('.book-btn').addEventListener('click', () => {
                 if (!USER_LOGGED_IN) {
@@ -279,22 +398,22 @@
                 }
                 openBookingForm(doctor.id);
             });
-            
+
             return card;
         }
 
         async function openDoctorModal(doctorId) {
             const doctor = currentDoctors.find(doc => doc.id == doctorId);
             if (!doctor) return;
-            
+
             elements.modalDoctorDetails.innerHTML = '<div class="loading-modal"><i class="fas fa-spinner fa-spin"></i><p>Loading doctor details...</p></div>';
             elements.modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
-            
+
             try {
                 const availabilityData = await fetchDoctorAvailability(doctorId);
                 const clinicInfoHTML = createClinicInfo(doctor, availabilityData);
-                
+
                 elements.modalDoctorDetails.innerHTML = `
                     <div class="doctor-profile">
                         <div class="doctor-profile-info">
@@ -325,21 +444,21 @@
         function createClinicInfo(doctor, availabilityData) {
             const clinicNames = doctor.clinic_names ? doctor.clinic_names.split(', ') : [];
             const clinicLocations = doctor.clinic_locations ? doctor.clinic_locations.split(', ') : [];
-            
+
             if (clinicNames.length === 0) {
-                return doctor.availability && Array.isArray(doctor.availability) && doctor.availability.length > 0 
-                    ? `<div class="doctor-clinics-section"><h3>Availability:</h3><div class="clinic-item"><div class="clinic-availability"><i class="fas fa-calendar-alt"></i><span><strong>Available Days:</strong> ${doctor.availability.join(', ')}</span></div></div></div>`
-                    : '';
+                return doctor.availability && Array.isArray(doctor.availability) && doctor.availability.length > 0 ?
+                    `<div class="doctor-clinics-section"><h3>Availability:</h3><div class="clinic-item"><div class="clinic-availability"><i class="fas fa-calendar-alt"></i><span><strong>Available Days:</strong> ${doctor.availability.join(', ')}</span></div></div></div>` :
+                    '';
             }
-            
+
             let clinicInfoHTML = '<div class="doctor-clinics-section"><h3>Available at Clinics:</h3><div class="clinics-list">';
-            
+
             clinicNames.forEach((clinicName, index) => {
                 const clinicLocation = clinicLocations[index] || 'Location not specified';
                 let availabilityText = 'Please contact clinic for availability';
-                
+
                 if (availabilityData && availabilityData[clinicName]) {
-                    const availableDays = Object.keys(availabilityData[clinicName]).filter(day => 
+                    const availableDays = Object.keys(availabilityData[clinicName]).filter(day =>
                         Object.values(availabilityData[clinicName][day]).some(slot => slot === true)
                     );
                     if (availableDays.length > 0) {
@@ -348,7 +467,7 @@
                 } else if (doctor.availability && Array.isArray(doctor.availability)) {
                     availabilityText = doctor.availability.join(', ');
                 }
-                
+
                 clinicInfoHTML += `
                     <div class="clinic-item">
                         <div class="clinic-name"><i class="fas fa-hospital"></i><strong>${clinicName}</strong></div>
@@ -357,7 +476,7 @@
                     </div>
                 `;
             });
-            
+
             return clinicInfoHTML + '</div></div>';
         }
 
@@ -376,9 +495,9 @@
         function openBookingForm(doctorId) {
             const doctor = currentDoctors.find(doc => doc.id == doctorId);
             if (!doctor) return;
-            
+
             selectedDoctorForBooking = doctor;
-            
+
             elements.modalTestInfo.innerHTML = `
                 <div class="booking-doctor-info">
                     <h2>Book Appointment</h2>
@@ -387,11 +506,11 @@
                     ${doctor.fees ? `<p>Consultation Fee: ${doctor.fees}/-</p>` : ''}
                 </div>
             `;
-            
+
             populateClinicSelect(doctor);
             setupDateInput();
             addHiddenDoctorId(doctor.id);
-            
+
             elements.bookingModal.style.display = 'block';
             document.body.style.overflow = 'hidden';
         }
@@ -399,9 +518,9 @@
         function populateClinicSelect(doctor) {
             const clinicSelect = document.querySelector('#clinic');
             const clinicDetails = doctor.clinic_details ? doctor.clinic_details.split('||') : [];
-            
+
             clinicSelect.innerHTML = '<option value="">Select a clinic</option>';
-            
+
             if (clinicDetails.length > 0) {
                 clinicDetails.forEach(detail => {
                     const [clinic_id, clinic_name, clinic_location] = detail.split('|');
@@ -418,6 +537,22 @@
             }
         }
 
+<<<<<<< HEAD
+        function setupDateInput() {
+            const dateInput = document.querySelector('#date');
+            const timeSelect = document.querySelector('#time');
+
+            const today = new Date();
+            dateInput.min = today.toISOString().split('T')[0];
+
+            const maxDate = new Date();
+            maxDate.setMonth(maxDate.getMonth() + 3);
+            dateInput.max = maxDate.toISOString().split('T')[0];
+
+            timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
+        }
+=======
+>>>>>>> a20bf8266a2f8618552d13bcb26a47c06bcc5e45
 
         function addHiddenDoctorId(doctorId) {
             let doctorIdInput = document.querySelector('#doctor_id');
@@ -435,25 +570,25 @@
             const clinicSelect = document.querySelector('#clinic');
             const dateInput = document.querySelector('#date');
             const timeSelect = document.querySelector('#time');
-            
+
             if (!selectedDoctorForBooking || !clinicSelect.value || !dateInput.value) {
                 timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
                 return;
             }
-            
+
             timeSelect.innerHTML = '<option value="">Loading time slots...</option>';
             timeSelect.disabled = true;
-            
+
             try {
                 const response = await fetch(`api.php?action=get_time_slots&doctor_id=${selectedDoctorForBooking.id}&clinic_name=${encodeURIComponent(clinicSelect.value)}&date=${dateInput.value}`);
-                
+
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                
+
                 const data = await response.json();
-                
+
                 timeSelect.innerHTML = '';
                 timeSelect.disabled = false;
-                
+
                 if (data.success && data.time_slots && data.time_slots.length > 0) {
                     timeSelect.innerHTML = '<option value="">Select a time slot</option>';
                     data.time_slots.forEach(slot => {
@@ -474,27 +609,33 @@
 
         async function handleBookingSubmit(e) {
             e.preventDefault();
-            
+
             const submitBtn = elements.bookingForm.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.textContent;
-            
+
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Booking...';
-            
+
             try {
                 const formData = new FormData(elements.bookingForm);
                 const response = await fetch('api.php?action=book_appointment', {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     closeModal(elements.bookingModal);
                     elements.bookingForm.reset();
+<<<<<<< HEAD
+
+                    setTimeout(() => {
+                        if (confirm('Appointment booked successfully! Would you like to view your appointments?')) {
+                            window.location.href = '../user/appointments.php';
+=======
                     
                     // Enhanced success message with daily appointment info
                     let successMessage = 'Appointment booked successfully!';
@@ -510,6 +651,7 @@
                             successMessage += `\n\nDaily Booking Status:`;
                             successMessage += `\nAppointments today: ${details.daily_appointments_count}/4`;
                             successMessage += `\nRemaining slots today: ${details.remaining_slots_today}`;
+>>>>>>> a20bf8266a2f8618552d13bcb26a47c06bcc5e45
                         }
                     }
                     
@@ -542,7 +684,7 @@
 
         function showNotification(type, message) {
             document.querySelectorAll('.notification').forEach(n => n.remove());
-            
+
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             notification.innerHTML = `
@@ -554,7 +696,7 @@
                     </button>
                 </div>
             `;
-            
+
             document.body.appendChild(notification);
             setTimeout(() => notification.remove(), 7000); // Extended timeout for longer messages
         }
@@ -626,5 +768,16 @@
             });
         }
     </script>
+    <!---AOS Library --->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script> 
+    <script>
+        AOS.init({
+            once: true,
+            duration: 1000,
+        });
+    </script>
 </body>
+<?php
+    include '../include/footer.php'
+?>
 </html>

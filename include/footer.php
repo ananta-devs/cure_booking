@@ -1,104 +1,97 @@
 <style>
-    /* Footer */
-    footer {
-        background-color: #2d2d32;
-        color: white;
-        padding: 60px 0 20px;
-        text-align: center; /* Center all content by default */
-    }
-    
-    .footer-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(194px, 1fr));
-        gap: 40px;
-        margin-bottom: 40px;
-        max-width: 1200px; /* Add max-width for larger screens */
-        margin-left: auto; /* Center the grid */
-        margin-right: auto;
-    }
-    
-    .footer-column h4 {
-        font-size: 18px;
-        margin-bottom: 20px;
-        color: #512da8;
-        text-align: center; /* Center the headings */
-    }
-    
-    .footer-links {
-        list-style: none;
-        padding: 0; /* Remove default padding */
-        text-align: center; /* Center the list items */
-    }
-    
-    .footer-links li {
-        margin-bottom: 10px;
-    }
-    
-    .footer-links a {
-        color: #b4b4b4;
-        text-decoration: none;
-        font-size: 14px;
-        display: inline-block; /* Better for centering */
-    }
-    
-    .footer-links a:hover {
-        color: white;
-    }
-    
-    .footer-bottom {
-        border-top: 1px solid #414146;
-        padding-top: 20px;
-        text-align: center;
-        font-size: 14px;
-        color: #b4b4b4;
-        max-width: 1200px; /* Match grid max-width */
-        margin-left: auto;
-        margin-right: auto;
-    }
+/* Footer Base */
+footer {
+  background-color: #1f2937; /* Darker for contrast */
+  color: #e5e7eb;
+  padding: 60px 20px 30px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+}
 
-    /* Responsive adjustments */
-    @media screen and (max-width: 768px) {
-        .footer-grid {
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 20px;
-            padding: 0 15px; /* Add some padding on smaller screens */
-        }
-        
-        footer {
-            padding: 30px 0 15px;
-        }
-        
-        .footer-bottom {
-            padding: 20px 15px 0;
-        }
-    }
+/* Grid Layout */
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto 40px;
+  padding: 0 15px;
+}
 
-    @media screen and (max-width: 480px) {
-        .footer-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        
-        .footer-column h4 {
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-        
-        .footer-links a {
-            font-size: 13px;
-        }
-        
-        .footer-bottom {
-            font-size: 12px;
-        }
-    }
+/* Footer Column Headings */
+.footer-column h4 {
+  font-size: 18px;
+  margin-bottom: 18px;
+  font-weight: 600;
+  color: #3b82f6;
+}
 
-    @media screen and (max-width: 320px) {
-        .footer-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+/* Footer Links */
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  color: #d1d5db;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease, padding-left 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #ffffff;
+  padding-left: 5px;
+}
+
+/* Footer Bottom */
+.footer-bottom {
+  border-top: 1px solid #374151;
+  padding-top: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive Tweaks */
+@media screen and (max-width: 768px) {
+  .footer-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 30px;
+  }
+  .footer-column h4 {
+    font-size: 16px;
+  }
+  .footer-links a {
+    font-size: 13.5px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .footer-bottom {
+    font-size: 12.5px;
+  }
+}
+
+@media screen and (max-width: 340px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
+
 <!-- Footer -->
 <footer>
         <div class="footer-grid">
