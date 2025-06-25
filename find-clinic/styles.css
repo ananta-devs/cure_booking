@@ -127,7 +127,7 @@ body {
     align-items: center;
     justify-content: center;
     height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0056b3 0%, #667eea 100%);
     color: white;
 }
 
@@ -162,7 +162,7 @@ body {
 .detail-item i {
     margin-right: 0.5rem;
     color: #007bff;
-    font-size: 1rem;
+    font-size: 13px;
     width: 18px;
 }
 
@@ -311,7 +311,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0056b3 0%, #667eea 100%);
     color: white;
 }
 
@@ -387,7 +387,7 @@ body {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0056b3 0%, #667eea 100%);
     margin-right: 16px;
     display: flex;
     align-items: center;
@@ -420,10 +420,17 @@ body {
     color: #4b5563;
 }
 
+.left{
+    font-size: 13px;
+}
+.right {
+    padding-left: 3px;
+}
+
 .detail-row i {
     margin-right: 8px;
     width: 16px;
-    color: #6366f1;
+    color: #3b82f6;
 }
 
 .availability-section {
@@ -452,7 +459,7 @@ body {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
     padding: 4px 10px;
-    border-radius: 20px;
+    border-radius: 5px;
     font-size: 0.75rem;
     font-weight: 500;
 }
@@ -467,7 +474,7 @@ body {
     background: #f3f4f6;
     color: #374151;
     padding: 4px 8px;
-    border-radius: 6px;
+    border-radius: 5px;
     font-size: 0.75rem;
     border: 1px solid #d1d5db;
 }

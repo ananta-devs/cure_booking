@@ -1,9 +1,9 @@
 <?php
-    session_start();
-    $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
-    include '../include/header.php';
-    include '../styles.php';
-    ?>
+session_start();
+$isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
+include '../include/header.php';
+include '../styles.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -141,7 +141,7 @@
         }
 
         .clinic-availability i {
-            color:rgb(23, 176, 59);
+            color: rgb(23, 176, 59);
             font-size: 0.8rem;
         }
 
@@ -537,7 +537,6 @@
             }
         }
 
-<<<<<<< HEAD
         function setupDateInput() {
             const dateInput = document.querySelector('#date');
             const timeSelect = document.querySelector('#time');
@@ -551,8 +550,7 @@
 
             timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
         }
-=======
->>>>>>> a20bf8266a2f8618552d13bcb26a47c06bcc5e45
+
 
         function addHiddenDoctorId(doctorId) {
             let doctorIdInput = document.querySelector('#doctor_id');
@@ -607,6 +605,7 @@
             }
         }
 
+        // CORRECTED handleBookingSubmit function
         async function handleBookingSubmit(e) {
             e.preventDefault();
 
@@ -630,13 +629,7 @@
                 if (data.success) {
                     closeModal(elements.bookingModal);
                     elements.bookingForm.reset();
-<<<<<<< HEAD
 
-                    setTimeout(() => {
-                        if (confirm('Appointment booked successfully! Would you like to view your appointments?')) {
-                            window.location.href = '../user/appointments.php';
-=======
-                    
                     // Enhanced success message with daily appointment info
                     let successMessage = 'Appointment booked successfully!';
                     if (data.appointment_details) {
@@ -646,19 +639,21 @@
                         successMessage += `\nDate: ${details.appointment_date}`;
                         successMessage += `\nTime: ${details.appointment_time}`;
                         successMessage += `\nClinic: ${details.clinic_name}`;
-                        
+
                         if (details.daily_appointments_count && details.remaining_slots_today !== undefined) {
                             successMessage += `\n\nDaily Booking Status:`;
                             successMessage += `\nAppointments today: ${details.daily_appointments_count}/4`;
                             successMessage += `\nRemaining slots today: ${details.remaining_slots_today}`;
->>>>>>> a20bf8266a2f8618552d13bcb26a47c06bcc5e45
                         }
                     }
-                    
+
                     setTimeout(() => {
                         alert(successMessage);
+                        if (confirm('Would you like to view your appointments?')) {
+                            window.location.href = '../user/appointments.php';
+                        }
                     }, 500);
-                    
+
                     showNotification('success', 'Appointment booked successfully!');
                 } else {
                     // Enhanced error handling for daily limit
@@ -666,9 +661,9 @@
                     if (data.message && data.message.includes('maximum limit of 4 appointments per day')) {
                         errorMessage = 'Daily Booking Limit Reached!\n\nYou can book up to 4 appointments per day. Please choose a different date to continue booking.';
                     }
-                    
+
                     showNotification('error', errorMessage);
-                    
+
                     if (data.redirect_to_login) {
                         setTimeout(() => window.location.href = '../user/login.php', 2000);
                     }
@@ -682,80 +677,48 @@
             }
         }
 
-        function showNotification(type, message) {
-            document.querySelectorAll('.notification').forEach(n => n.remove());
-
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.innerHTML = `
-                <div class="notification-content">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-                    <span style="white-space: pre-line;">${message}</span>
-                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 7000); // Extended timeout for longer messages
-        }
-
-        async function checkDailyBookingStatus(email, date) {
-            try {
-                const response = await fetch(`api.php?action=check_daily_bookings&email=${encodeURIComponent(email)}&date=${date}`);
-                if (!response.ok) throw new Error('Failed to check booking status');
-                
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('Error checking daily booking status:', error);
-                return null;
-            }
-        }
-
-        // Enhanced date input setup with booking limit info
+        // CORRECTED setupDateInput function
         function setupDateInput() {
             const dateInput = document.querySelector('#date');
             const timeSelect = document.querySelector('#time');
-            
+
             const today = new Date();
             dateInput.min = today.toISOString().split('T')[0];
-            
+
             const maxDate = new Date();
             maxDate.setMonth(maxDate.getMonth() + 3);
             dateInput.max = maxDate.toISOString().split('T')[0];
-            
+
             timeSelect.innerHTML = '<option value="">Select date and clinic first</option>';
-            
+
             // Add event listener to show booking limit info when date changes
             dateInput.addEventListener('change', async function() {
                 const selectedDate = this.value;
                 const userEmail = document.querySelector('#email').value;
-                
+
                 if (selectedDate && userEmail) {
                     const bookingStatus = await checkDailyBookingStatus(userEmail, selectedDate);
                     if (bookingStatus && bookingStatus.success) {
                         const count = bookingStatus.daily_count || 0;
                         const remaining = 4 - count;
-                        
+
                         if (count > 0) {
                             const statusDiv = document.querySelector('.daily-booking-status') || document.createElement('div');
                             statusDiv.className = 'daily-booking-status';
                             statusDiv.innerHTML = `
-                                <div style="background: ${remaining === 0 ? '#ffebee' : '#e8f5e8'}; 
-                                           border: 1px solid ${remaining === 0 ? '#f44336' : '#4caf50'}; 
-                                           padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 14px;">
-                                    <i class="fas ${remaining === 0 ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-                                    Daily Booking Status: ${count}/4 appointments on ${new Date(selectedDate).toLocaleDateString()}
-                                    ${remaining === 0 ? ' (Limit reached - choose another date)' : ` (${remaining} slots remaining)`}
-                                </div>
-                            `;
-                            
+                        <div style="background: ${remaining === 0 ? '#ffebee' : '#e8f5e8'}; 
+                                   border: 1px solid ${remaining === 0 ? '#f44336' : '#4caf50'}; 
+                                   padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 14px;">
+                            <i class="fas ${remaining === 0 ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+                            Daily Booking Status: ${count}/4 appointments on ${new Date(selectedDate).toLocaleDateString()}
+                            ${remaining === 0 ? ' (Limit reached - choose another date)' : ` (${remaining} slots remaining)`}
+                        </div>
+                    `;
+
                             if (!document.querySelector('.daily-booking-status')) {
                                 dateInput.parentNode.appendChild(statusDiv);
                             }
-                            
+
                             if (remaining === 0) {
                                 timeSelect.innerHTML = '<option value="">Daily booking limit reached - choose another date</option>';
                                 timeSelect.disabled = true;
@@ -767,9 +730,42 @@
                 }
             });
         }
+
+        // HELPER FUNCTIONS (add these to your script)
+        function showNotification(type, message) {
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+            <span style="white-space: pre-line;">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 7000);
+        }
+
+        async function checkDailyBookingStatus(email, date) {
+            try {
+                const response = await fetch(`api.php?action=check_daily_bookings&email=${encodeURIComponent(email)}&date=${date}`);
+                if (!response.ok) throw new Error('Failed to check booking status');
+
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error checking daily booking status:', error);
+                return null;
+            }
+        }
     </script>
     <!---AOS Library --->
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script> 
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
         AOS.init({
             once: true,
@@ -778,6 +774,7 @@
     </script>
 </body>
 <?php
-    include '../include/footer.php'
+include '../include/footer.php'
 ?>
+
 </html>

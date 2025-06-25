@@ -169,7 +169,7 @@ h1 {
     display: flex;
     flex-direction: column;
     position: relative;
-    border-top: 4px solid #512da8;
+    border-top: 4px solid #2563eb;
     background: linear-gradient(to bottom, #fff, #fafafa);
 }
 
@@ -198,7 +198,7 @@ h1 {
     width: 8px;
     height: 8px;
     margin-right: 8px;
-    background-color: #512da8;
+    background-color: #2563eb;
     border-radius: 50%;
 }
 
@@ -217,7 +217,7 @@ h1 {
     width: 8px;
     height: 8px;
     margin-right: 8px;
-    background-color: #512da8;
+    background-color: #2563eb;
     border-radius: 50%;
 }
 
@@ -236,7 +236,7 @@ h1 {
     width: 8px;
     height: 8px;
     margin-right: 8px;
-    background-color: #512da8;
+    background-color: #2563eb;
     border-radius: 50%;
 }
 
@@ -255,7 +255,7 @@ h1 {
     display: inline-block;
     padding: 4px 10px;
     background-color: #e9d8fd;
-    color: #553c9a;
+    color: #2563eb;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
@@ -293,7 +293,7 @@ h1 {
 
 .book-now-btn {
     width: 100%;
-    background-color: #512da8;
+    background-color: #2563eb;
     color: white;
     text-align: center;
     padding: 12px 0;
@@ -314,7 +314,7 @@ h1 {
 }
 
 .book-now-btn:hover {
-    background-color: #351189;
+    background-color: #2563eb;
 }
 
 /* surgery page */
