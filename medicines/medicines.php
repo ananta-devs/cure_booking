@@ -494,12 +494,20 @@
                     button.classList.remove('added-to-cart');
                     return;
                 }
-
                 const isInCart = cart.some(item => item.id == medicineId);
-                button.innerHTML = isInCart ?
-                    '<i class="ri-check-line"></i> Added' :
-                    '<i class="ri-shopping-cart-line"></i> Add to Cart';
-                button.classList.toggle('added-to-cart', isInCart);
+                if (isInCart) {
+                        button.innerHTML = '<i class="ri-check-line"></i> Added';
+                        button.className = 'add-to-cart-btn in-cart';
+                        button.style.background = "#374151";
+                        button.style.color = "white";
+                        button.disabled = true;
+                    } else {
+                        button.innerHTML = '<i class="ri-shopping-cart-line"></i> Add to Cart';
+                        button.className = 'add-to-cart-btn';
+                        button.style.background = '#3B82F6';
+                        button.style.color = 'white';
+                        button.disabled = false;
+                    }
             }
 
             function updateCartModal() {
