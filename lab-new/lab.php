@@ -8,6 +8,38 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+    <style>
+        .order-summary-container,
+        .checkout-summary {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        }
+
+
+        .order-item,
+        .checkout-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+        }
+
+        .order-item:last-child {
+        border-bottom: none;
+        }
+
+        .order-total,
+        .checkout-total {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 2px solid #ddd;
+        text-align: center;
+        font-size: 18px;
+        color: #3b82f6;
+        }
+    </style>
 </head>
 
 <body>

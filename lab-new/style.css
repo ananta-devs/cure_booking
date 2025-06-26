@@ -195,14 +195,20 @@
 }
 
 /* Order Summary Styles */
-.order-summary-container {
+
+
+
+.order-summary-container,
+.checkout-summary {
   background: #f9f9f9;
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 20px;
 }
 
-.order-item {
+
+.order-item,
+.checkout-item {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
@@ -213,7 +219,8 @@
   border-bottom: none;
 }
 
-.order-total {
+.order-total,
+.checkout-total {
   margin-top: 15px;
   padding-top: 15px;
   border-top: 2px solid #ddd;
