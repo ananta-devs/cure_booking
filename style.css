@@ -145,7 +145,6 @@ body {
   display: flex;
   flex-direction: column;
   border: 1px solid #242124;
-  z-index: 0;
 }
 
 /* Animated background layer */
@@ -157,7 +156,6 @@ body {
   transform: scaleY(0);
   transform-origin: bottom;
   transition: transform 1s ease;
-  z-index: 0;
 }
 
 /* Hover effect: reveal background */

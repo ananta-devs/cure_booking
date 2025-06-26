@@ -522,6 +522,8 @@
                     } else {
                         btn.innerHTML = '<i class="ri-shopping-cart-line"></i> Add to Cart';
                         btn.className = 'add-to-cart-btn';
+                        btn.style.background = '#3B82F6';
+                        btn.style.color = 'white';
                         btn.disabled = false;
                     }
                 });
