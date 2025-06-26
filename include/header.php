@@ -164,13 +164,32 @@ if (session_status() == PHP_SESSION_NONE) {
         text-decoration: none;
         display: block;
         letter-spacing: 0;
-        transition: background-color 0.3s, letter-spacing 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        transition: color 0.3s, letter-spacing 0.3s ease;
+    }
+
+    .dropdown-content a::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 0%;
+        height: 100%;
+        background-color: #3b82f6;
+        z-index: -1;
+        transition: width 0.3s ease;
+    }
+
+    .dropdown-content a:hover::before {
+        width: 100%;
     }
 
     .dropdown-content a:hover {
-        background-color: #f1f1f1;
+        color: white;
         letter-spacing: 0.5px;
     }
+
 
     .show_dropdown {
         display: block;

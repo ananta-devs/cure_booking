@@ -478,6 +478,8 @@
                 if (btn) {
                     btn.innerHTML = '<i class="ri-check-line"></i> Added';
                     btn.className = 'add-to-cart-btn in-cart';
+                    btn.style.background = '#374151';
+                    btn.style.color = '#ffffff'
                     btn.disabled = true;
                 }
             }
