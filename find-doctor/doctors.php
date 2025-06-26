@@ -16,6 +16,206 @@ include '../styles.php';
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
     <style>
+        .success-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .success-modal-content {
+            background-color: #ffffff;
+            margin: 10% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.4s ease-out;
+            overflow: hidden;
+        }
+
+        .success-header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            animation: bounceIn 0.6s ease-out 0.2s both;
+        }
+
+        .success-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            animation: slideInUp 0.5s ease-out 0.4s both;
+        }
+
+        .success-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 0;
+            animation: slideInUp 0.5s ease-out 0.6s both;
+        }
+
+        .success-body {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .success-details {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .success-detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .success-detail-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .success-detail-item i {
+            color: #4CAF50;
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .success-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .success-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .success-btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .success-btn-primary:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .success-btn-secondary {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .success-btn-secondary:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .success-modal-content {
+                margin: 20% auto;
+                width: 95%;
+            }
+            
+            .success-header {
+                padding: 25px 20px;
+            }
+            
+            .success-icon {
+                font-size: 3rem;
+            }
+            
+            .success-title {
+                font-size: 1.5rem;
+            }
+            
+            .success-body {
+                padding: 20px;
+            }
+            
+            .success-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .success-btn {
+                width: 100%;
+            }
+        }
         .search-container select {
             background: url('data:image/svg+xml;utf8,<svg fill="gray" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 12px center;
             background-size: 16px 16px;
@@ -265,6 +465,33 @@ include '../styles.php';
                 </div>
                 <button type="submit" class="btn primary-btn">Confirm Booking</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="success-modal">
+        <div class="success-modal-content">
+            <div class="success-header">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2 class="success-title">Booking Successful!</h2>
+                <p class="success-subtitle">Thank You</p>
+            </div>
+            <div class="success-body">
+                <p>Your appointment has been confirmed successfully. You will receive a confirmation shortly.</p>
+                <div id="successDetails" class="success-details">
+                    <!-- Appointment details will be populated here -->
+                </div>
+                <div class="success-actions">
+                    <button class="success-btn success-btn-primary" onclick="viewAppointments()">
+                        <i class="fas fa-calendar-alt"></i> View My Appointments
+                    </button>
+                    <button class="success-btn success-btn-secondary" onclick="closeSuccessModal()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -613,7 +840,7 @@ include '../styles.php';
             const originalBtnText = submitBtn.textContent;
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Booking...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
             try {
                 const formData = new FormData(elements.bookingForm);
@@ -627,34 +854,15 @@ include '../styles.php';
                 const data = await response.json();
 
                 if (data.success) {
+                    // Close the booking modal
                     closeModal(elements.bookingModal);
+                    
+                    // Reset the form
                     elements.bookingForm.reset();
-
-                    // Enhanced success message with daily appointment info
-                    let successMessage = 'Appointment booked successfully!';
-                    if (data.appointment_details) {
-                        const details = data.appointment_details;
-                        successMessage += `\n\nAppointment Details:`;
-                        successMessage += `\nDoctor: ${details.doctor_name}`;
-                        successMessage += `\nDate: ${details.appointment_date}`;
-                        successMessage += `\nTime: ${details.appointment_time}`;
-                        successMessage += `\nClinic: ${details.clinic_name}`;
-
-                        if (details.daily_appointments_count && details.remaining_slots_today !== undefined) {
-                            successMessage += `\n\nDaily Booking Status:`;
-                            successMessage += `\nAppointments today: ${details.daily_appointments_count}/4`;
-                            successMessage += `\nRemaining slots today: ${details.remaining_slots_today}`;
-                        }
-                    }
-
-                    setTimeout(() => {
-                        alert(successMessage);
-                        if (confirm('Would you like to view your appointments?')) {
-                            window.location.href = '../user/appointments.php';
-                        }
-                    }, 500);
-
-                    showNotification('success', 'Appointment booked successfully!');
+                    
+                    // Show the success modal with details
+                    showSuccessModal(data);
+                    
                 } else {
                     // Enhanced error handling for daily limit
                     let errorMessage = data.message;
@@ -702,18 +910,6 @@ include '../styles.php';
                         const count = bookingStatus.daily_count || 0;
                         const remaining = 4 - count;
 
-                        if (count > 0) {
-                            const statusDiv = document.querySelector('.daily-booking-status') || document.createElement('div');
-                            statusDiv.className = 'daily-booking-status';
-                            statusDiv.innerHTML = `
-                        <div style="background: ${remaining === 0 ? '#ffebee' : '#e8f5e8'}; 
-                                   border: 1px solid ${remaining === 0 ? '#f44336' : '#4caf50'}; 
-                                   padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 14px;">
-                            <i class="fas ${remaining === 0 ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-                            Daily Booking Status: ${count}/4 appointments on ${new Date(selectedDate).toLocaleDateString()}
-                            ${remaining === 0 ? ' (Limit reached - choose another date)' : ` (${remaining} slots remaining)`}
-                        </div>
-                    `;
 
                             if (!document.querySelector('.daily-booking-status')) {
                                 dateInput.parentNode.appendChild(statusDiv);
@@ -725,7 +921,6 @@ include '../styles.php';
                             } else {
                                 timeSelect.disabled = false;
                             }
-                        }
                     }
                 }
             });
@@ -763,6 +958,73 @@ include '../styles.php';
                 return null;
             }
         }
+
+        function showSuccessModal(data) {
+            const successModal = document.getElementById('successModal');
+            const successDetails = document.getElementById('successDetails');
+            
+            // Populate appointment details if available
+            if (data.appointment_details) {
+                const details = data.appointment_details;
+                successDetails.innerHTML = `
+                    <div class="success-detail-item">
+                        <i class="fas fa-user-md"></i>
+                        <span><strong>Doctor:</strong> ${details.doctor_name}</span>
+                    </div>
+                    <div class="success-detail-item">
+                        <i class="fas fa-calendar"></i>
+                        <span><strong>Date:</strong> ${new Date(details.appointment_date).toLocaleDateString()}</span>
+                    </div>
+                    <div class="success-detail-item">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>Time:</strong> ${details.appointment_time}</span>
+                    </div>
+                    <div class="success-detail-item">
+                        <i class="fas fa-hospital"></i>
+                        <span><strong>Clinic:</strong> ${details.clinic_name}</span>
+                    </div>
+                `;
+            } else {
+                successDetails.innerHTML = `
+                    <div class="success-detail-item">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Appointment details will be sent to your email shortly.</span>
+                    </div>
+                `;
+            }
+            
+            // Show the modal
+            successModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            // Auto-close after 8 seconds (optional)
+            setTimeout(() => {
+                if (successModal.style.display === 'block') {
+                    closeSuccessModal();
+                }
+            }, 30000);
+        }
+
+        // Function to close success modal
+        function closeSuccessModal() {
+            const successModal = document.getElementById('successModal');
+            successModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Function to redirect to appointments page
+        function viewAppointments() {
+            window.location.href = '../user/appointments.php';
+        }
+
+        // Add event listener to close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            const successModal = document.getElementById('successModal');
+            if (e.target === successModal) {
+                closeSuccessModal();
+            }
+        });
+
     </script>
     <!---AOS Library --->
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
