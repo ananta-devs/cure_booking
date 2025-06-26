@@ -100,36 +100,9 @@
         </div>
     </div>
 
-    <!-- Success Modal -->
-    <div id="successModal" class="modal">
-        <div class="modal-content">
-            <div class="success-content">
-                 <i class="ri-checkbox-circle-fill" style="font-size: 60px; color: #4CAF50;"></i>
-                <h2>Order Submitted Thank You</h2>
-                <p>Your medicine order has been placed successfully!
-                    We will contact you shortly to confirm your appointment.
-                </p>
-                <button id="success-ok-btn" class="btn primary-btn">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        .success-content {
-            text-align: center;
-            padding: 20px;
-        }
-        .success-content h2 {
-            color: #28a745;
-            margin-bottom: 15px;
-        }
-        .success-content p {
-            margin-bottom: 25px;
-            color: #666;
-        }
-    </style>
-
     <script>
+        // Fixed JavaScript code for medicine ordering system
+
         document.addEventListener('DOMContentLoaded', function() {
             // Cache DOM elements
             const $ = id => document.getElementById(id);
@@ -171,24 +144,34 @@
                     initiateSearch();
                 });
 
-                elements.searchInput.addEventListener('keypress', e => {
+                elements.searchInput?.addEventListener('keypress', e => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         initiateSearch();
                     }
                 });
 
-                // Cart
-                $('view-cart-btn').addEventListener('click', () => checkLoginStatus() && openModal('cart'));
-                $('checkout-btn').addEventListener('click', () => checkLoginStatus() && openModal('order'));
-                $('clear-cart-btn').addEventListener('click', clearCart);
-                $('proceed-checkout-btn').addEventListener('click', () => {
-                    closeModal('cart');
-                    openModal('order');
-                });
+                // Cart - Check if elements exist before adding listeners
+                const viewCartBtn = $('view-cart-btn');
+                const checkoutBtn = $('checkout-btn');
+                const clearCartBtn = $('clear-cart-btn');
+                const proceedCheckoutBtn = $('proceed-checkout-btn');
 
-                // Success modal
-                $('success-ok-btn').addEventListener('click', () => closeModal('success'));
+                if (viewCartBtn) {
+                    viewCartBtn.addEventListener('click', () => checkLoginStatus() && openModal('cart'));
+                }
+                if (checkoutBtn) {
+                    checkoutBtn.addEventListener('click', () => checkLoginStatus() && openModal('order'));
+                }
+                if (clearCartBtn) {
+                    clearCartBtn.addEventListener('click', clearCart);
+                }
+                if (proceedCheckoutBtn) {
+                    proceedCheckoutBtn.addEventListener('click', () => {
+                        closeModal('cart');
+                        openModal('order');
+                    });
+                }
 
                 // Modals
                 document.querySelectorAll('.modal .close').forEach(btn => {
@@ -202,12 +185,19 @@
                 });
 
                 // Order form
-                elements.orderForm?.addEventListener('submit', handleOrderSubmit);
-                elements.loadMoreBtn.addEventListener('click', loadMoreResults);
+                if (elements.orderForm) {
+                    elements.orderForm.addEventListener('submit', handleOrderSubmit);
+                }
+                
+                if (elements.loadMoreBtn) {
+                    elements.loadMoreBtn.addEventListener('click', loadMoreResults);
+                }
             }
 
             function checkLoginStatus() {
-                if (!USER_LOGGED_IN) {
+                // Check if USER_LOGGED_IN is defined
+                if (typeof USER_LOGGED_IN === 'undefined' || !USER_LOGGED_IN) {
+                    alert('Please login to continue');
                     window.location.href = '../user/login.php';
                     return false;
                 }
@@ -216,9 +206,14 @@
 
             function openModal(type) {
                 const modal = type === 'cart' ? elements.cartModal : 
-                              type === 'order' ? elements.orderModal : 
-                              elements.successModal;
-                              
+                            type === 'order' ? elements.orderModal : 
+                            elements.successModal;
+                
+                if (!modal) {
+                    console.error(`Modal not found for type: ${type}`);
+                    return;
+                }
+                            
                 if (type === 'cart') updateCartModal();
                 else if (type === 'order') updateOrderSummary();
 
@@ -228,56 +223,188 @@
 
             function closeModal(type) {
                 const modal = type === 'cart' ? elements.cartModal : 
-                              type === 'order' ? elements.orderModal : 
-                              elements.successModal;
+                            type === 'order' ? elements.orderModal : 
+                            elements.successModal;
+                
+                if (!modal) return;
+                
                 modal.style.display = 'none';
                 document.body.style.overflow = '';
             }
 
             function handleOrderSubmit(e) {
                 e.preventDefault();
+                
+                console.log('Order submit triggered'); // Debug log
 
-                if (!checkLoginStatus() || cart.length === 0) {
-                    if (cart.length === 0) alert('Your cart is empty!');
+                if (!checkLoginStatus()) {
+                    console.log('User not logged in');
                     return;
                 }
 
+                if (cart.length === 0) {
+                    alert('Your cart is empty!');
+                    console.log('Cart is empty');
+                    return;
+                }
+
+                // Validate form data
                 const formData = new FormData(elements.orderForm);
-                formData.append('cart', JSON.stringify(cart.map(item => ({
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity
-                }))));
-                formData.append('totalAmount', calculateCartTotal());
+                const name = formData.get('name');
+                const phone = formData.get('phone');
+                const email = formData.get('email');
+                const address = formData.get('address');
+
+                if (!name || !phone || !email || !address) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                // Prepare order data
+                const orderData = {
+                    action: 'place_order', // Add action parameter
+                    name: name,
+                    phone: phone,
+                    email: email,
+                    address: address,
+                    cart: JSON.stringify(cart.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        manufacturer: item.manufacturer,
+                        composition: item.composition
+                    }))),
+                    totalAmount: calculateCartTotal()
+                };
+
+                console.log('Sending order data:', orderData); // Debug log
 
                 const submitBtn = elements.orderForm.querySelector('button[type="submit"]');
                 const originalText = submitBtn.textContent;
                 submitBtn.textContent = 'Processing...';
                 submitBtn.disabled = true;
 
+                // Send order data
                 fetch(API_ENDPOINT, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(orderData)
+                })
+                .then(response => {
+                    console.log('Response status:', response.status); // Debug log
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text(); // Get as text first to see raw response
+                })
+                .then(text => {
+                    console.log('Raw response:', text); // Debug log
+                    try {
+                        const data = JSON.parse(text);
+                        console.log('Parsed response:', data); // Debug log
+                        
                         if (data.status === 'success') {
-                            // Close order modal and show success modal
-                            closeModal('order');
-                            openModal('success');
-                            
-                            // Reset form and clear cart
+                            showThankYouOverlay();
                             elements.orderForm.reset();
-                            clearCart();
+                            closeModal('order');
+                            cart = []; // Clear cart
+                            updateCartDisplay();
+                            updateCartModal();
+                            updateAllCartButtons();
                         } else {
-                            alert('Error: ' + data.message);
+                            alert('Error: ' + (data.message || 'Unknown error occurred'));
                         }
-                    })
-                    .catch(error => alert('Error submitting form: ' + error.message))
-                    .finally(() => {
-                        submitBtn.textContent = originalText;
-                        submitBtn.disabled = false;
-                    });
+                    } catch (parseError) {
+                        console.error('JSON parse error:', parseError);
+                        console.log('Response was not valid JSON:', text);
+                        alert('Server error: Invalid response format');
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('Error submitting order: ' + error.message);
+                })
+                .finally(() => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+            }
+
+            function showThankYouOverlay() {
+                // Remove existing overlay if any
+                const existingOverlay = document.querySelector('.thank-you-overlay');
+                if (existingOverlay) {
+                    existingOverlay.remove();
+                }
+
+                // Add CSS animations if not present
+                if (!document.querySelector('#dynamic-animations')) {
+                    const style = document.createElement('style');
+                    style.id = 'dynamic-animations';
+                    style.textContent = `
+                        @keyframes fadeIn {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        @keyframes scaleIn {
+                            from { transform: scale(0.7); opacity: 0; }
+                            to { transform: scale(1); opacity: 1; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+
+                const thankYouOverlay = document.createElement('div');
+                thankYouOverlay.className = 'thank-you-overlay';
+                thankYouOverlay.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.8); display: flex; align-items: center;
+                    justify-content: center; z-index: 10001; animation: fadeIn 0.3s ease-out;
+                `;
+
+                const thankYouModal = document.createElement('div');
+                thankYouModal.className = 'thank-you-modal';
+                thankYouModal.style.cssText = `
+                    background: white; border-radius: 15px; text-align: center;
+                    padding: 40px 30px; max-width: 400px; width: 90%;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                    animation: scaleIn 0.3s ease-out;
+                `;
+
+                thankYouModal.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <i class="ri-checkbox-circle-fill" style="font-size: 60px; color: #4CAF50;"></i>
+                    </div>
+                    <h2 style="color: #333; margin-bottom: 15px; font-size: 24px;">Order Submitted</h2>
+                    <h3 style="color: #4CAF50; margin-bottom: 20px; font-size: 20px;">Thank You!</h3>
+                    <p style="color: #666; margin-bottom: 25px; line-height: 1.5;">
+                        Your medicine order has been placed successfully! 
+                        We will contact you shortly to confirm your order.
+                    </p>
+                    <button onclick="this.closest('.thank-you-overlay').remove(); document.body.style.overflow = '';" 
+                            style="background: #4CAF50; color: white; border: none; padding: 12px 30px; 
+                                border-radius: 5px; font-size: 16px; cursor: pointer; transition: all 0.3s ease;">
+                        OK
+                    </button>
+                `;
+
+                thankYouOverlay.appendChild(thankYouModal);
+                document.body.appendChild(thankYouOverlay);
+                document.body.style.overflow = 'hidden';
+
+                // Add hover effect to button
+                const okButton = thankYouModal.querySelector('button');
+                okButton.addEventListener('mouseenter', () => {
+                    okButton.style.background = '#45a049';
+                    okButton.style.transform = 'translateY(-2px)';
+                });
+                okButton.addEventListener('mouseleave', () => {
+                    okButton.style.background = '#4CAF50';
+                    okButton.style.transform = 'translateY(0)';
+                });
             }
 
             // Cart functions
@@ -336,6 +463,11 @@
             }
 
             function updateCartDisplay() {
+                if (!elements.cartCount || !elements.cartTotal || !elements.modalCartTotal) {
+                    console.error('Cart display elements not found');
+                    return;
+                }
+
                 const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
                 const total = calculateCartTotal();
 
@@ -343,7 +475,10 @@
                 elements.cartTotal.textContent = total.toFixed(0);
                 elements.modalCartTotal.textContent = total.toFixed(0);
 
-                elements.cartSummary.classList.toggle('hidden', totalItems === 0 || !USER_LOGGED_IN);
+                if (elements.cartSummary) {
+                    const shouldShow = totalItems > 0 && (typeof USER_LOGGED_IN !== 'undefined' && USER_LOGGED_IN);
+                    elements.cartSummary.classList.toggle('hidden', !shouldShow);
+                }
             }
 
             function updateAllCartButtons() {
@@ -354,7 +489,7 @@
             }
 
             function updateCartButtonState(button, medicineId) {
-                if (!USER_LOGGED_IN) {
+                if (typeof USER_LOGGED_IN === 'undefined' || !USER_LOGGED_IN) {
                     button.innerHTML = '<i class="ri-user-line"></i> Login to Add';
                     button.classList.remove('added-to-cart');
                     return;
@@ -368,12 +503,16 @@
             }
 
             function updateCartModal() {
+                if (!elements.cartItemsContainer) {
+                    console.error('Cart items container not found');
+                    return;
+                }
+
                 if (cart.length === 0) {
                     elements.cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
                     return;
                 }
 
-                // Inject dynamic HTML with AOS attributes
                 elements.cartItemsContainer.innerHTML = cart.map(item => `
                     <div class="cart-item">
                         <div class="cart-item-info">
@@ -388,14 +527,18 @@
                                 <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
                             </div>
                             <div class="cart-item-price">₹${(item.price * item.quantity).toFixed(0)}</div>
-                                <button class="remove-btn" onclick="removeFromCart(${item.id})">&times;</button>
+                            <button class="remove-btn" onclick="removeFromCart(${item.id})">&times;</button>
                         </div>
                     </div>
                 `).join('');
-
             }
 
             function updateOrderSummary() {
+                if (!elements.orderSummary) {
+                    console.error('Order summary element not found');
+                    return;
+                }
+
                 if (cart.length === 0) {
                     elements.orderSummary.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
                     return;
@@ -420,9 +563,21 @@
             }
 
             function showNotification(message) {
+                // Remove existing notification
+                const existingNotification = document.querySelector('.notification');
+                if (existingNotification) {
+                    existingNotification.remove();
+                }
+
                 const notification = document.createElement('div');
                 notification.className = 'notification';
                 notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; background: #4CAF50;
+                    color: white; padding: 15px 20px; border-radius: 5px;
+                    z-index: 10000; animation: slideIn 0.3s ease-out;
+                `;
+                
                 document.body.appendChild(notification);
                 setTimeout(() => notification.remove(), 3000);
             }
@@ -430,6 +585,7 @@
             // Make functions globally available
             window.updateQuantity = updateQuantity;
             window.removeFromCart = removeFromCart;
+            window.addToCart = addToCart;
 
             // Medicine data and search functions
             async function loadMedicinesData() {
@@ -455,17 +611,18 @@
             function displayRandomMedicines() {
                 const shuffled = [...allMedicines].sort(() => 0.5 - Math.random());
                 const randomMedicines = shuffled.slice(0, itemsPerPage);
-                displayResults(randomMedicines, 0); // Don't show count for random medicines
-                elements.loadMoreBtn.classList.add('hidden');
+                displayResults(randomMedicines, 0);
+                if (elements.loadMoreBtn) {
+                    elements.loadMoreBtn.classList.add('hidden');
+                }
             }
 
             function initiateSearch() {
-                const query = elements.searchInput.value.trim();
+                const query = elements.searchInput?.value.trim() || '';
                 if (query.length === 0) {
                     displayRandomMedicines();
                     return;
                 }
-                if (query.length < 1) return;
 
                 currentPage = 1;
                 performSearch(query);
@@ -487,14 +644,18 @@
                     if (currentSearchResults.length === 0) {
                         showError('No medicines found. Try a different search term.');
                         clearResults();
-                        elements.loadMoreBtn.classList.add('hidden');
+                        if (elements.loadMoreBtn) {
+                            elements.loadMoreBtn.classList.add('hidden');
+                        }
                         return;
                     }
 
                     const resultsForPage = currentSearchResults.slice(0, itemsPerPage);
                     displayResults(resultsForPage, currentSearchResults.length, query);
 
-                    elements.loadMoreBtn.classList.toggle('hidden', currentSearchResults.length <= itemsPerPage);
+                    if (elements.loadMoreBtn) {
+                        elements.loadMoreBtn.classList.toggle('hidden', currentSearchResults.length <= itemsPerPage);
+                    }
                 } catch (error) {
                     showError('Error performing search: ' + error.message);
                 } finally {
@@ -509,10 +670,12 @@
                 const nextPageResults = currentSearchResults.slice(startIndex, endIndex);
 
                 nextPageResults.forEach(medicine => {
-                    elements.resultsContainer.appendChild(createMedicineCard(medicine));
+                    if (elements.resultsContainer) {
+                        elements.resultsContainer.appendChild(createMedicineCard(medicine));
+                    }
                 });
 
-                if (endIndex >= currentSearchResults.length) {
+                if (endIndex >= currentSearchResults.length && elements.loadMoreBtn) {
                     elements.loadMoreBtn.classList.add('hidden');
                 }
             }
@@ -524,13 +687,14 @@
                     return;
                 }
 
-                // Only show count if there's a search query
                 if (query.trim()) {
                     displaySearchResultsCount(totalCount || medicines.length, query);
                 }
 
                 medicines.forEach(medicine => {
-                    elements.resultsContainer.appendChild(createMedicineCard(medicine));
+                    if (elements.resultsContainer) {
+                        elements.resultsContainer.appendChild(createMedicineCard(medicine));
+                    }
                 });
             }
 
@@ -551,7 +715,9 @@
                     `<p>Found <strong>${count}</strong> result${count !== 1 ? 's' : ''} for "<em>${query}</em>"</p>` :
                     `<p>Showing <strong>${count}</strong> medicine${count !== 1 ? 's' : ''}</p>`;
 
-                elements.resultsContainer.parentNode.insertBefore(resultsCount, elements.resultsContainer);
+                if (elements.resultsContainer && elements.resultsContainer.parentNode) {
+                    elements.resultsContainer.parentNode.insertBefore(resultsCount, elements.resultsContainer);
+                }
             }
 
             function getCompositionText(medicine) {
@@ -589,37 +755,52 @@
                     <div class="button-container" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
                 `;
 
-                // Important: Refresh AOS after DOM update
+                // Refresh AOS after DOM update
                 setTimeout(() => {
-                    AOS.refreshHard();
+                    if (typeof AOS !== 'undefined') {
+                        AOS.refreshHard();
+                    }
                 }, 0);
 
-
-                card.querySelector('.button-container').appendChild(addToCartBtn);
+                const buttonContainer = card.querySelector('.button-container');
+                if (buttonContainer) {
+                    buttonContainer.appendChild(addToCartBtn);
+                }
+                
                 return card;
             }
 
             // Utility functions
             function showLoading() {
-                elements.loadingIndicator.classList.remove('hidden');
+                if (elements.loadingIndicator) {
+                    elements.loadingIndicator.classList.remove('hidden');
+                }
             }
 
             function hideLoading() {
-                elements.loadingIndicator.classList.add('hidden');
+                if (elements.loadingIndicator) {
+                    elements.loadingIndicator.classList.add('hidden');
+                }
             }
 
             function showError(msg) {
-                elements.errorMessage.textContent = msg;
-                elements.errorMessage.classList.remove('hidden');
+                if (elements.errorMessage) {
+                    elements.errorMessage.textContent = msg;
+                    elements.errorMessage.classList.remove('hidden');
+                }
             }
 
             function clearError() {
-                elements.errorMessage.textContent = '';
-                elements.errorMessage.classList.add('hidden');
+                if (elements.errorMessage) {
+                    elements.errorMessage.textContent = '';
+                    elements.errorMessage.classList.add('hidden');
+                }
             }
 
             function clearResults() {
-                elements.resultsContainer.innerHTML = '';
+                if (elements.resultsContainer) {
+                    elements.resultsContainer.innerHTML = '';
+                }
                 const existingCount = document.getElementById('results-count');
                 if (existingCount) existingCount.remove();
             }
