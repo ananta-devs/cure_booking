@@ -100,6 +100,35 @@
         </div>
     </div>
 
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="success-content">
+                 <i class="ri-checkbox-circle-fill" style="font-size: 60px; color: #4CAF50;"></i>
+                <h2>Order Submitted Thank You</h2>
+                <p>Your medicine order has been placed successfully!
+                    We will contact you shortly to confirm your appointment.
+                </p>
+                <button id="success-ok-btn" class="btn primary-btn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .success-content {
+            text-align: center;
+            padding: 20px;
+        }
+        .success-content h2 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        .success-content p {
+            margin-bottom: 25px;
+            color: #666;
+        }
+    </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Cache DOM elements
@@ -113,6 +142,7 @@
                 resultsContainer: $('results-container'),
                 cartModal: $('cartModal'),
                 orderModal: $('orderModal'),
+                successModal: $('successModal'),
                 cartSummary: $('cart-summary'),
                 cartCount: $('cart-count'),
                 cartTotal: $('cart-total'),
@@ -157,6 +187,9 @@
                     openModal('order');
                 });
 
+                // Success modal
+                $('success-ok-btn').addEventListener('click', () => closeModal('success'));
+
                 // Modals
                 document.querySelectorAll('.modal .close').forEach(btn => {
                     btn.addEventListener('click', () => closeModal(btn.getAttribute('data-modal')));
@@ -165,6 +198,7 @@
                 window.addEventListener('click', event => {
                     if (event.target === elements.cartModal) closeModal('cart');
                     else if (event.target === elements.orderModal) closeModal('order');
+                    else if (event.target === elements.successModal) closeModal('success');
                 });
 
                 // Order form
@@ -181,16 +215,21 @@
             }
 
             function openModal(type) {
-                const modal = type === 'cart' ? elements.cartModal : elements.orderModal;
+                const modal = type === 'cart' ? elements.cartModal : 
+                              type === 'order' ? elements.orderModal : 
+                              elements.successModal;
+                              
                 if (type === 'cart') updateCartModal();
-                else updateOrderSummary();
+                else if (type === 'order') updateOrderSummary();
 
                 modal.style.display = 'block';
                 document.body.style.overflow = 'hidden';
             }
 
             function closeModal(type) {
-                const modal = type === 'cart' ? elements.cartModal : elements.orderModal;
+                const modal = type === 'cart' ? elements.cartModal : 
+                              type === 'order' ? elements.orderModal : 
+                              elements.successModal;
                 modal.style.display = 'none';
                 document.body.style.overflow = '';
             }
@@ -223,10 +262,13 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'success') {
-                            alert('Your medicine order has been placed successfully!');
+                            // Close order modal and show success modal
+                            closeModal('order');
+                            openModal('success');
+                            
+                            // Reset form and clear cart
                             elements.orderForm.reset();
                             clearCart();
-                            closeModal('order');
                         } else {
                             alert('Error: ' + data.message);
                         }
@@ -319,20 +361,10 @@
                 }
 
                 const isInCart = cart.some(item => item.id == medicineId);
-                if (isInCart) {
-                    button.innerHTML = '<i class="ri-check-line"></i> Added';
-                    button.className = 'add-to-cart-btn in-cart';
-                    button.style.background = '#374151'; 
-                    button.style.color = '#ffffff'; 
-                    button.disabled = true; 
-                }
-                else {
-                    button.innerHTML = '<i class="ri-shopping-cart-line"></i> Add Cart';
-                    button.className = 'add-to-cart-btn';
-                    button.style.background = '#3b82f6';
-                    button.style.color = '#ffffff';
-                    button.disabled = false;
-                }
+                button.innerHTML = isInCart ?
+                    '<i class="ri-check-line"></i> Added' :
+                    '<i class="ri-shopping-cart-line"></i> Add to Cart';
+                button.classList.toggle('added-to-cart', isInCart);
             }
 
             function updateCartModal() {
@@ -602,7 +634,7 @@
         });
     </script>
     <?php
-    include "../include/footer.php";
+        include "../include/footer.php";
     ?>
 </body>
 
