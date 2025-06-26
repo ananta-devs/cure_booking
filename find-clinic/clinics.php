@@ -20,7 +20,7 @@
             <p>Find all your prescription medications, supplements, and healthcare essentials at competitive prices.</p>
             <form class="search-container" onsubmit="searchClinics(event)">
                 <input type="text" id="search-bar" placeholder="Search for clinics..." />
-                <button type="submit" aria-label="Search"><i class="ri-search-line"></i></button>
+                <button type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
             </form>
         </div>
     </section>
@@ -28,7 +28,7 @@
     <section class="clinics-section">
         <h2 data-aos="fade" data-aos-delay="200">Available Clinics</h2>
         <div id="loading" class="loading" style="display: none;">
-            <i class="ri-loader-4-line"></i> Loading clinics...
+            <i class="fa-solid fa-spinner"></i> Loading clinics...
         </div>
         <div id="error-message" class="error-message" style="display: none;"></div>
         <div id="clinics-container" class="clinics-container"></div>
@@ -43,7 +43,7 @@
             </div>
             <div class="modal-body" id="modalBody">
                 <div class="loading-modal">
-                    <i class="ri-loader-4-line"></i>
+                    <i class="fa-solid fa-spinner"></i>
                     <p>Loading doctors...</p>
                 </div>
             </div>
@@ -129,7 +129,7 @@
             if (clinics.length === 0) {
                 container.innerHTML = `
                         <div class="no-results">
-                            <i class="ri-hospital-line"></i>
+                            <i class="fa-solid fa-house-medical-circle-xmark"></i>
                             <h3>No clinics found</h3>
                             <p>Try adjusting your search criteria or browse all available clinics.</p>
                         </div>
@@ -145,7 +145,7 @@
                                 ''
                             }
                             <div class="clinic-image-placeholder" ${clinic.profile_image ? 'style="display:none;"' : ''}>
-                                <i class="ri-hospital-fill"></i>
+                                <i class="fa-solid fa-hospital"></i>
                             </div>
                         </div>
                         <div class="clinic-info">
@@ -200,7 +200,7 @@
             // Show loading state
             modalBody.innerHTML = `
                     <div class="loading-modal">
-                        <i class="ri-loader-4-line"></i>
+                        <i class="fa-solid fa-spinner"></i>
                         <p>Loading doctors...</p>
                     </div>
                 `;
@@ -217,7 +217,7 @@
                 } else {
                     modalBody.innerHTML = `
                             <div class="no-doctors">
-                                <i class="ri-user-x-line"></i>
+                                <i class="fa-solid fa-ban"></i>
                                 <h3>No doctors found</h3>
                                 <p>This clinic doesn't have any available doctors at the moment.</p>
                             </div>
@@ -242,7 +242,7 @@
             if (doctors.length === 0) {
                 modalBody.innerHTML = `
                         <div class="no-doctors">
-                            <i class="ri-user-x-line"></i>
+                            <i class="fa-solid fa-ban"></i>
                             <h3>No doctors available</h3>
                             <p>This clinic doesn't have any available doctors at the moment.</p>
                         </div>
@@ -260,7 +260,7 @@
                                         ''
                                     }
                                     <div class="doctor-avatar-placeholder" ${doctor.doc_img ? 'style="display:none;"' : ''}>
-                                        <i class="ri-user-line"></i>
+                                        <i class="fa-solid fa-user-doctor"></i>
                                     </div>
                                     <div class="doctor-basic-info">
                                         <h3>${escapeHtml(doctor.doc_name)}</h3>

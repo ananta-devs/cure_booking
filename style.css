@@ -21,12 +21,11 @@ body {
 }
 
 /* Hero Section */
-.hero-inner
-{
+.hero-inner {
   display: flex;
 }
 
-.model img{
+.model img {
   height: 450px;
   width: 400px;
   padding-top: 10px;
@@ -88,9 +87,34 @@ body {
   transition: background-color 0.4s ease;
 }
 
-.search-btn:hover{
+.search-btn:hover {
   background-color: #2563EB;
 }
+
+/* Pop-up page close*/
+.popup-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 30px;
+  height: 30px;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 30px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.popup-close:hover {
+  background-color: #dc2626;
+  /* Darker red on hover */
+  transform: rotate(180deg) scale(1.1);
+}
+
 
 /* Services Section */
 .services {
@@ -113,7 +137,7 @@ body {
 .service-card {
   position: relative;
   background-color: white;
-  border-radius: 12px;
+  border-radius: 6px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   transition: transform 1s ease, box-shadow 0.4s ease;
@@ -149,7 +173,7 @@ body {
 
 
 .service-card a {
-  color: #353535; 
+  color: #353535;
   text-decoration: none;
   display: flex;
   flex-direction: column;
@@ -176,11 +200,12 @@ body {
   justify-content: center;
   overflow: hidden;
 }
+
 .service-img img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease-in-out; 
+  transition: transform 0.4s ease-in-out;
 }
 
 .service-card:hover .service-img img {
@@ -226,7 +251,6 @@ body {
   height: 120px;
   width: 120px;
   background-color: #e9f0f7;
-  border-radius: 50%;
   margin: 0 auto 15px;
   display: flex;
   align-items: center;
@@ -421,7 +445,7 @@ footer {
 
 /* Additional Responsive Adjustments */
 @media (max-width: 992px) {
-  
+
   .services-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
@@ -431,19 +455,19 @@ footer {
   .hero h1 {
     text-align: center;
   }
-  
+
   .hero p {
     text-align: center;
   }
-  
+
   .search-btn {
     max-width: 100%;
   }
-  
+
   .services-grid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
-  
+
   .doctors-grid {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
@@ -459,19 +483,19 @@ footer {
   .services-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .doctors-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
-  
+
   .app-buttons {
     flex-direction: column;
   }
-  
+
   .app-btn {
     width: 100%;
   }
-  
+
   .footer-grid {
     grid-template-columns: 1fr;
   }

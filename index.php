@@ -265,7 +265,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
             // Add event listeners
             searchInput.addEventListener("input", handleSearchInput);
             searchInput.addEventListener("focus", handleSearchFocus);
-            
+
             // Handle search button click (for hero section)
             const searchBtn = document.querySelector(".search-btn");
             if (searchBtn) {
@@ -286,7 +286,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
             container.id = "searchResults";
             container.className = "search-results";
             container.style.display = "none";
-            
+
             // Insert after search box
             const searchBox = document.querySelector(".search-box");
             if (searchBox) {
@@ -294,7 +294,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } else {
                 document.body.appendChild(container);
             }
-            
+
             // Update global reference
             window.searchResults = container;
         }
@@ -304,20 +304,20 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
             section.id = "detailsSection";
             section.className = "details-section";
             section.style.display = "none";
-            
+
             const content = document.createElement("div");
             content.id = "detailsContent";
             content.className = "details-content";
-            
+
             const closeBtn = document.createElement("button");
             closeBtn.className = "details-close";
             closeBtn.innerHTML = "×";
             closeBtn.onclick = hideDetails;
-            
+
             section.appendChild(closeBtn);
             section.appendChild(content);
             document.body.appendChild(section);
-            
+
             // Update global references
             window.detailsSection = section;
             window.detailsContent = content;
@@ -326,7 +326,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
         function handleSearchInput() {
             clearTimeout(searchTimeout);
             const query = this.value.trim();
-            
+
             if (query.length >= 2) {
                 searchTimeout = setTimeout(() => performSearch(query), 300);
             } else {
@@ -359,11 +359,11 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         async function performSearch(query) {
             showSearchLoading();
-            
+
             try {
                 const response = await fetch(`${API_BASE_URL}?action=search&query=${encodeURIComponent(query)}`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
+
                 const data = await response.json();
                 displaySearchResults(data);
             } catch (error) {
@@ -452,7 +452,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
             try {
                 const response = await fetch(`${API_BASE_URL}?action=doctor_details&id=${doctorId}`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
+
                 const data = await response.json();
                 data.error ? showDetailsError(data.error) : displayDoctorDetails(data);
             } catch (error) {
@@ -468,7 +468,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
             try {
                 const response = await fetch(`${API_BASE_URL}?action=clinic_details&id=${clinicId}`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
+
                 const data = await response.json();
                 if (data.error) {
                     showDetailsError(data.error);
@@ -485,7 +485,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
         function showDetailsLoading() {
             const detailsContentEl = document.getElementById("detailsContent") || window.detailsContent;
             const detailsSectionEl = document.getElementById("detailsSection") || window.detailsSection;
-            
+
             if (detailsContentEl && detailsSectionEl) {
                 detailsContentEl.innerHTML = '<div class="search-loading">Loading details...</div>';
                 detailsSectionEl.style.display = "block";
@@ -495,7 +495,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
         function showDetailsError(message) {
             const detailsContentEl = document.getElementById("detailsContent") || window.detailsContent;
             const detailsSectionEl = document.getElementById("detailsSection") || window.detailsSection;
-            
+
             if (detailsContentEl && detailsSectionEl) {
                 detailsContentEl.innerHTML = `<div class="error-message">${message}</div>`;
                 detailsSectionEl.style.display = "block";
@@ -505,11 +505,12 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
         function displayDoctorDetails(doctor) {
             const detailsContentEl = document.getElementById("detailsContent") || window.detailsContent;
             const detailsSectionEl = document.getElementById("detailsSection") || window.detailsSection;
-            
+
             if (!detailsContentEl || !detailsSectionEl) return;
 
             let html = `
                 <div class="details-card">
+                <span class="popup-close" onclick="closeClinicPopup()"><i class="fa-solid fa-xmark"></i></span>
                     <div class="details-header">
                         <div class="details-avatar">👨‍⚕️</div>
                         <div class="details-info">
@@ -525,7 +526,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                         <div class="detail-item">
                             <h4>Experience</h4>
-                            <p>${doctor.experience || "Not specified"}</p>
+                            <p>${doctor.experience || "Not specified"} ${doctor.experience == 1 ? "Year" : "Years"}</p>
                         </div>
                         <div class="detail-item">
                             <h4>Location</h4>
@@ -579,10 +580,17 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
             detailsSectionEl.style.display = "block";
         }
 
+        function closeClinicPopup() {
+            const popup = document.querySelector('.details-card');
+            if (popup) {
+                popup.style.display = 'none';
+            }
+        }
+
         function displayClinicDetails(clinic, clinicId) {
             const detailsContentEl = document.getElementById("detailsContent") || window.detailsContent;
             const detailsSectionEl = document.getElementById("detailsSection") || window.detailsSection;
-            
+
             if (!detailsContentEl || !detailsSectionEl) return;
 
             const html = `

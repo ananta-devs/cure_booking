@@ -319,10 +319,20 @@
                 }
 
                 const isInCart = cart.some(item => item.id == medicineId);
-                button.innerHTML = isInCart ?
-                    '<i class="ri-check-line"></i> Added' :
-                    '<i class="ri-shopping-cart-line"></i> Add to Cart';
-                button.classList.toggle('added-to-cart', isInCart);
+                if (isInCart) {
+                    button.innerHTML = '<i class="ri-check-line"></i> Added';
+                    button.className = 'add-to-cart-btn in-cart';
+                    button.style.background = '#374151'; 
+                    button.style.color = '#ffffff'; 
+                    button.disabled = true; 
+                }
+                else {
+                    button.innerHTML = '<i class="ri-shopping-cart-line"></i> Add Cart';
+                    button.className = 'add-to-cart-btn';
+                    button.style.background = '#3b82f6';
+                    button.style.color = '#ffffff';
+                    button.disabled = false;
+                }
             }
 
             function updateCartModal() {
@@ -592,7 +602,7 @@
         });
     </script>
     <?php
-        include "../include/footer.php";
+    include "../include/footer.php";
     ?>
 </body>
 
