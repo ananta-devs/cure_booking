@@ -71,6 +71,22 @@ include '../styles.php';
             font-size: 18px;
         }
 
+        .modal-content .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;       /* larger size for visibility */
+            font-weight: bold;
+            color: #3b82f6;
+            cursor: pointer;
+            transition: color 0.3s ease, transform 0.3s;
+            z-index: 10;
+        }
+
+        .modal-content .close:hover {
+            color: #ef4444;  /* red on hover */
+            transform: scale(1.2);
+        }
 
         .doctor-clinics-section {
             margin-top: 25px;
@@ -153,6 +169,24 @@ include '../styles.php';
         .clinic-availability strong {
             color: #2c3e50;
             font-weight: 600;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .primary-btn {
+            background-color: #3B82F6;
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background-color: #3B82F6;
         }
 
         @media (max-width: 768px) {

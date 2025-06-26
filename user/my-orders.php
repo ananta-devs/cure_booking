@@ -190,7 +190,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders - CureBooking (Test Version)</title>
+    <title>My Orders - CureBooking </title>
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="stylesheet" href="order.css">
 </head>
@@ -198,7 +198,7 @@
     <?php include '../include/header.php'; ?>
     <div class="container">
         <div class="page-header">
-            <h1>My Orders (Test Version)</h1>
+            <h1>My Orders </h1>
             <p>Track your lab tests and medicine orders</p>
             <p><small>Session Email: <?php echo htmlspecialchars($user_email); ?></small></p>
         </div>
