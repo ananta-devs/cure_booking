@@ -656,7 +656,8 @@
                     const data = await response.json();
 
                     if (data.status === 'success') {
-                        alert(data.message);
+                        // Show thank you message instead of alert
+                        this.showThankYouMessage();
                         this.elements.bookingForm.reset();
                         this.closeModal('booking');
                         this.cart = []; // Clear cart
@@ -672,7 +673,76 @@
                     submitBtn.disabled = false;
                 }
             }
+            
+            showThankYouMessage() {
+                // Create thank you modal/overlay
+                const thankYouOverlay = document.createElement('div');
+                thankYouOverlay.className = 'thank-you-overlay';
+                thankYouOverlay.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.8); display: flex; align-items: center;
+                    justify-content: center; z-index: 10001; animation: fadeIn 0.3s ease-out;
+                `;
 
+                const thankYouModal = document.createElement('div');
+                thankYouModal.className = 'thank-you-modal';
+                thankYouModal.style.cssText = `
+                    background: white; border-radius: 15px; text-align: center;
+                    padding: 40px 30px; max-width: 400px; width: 90%;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                    animation: scaleIn 0.3s ease-out;
+                `;
+
+                thankYouModal.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <i class="ri-checkbox-circle-fill" style="font-size: 60px; color: #4CAF50;"></i>
+                    </div>
+                    <h2 style="color: #333; margin-bottom: 15px; font-size: 24px;">Order Submitted</h2>
+                    <h3 style="color: #4CAF50; margin-bottom: 20px; font-size: 20px;">Thank You!</h3>
+                    <p style="color: #666; margin-bottom: 25px; line-height: 1.5;">
+                        Your lab test booking has been successfully submitted. 
+                        We will contact you shortly to confirm your appointment.
+                    </p>
+                    <button onclick="this.closest('.thank-you-overlay').remove(); document.body.style.overflow = '';" 
+                            style="background: #4CAF50; color: white; border: none; padding: 12px 30px; 
+                                border-radius: 5px; font-size: 16px; cursor: pointer; transition: all 0.3s ease;">
+                        OK
+                    </button>
+                `;
+
+                thankYouOverlay.appendChild(thankYouModal);
+                document.body.appendChild(thankYouOverlay);
+                document.body.style.overflow = 'hidden';
+
+                // Add CSS animations if not already present
+                if (!document.querySelector('#thank-you-styles')) {
+                    const styles = document.createElement('style');
+                    styles.id = 'thank-you-styles';
+                    styles.textContent = `
+                        @keyframes fadeIn {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        @keyframes scaleIn {
+                            from { transform: scale(0.7); opacity: 0; }
+                            to { transform: scale(1); opacity: 1; }
+                        }
+                        .thank-you-modal button:hover {
+                            background: #45a049 !important;
+                            transform: translateY(-2px);
+                        }
+                    `;
+                    document.head.appendChild(styles);
+                }
+
+                // Auto close after 5 seconds
+                setTimeout(() => {
+                    if (thankYouOverlay.parentNode) {
+                        thankYouOverlay.remove();
+                        document.body.style.overflow = '';
+                    }
+                }, 5000);
+            }
             showNotification(message) {
                 const notification = document.createElement('div');
                 notification.className = 'notification';
