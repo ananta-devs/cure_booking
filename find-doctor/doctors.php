@@ -734,18 +734,17 @@ include '../styles.php';
         // HELPER FUNCTIONS (add these to your script)
         function showNotification(type, message) {
             document.querySelectorAll('.notification').forEach(n => n.remove());
-
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-            <span style="white-space: pre-line;">${message}</span>
-            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `;
+                <div class="notification-content">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                    <span style="white-space: pre-line;">${message}</span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
 
             document.body.appendChild(notification);
             setTimeout(() => notification.remove(), 7000);
@@ -774,7 +773,7 @@ include '../styles.php';
     </script>
 </body>
 <?php
-include '../include/footer.php'
+    include '../include/footer.php';
 ?>
 
 </html>
