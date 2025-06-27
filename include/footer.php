@@ -12,7 +12,7 @@
   /* Grid Layout */
   .footer-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 40px;
     max-width: 1200px;
     margin: 0 auto 40px;
@@ -91,10 +91,6 @@
     }
   }
 
-  .fa-brands {
-    color: #3b82f6;
-    padding-right: 10px;
-  }
 </style>
 
 <!-- Footer -->
@@ -127,6 +123,8 @@
                 <ul class="footer-links">
                      <li ><a href="http://localhost/cure_booking/login.php?role=doctor">CureBooking Profile</a></li>
                 </ul>
+            </div>
+            <div class="footer-column">
                 <h4>For Clinics</h4>
                 <ul class="footer-links">
                     <li><a href="http://localhost/cure_booking/login.php?role=clinic">CureBooking Profile</a></li>
@@ -144,10 +142,10 @@
             <div class="footer-column">
                 <h4>Social</h4>
                 <ul class="footer-links">
-                    <li><i class="fa-brands fa-facebook"></i><a href="https://www.facebook.com/" target="blank">Facebook</a></li>
-                    <li><i class="fa-brands fa-square-x-twitter"></i><a href="https://x.com/i/flow/login" target="blank">X-handle</a></li>
-                    <li><i class="fa-brands fa-square-instagram"></i><a href="https://www.instagram.com/" target="blank">Instagram</a></li>
-                    <li><i class="fa-brands fa-youtube"></i><a href="https://www.youtube.com/" target="blank">Youtube</a></li>
+                    <li><a href="https://www.facebook.com/" target="blank">Facebook</a></li>
+                    <li><a href="https://x.com/i/flow/login" target="blank">X-handle</a></li>
+                    <li><a href="https://www.instagram.com/" target="blank">Instagram</a></li>
+                    <li><a href="https://www.youtube.com/" target="blank">Youtube</a></li>
                 </ul>
             </div>
         </div>
