@@ -1,10 +1,10 @@
 <?php
-// Get clinic name from session
-$clinic_name = $_SESSION['clinic_name'] ?? 'Clinic Name';
-$clinic_location = $_SESSION['clinic_location'] ?? 'NULL';
+    // Get clinic name from session
+    $clinic_name = $_SESSION['clinic_name'] ?? 'Clinic Name';
+    $clinic_location = $_SESSION['clinic_location'] ?? 'NULL';
 
-// Get current page to set active state
-$current_page = basename($_SERVER['PHP_SELF']);
+    // Get current page to set active state
+    $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <style>
     /* Sidebar */
@@ -205,51 +205,51 @@ $current_page = basename($_SERVER['PHP_SELF']);
         }
     }
     @media (max-width: 480px) {
-    .top-header {
-        left: 0;
-        top: 59px; /* Ensure it's at the top */
-        height: 60px; /* Further reduce height for small screens */
-        min-height: 60px; /* Ensure minimum height */
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
+        .top-header {
+            left: 0;
+            top: 59px; /* Ensure it's at the top */
+            height: 60px; /* Further reduce height for small screens */
+            min-height: 60px; /* Ensure minimum height */
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+        /* Adjust date/time display for small screens */
+        .current-date .date {
+            font-size: 1rem;
+            margin-bottom: 0.1rem;
+        }
+        
+        .current-date .time {
+            font-size: 0.8rem;
+        }
+        
     }
-    /* Adjust date/time display for small screens */
-    .current-date .date {
-        font-size: 1rem;
-        margin-bottom: 0.1rem;
-    }
-    
-    .current-date .time {
-        font-size: 0.8rem;
-    }
-    
-}
 
-/* Extra small screens */
-@media (max-width: 360px) {
-    .top-header {
-        height: 50px;
-        padding: 0 0.5rem;
+    /* Extra small screens */
+    @media (max-width: 360px) {
+        .top-header {
+            height: 50px;
+            padding: 0 0.5rem;
+        }
+        
+        .top-header .clinic-info h2 {
+            font-size: 1rem;
+            max-width: 120px;
+        }
+        
+        .top-header .clinic-info p {
+            font-size: 0.7rem;
+        }
+        
+        .current-date .date {
+            font-size: 0.9rem;
+        }
+        
+        .current-date .time {
+            font-size: 0.7rem;
+        }
     }
-    
-    .top-header .clinic-info h2 {
-        font-size: 1rem;
-        max-width: 120px;
-    }
-    
-    .top-header .clinic-info p {
-        font-size: 0.7rem;
-    }
-    
-    .current-date .date {
-        font-size: 0.9rem;
-    }
-    
-    .current-date .time {
-        font-size: 0.7rem;
-    }
-}
     /* Smooth transitions for all interactive elements */
     * {
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
