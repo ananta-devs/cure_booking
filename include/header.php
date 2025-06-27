@@ -275,6 +275,7 @@ if (session_status() == PHP_SESSION_NONE) {
         /* Show hamburger menu on mobile */
         .hamburger-menu {
             display: flex;
+            text-align: left;
         }
 
         /* Hide logo image on mobile */
