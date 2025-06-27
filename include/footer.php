@@ -90,9 +90,17 @@
       grid-template-columns: 1fr;
     }
   }
+
+  .fa-brands {
+    color: #3b82f6;
+    padding-right: 10px;
+  }
 </style>
 
 <!-- Footer -->
+ <head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+ </head>
 <footer>
         <div class="footer-grid">
             <div class="footer-column">
@@ -136,10 +144,10 @@
             <div class="footer-column">
                 <h4>Social</h4>
                 <ul class="footer-links">
-                    <li><a href="https://www.facebook.com/" target="blank">Facebook</a></li>
-                    <li><a href="https://x.com/i/flow/login" target="blank">X-handle</a></li>
-                    <li><a href="https://www.instagram.com/" target="blank">Instagram</a></li>
-                    <li><a href="https://www.youtube.com/" target="blank">Youtube</a></li>
+                    <li><i class="fa-brands fa-facebook"></i><a href="https://www.facebook.com/" target="blank">Facebook</a></li>
+                    <li><i class="fa-brands fa-square-x-twitter"></i><a href="https://x.com/i/flow/login" target="blank">X-handle</a></li>
+                    <li><i class="fa-brands fa-square-instagram"></i><a href="https://www.instagram.com/" target="blank">Instagram</a></li>
+                    <li><i class="fa-brands fa-youtube"></i><a href="https://www.youtube.com/" target="blank">Youtube</a></li>
                 </ul>
             </div>
         </div>
