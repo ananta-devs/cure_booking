@@ -12,7 +12,7 @@
   /* Grid Layout */
   .footer-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 40px;
     max-width: 1200px;
     margin: 0 auto 40px;
@@ -123,6 +123,8 @@
                 <ul class="footer-links">
                      <li ><a href="http://localhost/cure_booking/login.php?role=doctor">CureBooking Profile</a></li>
                 </ul>
+            </div>
+            <div class="footer-column">
                 <h4>For Clinics</h4>
                 <ul class="footer-links">
                     <li><a href="http://localhost/cure_booking/login.php?role=clinic">CureBooking Profile</a></li>
