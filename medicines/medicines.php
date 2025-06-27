@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search your medicines by typing brand</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
@@ -535,7 +536,7 @@
                                 <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
                             </div>
                             <div class="cart-item-price">₹${(item.price * item.quantity).toFixed(0)}</div>
-                            <button class="remove-btn" onclick="removeFromCart(${item.id})">&times;</button>
+                            <button class="remove-btn" onclick="removeFromCart(${item.id})"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
                 `).join('');
