@@ -639,7 +639,7 @@ include '../styles.php';
                     <p class="doctor-specialty">${doctor.specialty}</p>
                     ${doctor.location ? `<div class="doctor-location"><i class="fas fa-map-marker-alt"></i><span>${doctor.location}</span></div>` : ''}
                     ${doctor.experience ? `<div class="doctor-experience"><i class="fas fa-user-md"></i><span>${doctor.experience} Years Experience</span></div>` : ''}
-                    ${doctor.fees ? `<div class="doctor-fees"><i class="fas fa-money-bill-wave"></i><span>Consultation: ${doctor.fees}/-</span></div>` : ''}
+                    ${doctor.fees ? `<div class="doctor-fees"><i class="fas fa-money-bill-wave"></i><span>Consultation: ₹ ${doctor.fees}/-</span></div>` : ''}
                 </div>
                     <div class="doctor-actions" data-aos="fade" data-aos-duration="800">
                         <button class="view-profile-btn" data-id="${doctor.id}">View Profile</button>
@@ -685,7 +685,7 @@ include '../styles.php';
                                 ${createProfileDetail('fas fa-map-marker-alt', doctor.location)}
                                 ${createProfileDetail('fas fa-user-md', doctor.experience ? `${doctor.experience} Years Experience` : null)}
                                 ${createProfileDetail('fas fa-envelope', doctor.email)}
-                                ${createProfileDetail('fas fa-money-bill-wave', doctor.fees ? `Consultation Fee: ${doctor.fees}/-` : null)}
+                                ${createProfileDetail('fas fa-money-bill-wave', doctor.fees ? `Consultation Fee: ₹ ${doctor.fees}/-` : null)}
                             </div>
                         </div>
                     </div>
