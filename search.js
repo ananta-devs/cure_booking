@@ -7,9 +7,9 @@ const searchResults = document.getElementById("searchResults");
 const detailsSection = document.getElementById("detailsSection");
 const detailsContent = document.getElementById("detailsContent");
 
-// Search functionality
 let searchTimeout;
 
+// Event listeners
 searchInput.addEventListener("input", function () {
     clearTimeout(searchTimeout);
     const query = this.value.trim();
@@ -21,136 +21,155 @@ searchInput.addEventListener("input", function () {
     }
 });
 
-// Hide search results when clicking outside
 document.addEventListener("click", (e) => {
     if (!e.target.closest(".search-box")) hideSearchResults();
 });
 
-async function performSearch(query) {
-    showSearchLoading();
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}?action=search&query=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const data = await response.json();
-        displaySearchResults(data);
-    } catch (error) {
-        console.error("Search error:", error);
-        showSearchError("Search failed. Please check your connection and try again.");
-    }
+// Utility functions
+function showElement(element, content) {
+    element.innerHTML = content;
+    element.style.display = "block";
 }
 
-function showSearchLoading() {
-    searchResults.innerHTML = '<div class="search-loading">🔍 Searching...</div>';
-    searchResults.style.display = "block";
+function hideElement(element) {
+    element.style.display = "none";
 }
 
 function hideSearchResults() {
-    searchResults.style.display = "none";
+    hideElement(searchResults);
 }
 
-function showSearchError(message) {
-    searchResults.innerHTML = `<div class="error-message">${message}</div>`;
-    searchResults.style.display = "block";
+function hideDetails() {
+    hideElement(detailsSection);
+    searchInput.focus();
+}
+
+// API functions
+async function apiRequest(action, params = {}) {
+    const url = new URL(API_BASE_URL);
+    url.searchParams.set('action', action);
+    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
+}
+
+async function performSearch(query) {
+    showElement(searchResults, '<div class="search-loading">🔍 Searching...</div>');
+    
+    try {
+        const data = await apiRequest('search', { query });
+        displaySearchResults(data);
+    } catch (error) {
+        console.error("Search error:", error);
+        showElement(searchResults, '<div class="error-message">Search failed. Please check your connection and try again.</div>');
+    }
 }
 
 function displaySearchResults(data) {
     if (data.doctors.length === 0 && data.clinics.length === 0) {
-        searchResults.innerHTML = '<div class="no-results">No results found. Try different search terms.</div>';
-        searchResults.style.display = "block";
+        showElement(searchResults, '<div class="no-results">No results found. Try different search terms.</div>');
         return;
     }
 
-    let html = "";
-
-    // Display doctors
-    data.doctors.forEach(doctor => {
-        html += `
-            <div class="search-result-item" onclick="showDoctorDetails(${doctor.doc_id})">
-                <div class="result-info">
-                    <div class="result-name">${doctor.doc_name}</div>
-                    <div class="result-specialty">${doctor.doc_specia}</div>
-                    <div class="result-location">${doctor.location || "Location not specified"}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="result-type">Doctor</div>
-                    <div class="result-fee">₹${doctor.fees}</div>
-                </div>
+    const doctorResults = data.doctors.map(doctor => `
+        <div class="search-result-item" onclick="showDoctorDetails(${doctor.doc_id})">
+            <div class="result-info">
+                <div class="result-name">${doctor.doc_name}</div>
+                <div class="result-specialty">${doctor.doc_specia}</div>
+                <div class="result-location">${doctor.location || "Location not specified"}</div>
             </div>
-        `;
-    });
-
-    // Display clinics
-    data.clinics.forEach(clinic => {
-        html += `
-            <div class="search-result-item" onclick="showClinicDetails(${clinic.clinic_id})">
-                <div class="result-info">
-                    <div class="result-name">${clinic.clinic_name}</div>
-                    <div class="result-specialty">Clinic</div>
-                    <div class="result-location">${clinic.location}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="result-type clinic">Clinic</div>
-                    <div class="result-fee">${clinic.contact_number}</div>
-                </div>
+            <div style="text-align: right;">
+                <div class="result-type">Doctor</div>
+                <div class="result-fee">₹${doctor.fees}</div>
             </div>
-        `;
-    });
+        </div>
+    `).join('');
 
-    searchResults.innerHTML = html;
-    searchResults.style.display = "block";
+    const clinicResults = data.clinics.map(clinic => `
+        <div class="search-result-item" onclick="showClinicDetails(${clinic.clinic_id})">
+            <div class="result-info">
+                <div class="result-name">${clinic.clinic_name}</div>
+                <div class="result-specialty">Clinic</div>
+                <div class="result-location">${clinic.location}</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="result-type clinic">Clinic</div>
+                <div class="result-fee">${clinic.contact_number}</div>
+            </div>
+        </div>
+    `).join('');
+
+    showElement(searchResults, doctorResults + clinicResults);
 }
 
 async function showDoctorDetails(doctorId) {
     hideSearchResults();
-    showDetailsLoading();
+    showElement(detailsContent, '<div class="search-loading">Loading details...</div>');
+    detailsSection.style.display = "block";
 
     try {
-        const response = await fetch(`${API_BASE_URL}?action=doctor_details&id=${doctorId}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const data = await response.json();
-        data.error ? showDetailsError(data.error) : displayDoctorDetails(data);
+        const data = await apiRequest('doctor_details', { id: doctorId });
+        if (data.error) throw new Error(data.error);
+        displayDoctorDetails(data);
     } catch (error) {
         console.error("Doctor details error:", error);
-        showDetailsError("Failed to load doctor details. Please try again.");
+        showElement(detailsContent, '<div class="error-message">Failed to load doctor details. Please try again.</div>');
     }
 }
 
 async function showClinicDetails(clinicId) {
     hideSearchResults();
-    showDetailsLoading();
+    showElement(detailsContent, '<div class="search-loading">Loading details...</div>');
+    detailsSection.style.display = "block";
 
     try {
-        const response = await fetch(`${API_BASE_URL}?action=clinic_details&id=${clinicId}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await apiRequest('clinic_details', { id: clinicId });
+        if (data.error) throw new Error(data.error);
         
-        const data = await response.json();
-        if (data.error) {
-            showDetailsError(data.error);
-        } else {
-            displayClinicDetails(data, clinicId);
-            loadClinicDoctors(clinicId);
-        }
+        displayClinicDetails(data);
+        loadClinicDoctors(clinicId);
     } catch (error) {
         console.error("Clinic details error:", error);
-        showDetailsError("Failed to load clinic details. Please try again.");
+        showElement(detailsContent, '<div class="error-message">Failed to load clinic details. Please try again.</div>');
     }
 }
 
-function showDetailsLoading() {
-    detailsContent.innerHTML = '<div class="search-loading">Loading details...</div>';
-    detailsSection.style.display = "block";
-}
-
-function showDetailsError(message) {
-    detailsContent.innerHTML = `<div class="error-message">${message}</div>`;
-    detailsSection.style.display = "block";
-}
-
 function displayDoctorDetails(doctor) {
-    let html = `
+    const bioSection = doctor.bio ? `
+        <div class="detail-item" style="grid-column: 1 / -1;">
+            <h4>About</h4>
+            <p>${doctor.bio}</p>
+        </div>` : '';
+
+    const clinicsSection = doctor.schedules?.length > 0 ? `
+        <div class="clinic-list">
+            <h3>🏥 Available at Clinics</h3>
+            ${doctor.schedules.map(schedule => `
+                <div class="clinic-item">
+                    <div class="clinic-info">
+                        <h4>${schedule.clinic_name}</h4>
+                        <p>${schedule.location}</p>
+                    </div>
+                    <div class="clinic-badge">Available</div>
+                </div>
+            `).join('')}
+        </div>
+    ` : doctor.clinics ? `
+        <div class="clinic-list">
+            <h3>🏥 Available at Clinics</h3>
+            <div class="clinic-item">
+                <div class="clinic-info">
+                    <h4>Clinics</h4>
+                    <p>${doctor.clinics}</p>
+                </div>
+                <div class="clinic-badge">Available</div>
+            </div>
+        </div>
+    ` : '';
+
+    const html = `
         <div class="details-card">
             <div class="details-header">
                 <div class="details-avatar">👨‍⚕️</div>
@@ -177,51 +196,16 @@ function displayDoctorDetails(doctor) {
                     <h4>Education</h4>
                     <p>${doctor.education || "Not specified"}</p>
                 </div>
-                ${doctor.bio ? `
-                <div class="detail-item" style="grid-column: 1 / -1;">
-                    <h4>About</h4>
-                    <p>${doctor.bio}</p>
-                </div>` : ''}
+                ${bioSection}
             </div>
+            ${clinicsSection}
+        </div>
     `;
 
-    // Display available clinics
-    if (doctor.schedules?.length > 0) {
-        html += `
-            <div class="clinic-list">
-                <h3>🏥 Available at Clinics</h3>
-                ${doctor.schedules.map(schedule => `
-                    <div class="clinic-item">
-                        <div class="clinic-info">
-                            <h4>${schedule.clinic_name}</h4>
-                            <p>${schedule.location}</p>
-                        </div>
-                        <div class="clinic-badge">Available</div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } else if (doctor.clinics) {
-        html += `
-            <div class="clinic-list">
-                <h3>🏥 Available at Clinics</h3>
-                <div class="clinic-item">
-                    <div class="clinic-info">
-                        <h4>Clinics</h4>
-                        <p>${doctor.clinics}</p>
-                    </div>
-                    <div class="clinic-badge">Available</div>
-                </div>
-            </div>
-        `;
-    }
-
-    html += "</div>";
     detailsContent.innerHTML = html;
-    detailsSection.style.display = "block";
 }
 
-function displayClinicDetails(clinic, clinicId) {
+function displayClinicDetails(clinic) {
     const html = `
         <div class="details-card">
             <div class="details-header">
@@ -254,13 +238,11 @@ function displayClinicDetails(clinic, clinicId) {
     `;
 
     detailsContent.innerHTML = html;
-    detailsSection.style.display = "block";
 }
 
 async function loadClinicDoctors(clinicId) {
     try {
-        const response = await fetch(`${API_BASE_URL}?action=clinic_doctors&id=${clinicId}`);
-        const data = await response.json();
+        const data = await apiRequest('clinic_doctors', { id: clinicId });
 
         if (data.doctors?.length > 0) {
             const doctorsHtml = `
@@ -286,10 +268,5 @@ async function loadClinicDoctors(clinicId) {
     }
 }
 
-function hideDetails() {
-    detailsSection.style.display = "none";
-    searchInput.focus();
-}
-
 // Initialize
-document.addEventListener("DOMContentLoaded", () => searchInput.focus()); 
+document.addEventListener("DOMContentLoaded", () => searchInput.focus());
