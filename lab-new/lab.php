@@ -445,42 +445,103 @@
                 });
             }
 
+            // createLabTestCard(labTest) {
+            //     const card = document.createElement('div');
+            //     card.className = 'result-card';
+
+            //     const isInCart = this.cart.some(item => item.id === labTest.id);
+
+            //     card.innerHTML = `
+            //         <div class="details" data-aos="fade" data-aos-duration="1000">
+            //             <h3 class="name">${labTest.name}</h3>
+            //             <div class="lab-sample"><strong>Sample:</strong> ${labTest.sample || 'N/A'}</div>
+            //             <div class="price"><strong>Price:</strong> ₹${labTest.price || 'N/A'}/-</div>
+            //             <div class="lab-desc">${labTest.description || 'No description available'}</div>
+            //         </div>
+            //         <div class="button-container">
+            //             <button class="add-to-cart-btn ${isInCart ? 'in-cart' : ''}" 
+            //                     data-test-id="${labTest.id}" ${isInCart ? 'disabled' : ''}>
+            //                 <i class="ri-${isInCart ? 'check' : 'shopping-cart'}-line"></i> 
+            //                 ${isInCart ? 'Added' : 'Add to Cart'}
+            //             </button>
+            //         </div>
+            //     `;
+            //     // Important: Refresh AOS after DOM update
+            //     setTimeout(() => {
+            //         AOS.refreshHard();
+            //     }, 0);
+
+            //     const addBtn = card.querySelector('.add-to-cart-btn');
+            //     addBtn.addEventListener('click', e => {
+            //         e.stopPropagation();
+            //         if (!isInCart && !this.cart.some(item => item.id === labTest.id)) {
+            //             this.addToCart(labTest);
+            //         }
+            //     });
+
+            //     return card;
+            // }
             createLabTestCard(labTest) {
-                const card = document.createElement('div');
-                card.className = 'result-card';
+    const card = document.createElement('div');
+    card.className = 'result-card';
 
-                const isInCart = this.cart.some(item => item.id === labTest.id);
+    const isInCart = this.cart.some(item => item.id === labTest.id);
 
-                card.innerHTML = `
-                    <div class="details" data-aos="fade" data-aos-duration="1000">
-                        <h3 class="name">${labTest.name}</h3>
-                        <div class="lab-sample"><strong>Sample:</strong> ${labTest.sample || 'N/A'}</div>
-                        <div class="price"><strong>Price:</strong> ₹${labTest.price || 'N/A'}/-</div>
-                        <div class="lab-desc">${labTest.description || 'No description available'}</div>
-                    </div>
-                    <div class="button-container">
-                        <button class="add-to-cart-btn ${isInCart ? 'in-cart' : ''}" 
-                                data-test-id="${labTest.id}" ${isInCart ? 'disabled' : ''}>
-                            <i class="ri-${isInCart ? 'check' : 'shopping-cart'}-line"></i> 
-                            ${isInCart ? 'Added' : 'Add to Cart'}
-                        </button>
-                    </div>
-                `;
-                // Important: Refresh AOS after DOM update
-                setTimeout(() => {
-                    AOS.refreshHard();
-                }, 0);
+    // Determine button content based on login status
+    let buttonContent, buttonClass, buttonDisabled;
+    
+    if (!isUserLoggedIn) {
+        buttonContent = '<i class="ri-user-line"></i> Login to Add';
+        buttonClass = 'add-to-cart-btn login-required';
+        buttonDisabled = false;
+    } else if (isInCart) {
+        buttonContent = '<i class="ri-check-line"></i> Added';
+        buttonClass = 'add-to-cart-btn in-cart';
+        buttonDisabled = true;
+    } else {
+        buttonContent = '<i class="ri-shopping-cart-line"></i> Add to Cart';
+        buttonClass = 'add-to-cart-btn';
+        buttonDisabled = false;
+    }
 
-                const addBtn = card.querySelector('.add-to-cart-btn');
-                addBtn.addEventListener('click', e => {
-                    e.stopPropagation();
-                    if (!isInCart && !this.cart.some(item => item.id === labTest.id)) {
-                        this.addToCart(labTest);
-                    }
-                });
+    card.innerHTML = `
+        <div class="details" data-aos="fade" data-aos-duration="1000">
+            <h3 class="name">${labTest.name}</h3>
+            <div class="lab-sample"><strong>Sample:</strong> ${labTest.sample || 'N/A'}</div>
+            <div class="price"><strong>Price:</strong> ₹${labTest.price || 'N/A'}/-</div>
+            <div class="lab-desc">${labTest.description || 'No description available'}</div>
+        </div>
+        <div class="button-container">
+            <button class="${buttonClass}" 
+                    data-test-id="${labTest.id}" ${buttonDisabled ? 'disabled' : ''}>
+                ${buttonContent}
+            </button>
+        </div>
+    `;
 
-                return card;
-            }
+    // Important: Refresh AOS after DOM update
+    setTimeout(() => {
+        AOS.refreshHard();
+    }, 0);
+
+    const addBtn = card.querySelector('.add-to-cart-btn');
+    addBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        
+        if (!isUserLoggedIn) {
+            // Redirect to login page
+            sessionStorage.setItem('returnUrl', window.location.href);
+            window.location.href = '../user/login.php';
+            return;
+        }
+        
+        if (!isInCart && !this.cart.some(item => item.id === labTest.id)) {
+            this.addToCart(labTest);
+        }
+    });
+
+    return card;
+}
 
             addToCart(labTest) {
                 if (!isUserLoggedIn) {
