@@ -111,7 +111,7 @@ function handleFileUpload($oldImage = '') {
     }
     
     // Generate unique filename
-    $uniqueFilename = 'doctor_' . uniqid() . '_' . time() . '.' . $fileExtension;
+    $uniqueFilename = uniqid() . time() . '.' . $fileExtension;
     $uploadPath = $uploadDir . $uniqueFilename;
     
     // Move uploaded file
