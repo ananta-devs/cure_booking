@@ -1,21 +1,21 @@
 <?php
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cure_booking";
+    // Database connection
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "cure_booking";
 
-try {
-    $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
-}
+    try {
+        $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
 
-// Fetch doctors from database (limit to 6 for the homepage)
-$stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia, doc_img, fees FROM doctor LIMIT 6");
-$stmt->execute();
-$doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Fetch doctors from database (limit to 6 for the homepage)
+    $stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia, doc_img, fees FROM doctor LIMIT 6");
+    $stmt->execute();
+    $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -24,6 +24,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#3B82F6">
     <title>CureBooking | Find Doctors & Book Appointments Online</title>
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="stylesheet" href="style.css">
