@@ -136,10 +136,10 @@
             <div class="footer-column">
                 <h4>Social</h4>
                 <ul class="footer-links">
-                    <li><a href="https://www.facebook.com/">Facebook</a></li>
-                    <li><a href="https://x.com/i/flow/login">X-handle</a></li>
-                    <li><a href="https://www.instagram.com/">Instagram</a></li>
-                    <li><a href="https://www.youtube.com/">Youtube</a></li>
+                    <li><a href="https://www.facebook.com/" target="blank">Facebook</a></li>
+                    <li><a href="https://x.com/i/flow/login" target="blank">X-handle</a></li>
+                    <li><a href="https://www.instagram.com/" target="blank">Instagram</a></li>
+                    <li><a href="https://www.youtube.com/" target="blank">Youtube</a></li>
                 </ul>
             </div>
         </div>

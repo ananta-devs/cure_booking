@@ -363,11 +363,14 @@ body {
   align-items: center;
   background-color: black;
   color: white;
-  padding: 10px 20px;
-  border-radius: 4px;
+  padding: 8px 10px;
+  border-radius: 7px;
   text-decoration: none;
-  flex: 1 1 150px;
   justify-content: center;
+}
+
+.appstore {
+  padding-right: 40px;
 }
 
 .app-btn span {
@@ -469,6 +472,7 @@ footer {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
+
 
 @media (max-width: 768px) {
   .hero h1 {

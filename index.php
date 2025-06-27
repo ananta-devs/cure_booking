@@ -162,14 +162,14 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <p>Book appointments, order medicines, consult with doctors,
                     and manage your health records - all from the convenience of your smartphone.</p>
                 <div class="app-buttons">
-                    <a href="#" class="app-btn">
+                    <a href="https://play.google.com/store/" target="blank" class="app-btn">
                         <img class="store" src="http://localhost/cure_booking/assets/play-store.png" />
                         <div class="btn-text">
                             <span class="app-btn-text-small">Get it on</span>
                             <span class="app-btn-text-large">Google Play</span>
                         </div>
                     </a>
-                    <a href="#" class="app-btn">
+                    <a href="https://www.apple.com/app-store/" target="blank" class="app-btn appstore">
                         <img class="store" src="http://localhost/cure_booking/assets/app-store.png" alt="App Store Logo" />
                         <div class="btn-text">
                             <span class="app-btn-text-small">Get it on</span>
