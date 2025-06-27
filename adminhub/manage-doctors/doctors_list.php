@@ -311,7 +311,7 @@
                 <td><img src="${imageUrl}" alt="${doctor.doc_name}" class="doctor-img" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;"></td>
                 <td>${doctor.doc_name}</td>
                 <td>${doctor.doc_specia}</td>
-                <td>$${parseFloat(doctor.fees || 0).toFixed(2)}</td>
+                <td>${parseFloat(doctor.fees || 0).toFixed(2)}</td>
                 <td>${doctor.experience || 0} years</td>
                 <td>${doctor.doc_email || "N/A"}</td>
                 <td>${clinicNames}</td>
