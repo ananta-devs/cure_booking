@@ -124,7 +124,7 @@
                         <div class="doctor-card" data-aos="fade-up">
                             <div class="doctor-img">
                                 <?php if (!empty($doctor['doc_img'])): ?>
-                                    <img src="http://localhost/adminhub/manage-doctors/uploads/<?php echo htmlspecialchars($doctor['doc_img']); ?>"
+                                    <img src="http://localhost/cure_booking/adminhub/manage-doctors/uploads/<?php echo htmlspecialchars($doctor['doc_img']); ?>"
                                         alt="<?php echo htmlspecialchars($doctor['doc_name']); ?>">
                                 <?php endif; ?>
                             </div>
