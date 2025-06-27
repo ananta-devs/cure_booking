@@ -396,6 +396,19 @@ body {
   height: auto;
 }
 
+.store {
+  height: 20px;
+  padding-right: 10px;
+}
+
+.btn-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: left;
+}
+
+
 @media(max-width:768px) {
   .app-image{
     padding-right: 50px;
@@ -500,9 +513,44 @@ footer {
 
   .app-btn {
     width: 100%;
+    padding: 8px 16px;
   }
 
   .footer-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.app-btn {
+    text-decoration: none;
+}
+
+.download {
+    display: flex;
+    align-items: center; /* aligns image and text in the center vertically */
+    background-color: #000; /* optional: black button look */
+    padding: 10px 15px;
+    border-radius: 10px;
+    color: white;
+    width: fit-content;
+}
+
+.store {
+    height: 40px; /* or whatever size fits */
+    margin-right: 10px; /* creates space between image and text */
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.app-btn-text-small {
+    font-size: 12px;
+}
+
+.app-btn-text-large {
+    font-size: 16px;
+    font-weight: bold;
 }
