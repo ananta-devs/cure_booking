@@ -157,7 +157,7 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- App Section -->
     <section class="app-section">
         <div class="container app-container">
-            <div class="app-content">
+            <div class="app-content" data-aos="fade-right">
                 <h2>Download the CureBooking App</h2>
                 <p>Book appointments, order medicines, consult with doctors,
                     and manage your health records - all from the convenience of your smartphone.</p>
@@ -176,8 +176,8 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </a>
                 </div>
             </div>
-            <div class="app-image">
-                <img src="/api/placeholder/300/500" alt="Mobile App">
+            <div class="app-image" data-aos="fade-left">
+                <img src="http://localhost/cure_booking/assets/phone-desktop.png" alt="Mobile App">
             </div>
         </div>
     </section>

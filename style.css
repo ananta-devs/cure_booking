@@ -323,8 +323,9 @@ body {
 /* App Section */
 .app-section {
   padding: 50px 0;
-  background-color: #faf2f2;
+  background-color: #e0e0e0;
 }
+
 
 .app-container {
   display: flex;
@@ -387,11 +388,18 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  text-align: left;
 }
 
 .app-image img {
   max-width: 100%;
   height: auto;
+}
+
+@media(max-width:768px) {
+  .app-image{
+    padding-right: 50px;
+  }
 }
 
 /* Footer */

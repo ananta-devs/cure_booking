@@ -7,6 +7,7 @@
     <title>CureBooking | Lab Tests</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
     <style>
         .order-summary-container,
@@ -598,7 +599,7 @@
                         </div>
                         <div class="cart-item-controls">
                             <div class="cart-item-price">₹${item.price.toFixed(0)}</div>
-                            <button class="remove-btn" onclick="labManager.removeFromCart(${item.id})">&times;</button>
+                            <button class="remove-btn" onclick="labManager.removeFromCart(${item.id})"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
                 `).join('');
