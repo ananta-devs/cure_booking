@@ -198,7 +198,6 @@
             function checkLoginStatus() {
                 // Check if USER_LOGGED_IN is defined
                 if (typeof USER_LOGGED_IN === 'undefined' || !USER_LOGGED_IN) {
-                    alert('Please login to continue');
                     window.location.href = '../user/login.php';
                     return false;
                 }
