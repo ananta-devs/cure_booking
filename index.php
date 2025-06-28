@@ -13,7 +13,7 @@
     }
 
     // Fetch doctors from database (limit to 6 for the homepage)
-    $stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia, doc_img, fees FROM doctor LIMIT 6");
+    $stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia, doc_img, fees FROM doctor LIMIT 4");
     $stmt->execute();
     $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
