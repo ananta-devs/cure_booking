@@ -1,11 +1,19 @@
+<?php
+    session_start();
+
+    // Check if user is logged in (for both doctor and clinic)
+    if (!isset($_SESSION['logged_in']) && !isset($_SESSION['doctor_id'])) {
+        header('Location: ../login.php');
+        exit;
+    }
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doctor Profile - CureBooking</title>
-    <link rel="stylesheet" href="style_doctor.css">
-    <link rel="stylesheet" href="change_password_modal.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
@@ -98,8 +106,7 @@
             </section>
         </main>
     </div>
-
-    <script src="script_doctor.js"></script>
-    <script src="change_password.js"></script>
+    <script src="script.js"></script>
+      
 </body>
 </html>
