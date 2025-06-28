@@ -1,4 +1,4 @@
-// script_doctor.js - Updated to show clinic list with clickable availability
+// script_doctor.js - Updated to show clinic list with clickable availability and appointment counts
 class DoctorProfile {
     constructor() {
         this.doctorId = null;
@@ -13,6 +13,7 @@ class DoctorProfile {
             await this.getLoggedInDoctorId();
             if (this.doctorId) {
                 await this.loadDoctorProfile();
+                await this.loadAppointmentCounts();
             } else {
                 this.showError("No doctor logged in. Please login first.");
                 // Redirect to login page after 3 seconds
@@ -55,6 +56,78 @@ class DoctorProfile {
         }
     }
 
+    async loadAppointmentCounts() {
+        try {
+            const response = await fetch(
+                "api.php?action=getDoctorAppointmentCounts"
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.displayAppointmentCounts(data);
+            } else {
+                console.error(
+                    "Failed to load appointment counts:",
+                    data.message
+                );
+                // Show default values if loading fails
+                this.displayAppointmentCounts({
+                    today_count: 0,
+                    tomorrow_count: 0,
+                });
+            }
+        } catch (error) {
+            console.error("Error loading appointment counts:", error);
+            // Show default values if loading fails
+            this.displayAppointmentCounts({
+                today_count: 0,
+                tomorrow_count: 0,
+            });
+        }
+    }
+
+    displayAppointmentCounts(data) {
+        const todayCountElement = document.getElementById("todayCount");
+        const tomorrowCountElement = document.getElementById("tomorrowCount");
+
+        if (todayCountElement) {
+            todayCountElement.textContent = data.today_count || 0;
+            // Add visual feedback for appointment counts
+            if (data.today_count > 0) {
+                todayCountElement.classList.add("has-appointments");
+            }
+        }
+
+        if (tomorrowCountElement) {
+            tomorrowCountElement.textContent = data.tomorrow_count || 0;
+            // Add visual feedback for appointment counts
+            if (data.tomorrow_count > 0) {
+                tomorrowCountElement.classList.add("has-appointments");
+            }
+        }
+
+        // Optional: Update tooltips with more detailed information
+        const todayItem = document.querySelector(
+            ".appointment-count-item:first-child"
+        );
+        const tomorrowItem = document.querySelector(
+            ".appointment-count-item:last-child"
+        );
+
+        if (todayItem) {
+            todayItem.title = `You have ${data.today_count} appointment(s) scheduled for today`;
+        }
+
+        if (tomorrowItem) {
+            tomorrowItem.title = `You have ${data.tomorrow_count} appointment(s) scheduled for tomorrow`;
+        }
+    }
+
     async loadDoctorProfile() {
         try {
             const response = await fetch(
@@ -87,7 +160,7 @@ class DoctorProfile {
         // Update doctor image
         const doctorImg = document.getElementById("doctorImg");
         if (doctor.doc_img) {
-            doctorImg.src = `uploads/doctors/${doctor.doc_img}`;
+            doctorImg.src = `http://localhost/cure_booking/adminhub/manage-doctors/uploads/${doctor.doc_img}`;
             doctorImg.alt = `Dr. ${doctor.doc_name}`;
         } else {
             doctorImg.src = "https://via.placeholder.com/120x120?text=Doctor";
@@ -196,6 +269,7 @@ class DoctorProfile {
         // Scroll to availability details
         availabilityDetails.scrollIntoView({ behavior: "smooth" });
     }
+
     addCloseButtonListener() {
         const closeBtn = document.getElementById("closeAvailabilityBtn");
         if (closeBtn) {
@@ -335,6 +409,10 @@ class DoctorProfile {
         document.getElementById("doctorBio").textContent = message;
         document.getElementById("doctorEducation").textContent = "";
         document.getElementById("doctorEmail").textContent = "";
+
+        // Reset appointment counts to show error state
+        document.getElementById("todayCount").textContent = "-";
+        document.getElementById("tomorrowCount").textContent = "-";
     }
 }
 

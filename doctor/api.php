@@ -39,6 +39,9 @@ switch ($action) {
     case 'changePassword':
         changePassword($pdo);
         break;
+    case 'getDoctorAppointmentCounts':
+        getDoctorAppointmentCounts($pdo);
+        break;
     default:
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
@@ -62,6 +65,83 @@ function getLoggedInDoctor() {
             'success' => false,
             'message' => 'No doctor logged in or session expired'
         ]);
+    }
+}
+
+function getDoctorAppointmentCounts($pdo) {
+    // Check if doctor is logged in
+    if (!isset($_SESSION['doctor_id']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || $_SESSION['user_type'] !== 'doctor') {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Authentication required']);
+        return;
+    }
+
+    $doctorId = $_SESSION['doctor_id'];
+
+    try {
+        // Get today's date and tomorrow's date
+        $today = date('Y-m-d');
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+
+        // Count appointments for today
+        // Using 'id' as the primary key column based on your schema
+        $todayStmt = $pdo->prepare("
+            SELECT COUNT(*) as count 
+            FROM appointments 
+            WHERE doctor_id = ? 
+            AND DATE(appointment_date) = ?
+            AND status NOT IN ('cancelled', 'completed')
+        ");
+        $todayStmt->execute([$doctorId, $today]);
+        $todayCount = $todayStmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+        // Count appointments for tomorrow
+        $tomorrowStmt = $pdo->prepare("
+            SELECT COUNT(*) as count 
+            FROM appointments 
+            WHERE doctor_id = ? 
+            AND DATE(appointment_date) = ?
+            AND status NOT IN ('cancelled', 'completed')
+        ");
+        $tomorrowStmt->execute([$doctorId, $tomorrow]);
+        $tomorrowCount = $tomorrowStmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+        // Get recent appointments for additional context (optional)
+        // Updated to use the correct column names from your schema
+        $recentStmt = $pdo->prepare("
+            SELECT 
+                a.id as appointment_id,
+                a.appointment_date,
+                a.appointment_time,
+                a.status,
+                a.patient_name,
+                a.clinic_name
+            FROM appointments a
+            WHERE a.doctor_id = ? 
+            AND DATE(a.appointment_date) IN (?, ?)
+            AND a.status NOT IN ('cancelled', 'completed')
+            ORDER BY a.appointment_date ASC, a.appointment_time ASC
+            LIMIT 10
+        ");
+        $recentStmt->execute([$doctorId, $today, $tomorrow]);
+        $recentAppointments = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'today_count' => (int)$todayCount,
+            'tomorrow_count' => (int)$tomorrowCount,
+            'today_date' => $today,
+            'tomorrow_date' => $tomorrow,
+            'recent_appointments' => $recentAppointments
+        ]);
+
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database error: ' . $e->getMessage()
+        ]);
+        error_log("Appointment count error for doctor ID $doctorId: " . $e->getMessage());
     }
 }
 

@@ -17,6 +17,18 @@
                 <div class="doctor-details">
                     <h1 id="doctorName">Loading...</h1>
                     <p class="specialization" id="doctorSpecialization">Loading...</p>
+                    
+                    <!-- Appointment counts section -->
+                    <div class="appointment-counts">
+                        <div class="appointment-count-item">
+                            <div class="count-number" id="todayCount">-</div>
+                            <div class="count-label">Today's Appointments</div>
+                        </div>
+                        <div class="appointment-count-item">
+                            <div class="count-number" id="tomorrowCount">-</div>
+                            <div class="count-label">Tomorrow's Appointments</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="header-actions">
                     <button id="changePasswordBtn" class="change-password-btn" title="Change Password">
