@@ -32,6 +32,7 @@
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
 </head>
 
 <body>
@@ -133,9 +134,9 @@
                                         </div>
                                     </div>
                                     <div class="card-content">
-                                        <h3><?php echo htmlspecialchars($doctor['doc_name']); ?></h3>
+                                        <h3><?php echo htmlspecialchars('Dr. ' . $doctor['doc_name']); ?></h3>
                                         <div class="doctor-specia"><?php echo htmlspecialchars($doctor['doc_specia']); ?></div>
-                                        <button class="button">View More</button>
+                                        <button class="button" onclick="showDoctorDetails(<?php echo $doctor['doc_id']; ?>)">View More</button>
                                     </div>
                                 </div>
                             </div>
@@ -323,12 +324,6 @@
             content.id = "detailsContent";
             content.className = "details-content";
 
-            const closeBtn = document.createElement("button");
-            closeBtn.className = "details-close";
-            closeBtn.innerHTML = "×";
-            closeBtn.onclick = hideDetails;
-
-            section.appendChild(closeBtn);
             section.appendChild(content);
             document.body.appendChild(section);
 
@@ -523,79 +518,83 @@
             if (!detailsContentEl || !detailsSectionEl) return;
 
             let html = `
-                <div class="details-card">
-                <span class="popup-close" onclick="closeClinicPopup()"><i class="fa-solid fa-xmark"></i></span>
-                    <div class="details-header">
-                        <div class="details-avatar">👨‍⚕️</div>
-                        <div class="details-info">
-                            <h2>${doctor.doc_name}</h2>
-                            <p>${doctor.doc_specia}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="details-content">
-                        <div class="detail-item">
-                            <h4>Consultation Fee</h4>
-                            <p>₹${doctor.fees}</p>
-                        </div>
-                        <div class="detail-item">
-                            <h4>Experience</h4>
-                            <p>${doctor.experience || "Not specified"} ${doctor.experience == 1 ? "Year" : "Years"}</p>
-                        </div>
-                        <div class="detail-item">
-                            <h4>Location</h4>
-                            <p>${doctor.location || "Not specified"}</p>
-                        </div>
-                        <div class="detail-item">
-                            <h4>Education</h4>
-                            <p>${doctor.education || "Not specified"}</p>
-                        </div>
-                        ${doctor.bio ? `
-                        <div class="detail-item" style="grid-column: 1 / -1;">
-                            <h4>About</h4>
-                            <p>${doctor.bio}</p>
-                        </div>` : ''}
-                    </div>
-            `;
+        <div class="details-card">
+            <span class="popup-close" onclick="hideDetails()"><i class="fa-solid fa-xmark"></i></span>
+            <div class="details-header">
+                <div class="details-avatar">
+                    <img class="do-img" src="http://localhost/cure_booking/adminhub/manage-doctors/uploads/${doctor.doc_img}" />
+                </div>
+                <div class="details-info">
+                    <h2>${doctor.doc_name}</h2>
+                    <p>${doctor.doc_specia}</p>
+                </div>
+            </div>
+            
+            <div class="doctor-details-grid">
+                <div class="detail-item">
+                    <h4>Consultation Fee</h4>
+                    <p>₹${doctor.fees}</p>
+                </div>
+                <div class="detail-item">
+                    <h4>Experience</h4>
+                    <p>${doctor.experience || "Not specified"} ${doctor.experience == 1 ? "Year" : "Years"}</p>
+                </div>
+                <div class="detail-item">
+                    <h4>Location</h4>
+                    <p>${doctor.location || "Not specified"}</p>
+                </div>
+                <div class="detail-item">
+                    <h4>Education</h4>
+                    <p>${doctor.education || "Not specified"}</p>
+                </div>
+                ${doctor.bio ? `
+                    <div class="detail-item" style="grid-column: 1 / -1;">
+                        <h4>About</h4>
+                        <p>${doctor.bio}</p>
+                    </div>` : ''
+                }
+            </div>
+    `;
 
             // Display available clinics
             if (doctor.schedules?.length > 0) {
                 html += `
-                    <div class="clinic-list">
-                        <h3>🏥 Available at Clinics</h3>
-                        ${doctor.schedules.map(schedule => `
-                            <div class="clinic-item">
-                                <div class="clinic-info">
-                                    <h4>${schedule.clinic_name}</h4>
-                                    <p>${schedule.location}</p>
-                                </div>
-                                <div class="clinic-badge">Available</div>
-                            </div>
-                        `).join('')}
+            <div class="clinic-list">
+                <h3>🏥 Available at Clinics</h3>
+                ${doctor.schedules.map(schedule => `
+                    <div class="clinic-item">
+                        <div class="clinic-info">
+                            <h4>${schedule.clinic_name}</h4>
+                            <p>${schedule.location}</p>
+                        </div>
+                        <div class="clinic-badge">Available</div>
                     </div>
-                `;
+                `).join('')}
+            </div>
+        `;
             } else if (doctor.clinics) {
                 html += `
-                    <div class="clinic-list">
-                        <h3>🏥 Available at Clinics</h3>
-                        <div class="clinic-item">
-                            <div class="clinic-info">
-                                <h4>Clinics</h4>
-                                <p>${doctor.clinics}</p>
-                            </div>
-                            <div class="clinic-badge">Available</div>
-                        </div>
+            <div class="clinic-list">
+                <h3>🏥 Available at Clinics</h3>
+                <div class="clinic-item">
+                    <div class="clinic-info">
+                        <h4>Clinics</h4>
+                        <p>${doctor.clinics}</p>
                     </div>
-                `;
+                    <div class="clinic-badge">Available</div>
+                </div>
+            </div>
+        `;
             }
 
-            html += "</div>";
+            html += "</div>"; // close details-card
             detailsContentEl.innerHTML = html;
             detailsSectionEl.style.display = "block";
         }
 
+
         function closeClinicPopup() {
-            const popup = document.querySelector('.details-card');
+            const popup = document.querySelector('.doctor-c');
             if (popup) {
                 popup.style.display = 'none';
             }
@@ -609,8 +608,9 @@
 
             const html = `
                 <div class="details-card">
+                    <span class="popup-close" onclick="hideDetails()"><i class="fa-solid fa-xmark"></i></span>
                     <div class="details-header">
-                        <div class="details-avatar">🏥</div>
+                        <div class="clinic-icon">🏥</div>
                         <div class="details-info">
                             <h2>${clinic.clinic_name}</h2>
                             <p>Medical Clinic</p>
@@ -652,7 +652,7 @@
 
                 if (data.doctors?.length > 0) {
                     const doctorsHtml = `
-                        <div class="details-card">
+                        <div class="details-card doctor-c">
                             <div class="clinic-list">
                                 <h3>👨‍⚕️ Available Doctors</h3>
                                 ${data.doctors.map(doctor => `
@@ -678,11 +678,13 @@
             const detailsSectionEl = document.getElementById("detailsSection") || window.detailsSection;
             if (detailsSectionEl) {
                 detailsSectionEl.style.display = "none";
+                //detailsSectionEl.innerHTML = "";
             }
             if (searchInput) {
                 searchInput.focus();
             }
         }
+
 
         // Initialize when DOM is loaded
         document.addEventListener("DOMContentLoaded", initializeSearch);

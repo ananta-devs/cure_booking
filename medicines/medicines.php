@@ -132,6 +132,8 @@
             let currentPage = 1;
             const itemsPerPage = 9;
             let cart = [];
+            let lastSearchQuery = ''; // Track the last search query
+            let noResultsDisplayed = false; // Track if no results are currently displayed
 
             // Initialize
             loadMedicinesData();
@@ -151,6 +153,9 @@
                         initiateSearch();
                     }
                 });
+
+                // Add input event listener for real-time monitoring
+                elements.searchInput?.addEventListener('input', handleSearchInputChange);
 
                 // Cart - Check if elements exist before adding listeners
                 const viewCartBtn = $('view-cart-btn');
@@ -193,6 +198,36 @@
                 if (elements.loadMoreBtn) {
                     elements.loadMoreBtn.addEventListener('click', loadMoreResults);
                 }
+            }
+
+            // New function to handle search input changes
+            function handleSearchInputChange() {
+                const currentQuery = elements.searchInput?.value.trim() || '';
+                
+                // If user clears the search and we previously had no results, refresh the page
+                if (currentQuery === '' && lastSearchQuery !== '' && noResultsDisplayed) {
+                    refreshToRandomMedicines();
+                }
+                
+                // If user starts typing after a no-results state, clear the no-results flag
+                if (currentQuery !== '' && noResultsDisplayed) {
+                    noResultsDisplayed = false;
+                }
+            }
+
+            // New function to refresh to random medicines
+            function refreshToRandomMedicines() {
+                clearError();
+                clearResults();
+                displayRandomMedicines();
+                lastSearchQuery = '';
+                noResultsDisplayed = false;
+                
+                // Optional: Show a brief loading animation for better UX
+                showLoading();
+                setTimeout(() => {
+                    hideLoading();
+                }, 300);
             }
 
             function checkLoginStatus() {
@@ -623,12 +658,15 @@
                 if (elements.loadMoreBtn) {
                     elements.loadMoreBtn.classList.add('hidden');
                 }
+                noResultsDisplayed = false; // Reset no results flag
             }
 
             function initiateSearch() {
                 const query = elements.searchInput?.value.trim() || '';
+                lastSearchQuery = query; // Store the search query
+                
                 if (query.length === 0) {
-                    displayRandomMedicines();
+                    refreshToRandomMedicines();
                     return;
                 }
 
@@ -652,12 +690,14 @@
                     if (currentSearchResults.length === 0) {
                         showError('No medicines found. Try a different search term.');
                         clearResults();
+                        noResultsDisplayed = true; // Set flag when no results found
                         if (elements.loadMoreBtn) {
                             elements.loadMoreBtn.classList.add('hidden');
                         }
                         return;
                     }
 
+                    noResultsDisplayed = false; // Reset flag when results found
                     const resultsForPage = currentSearchResults.slice(0, itemsPerPage);
                     displayResults(resultsForPage, currentSearchResults.length, query);
 
@@ -666,6 +706,7 @@
                     }
                 } catch (error) {
                     showError('Error performing search: ' + error.message);
+                    noResultsDisplayed = true; // Set flag on error as well
                 } finally {
                     hideLoading();
                 }
@@ -692,6 +733,7 @@
                 clearResults();
                 if (medicines.length === 0) {
                     showError('No medicines found. Try a different search term.');
+                    noResultsDisplayed = true;
                     return;
                 }
 
