@@ -1,21 +1,21 @@
 <?php
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cure_booking";
+    // Database connection
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "cure_booking";
 
-try {
-    $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
-}
+    try {
+        $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
 
-// Fetch doctors from database (limit to 6 for the homepage)
-$stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia, doc_img, fees FROM doctor LIMIT 6");
-$stmt->execute();
-$doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Fetch doctors from database (limit to 6 for the homepage)
+    $stmt = $pdo->prepare("SELECT doc_id, doc_name, doc_specia, doc_img, fees FROM doctor LIMIT 6");
+    $stmt->execute();
+    $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -242,7 +242,10 @@ $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
             duration: 1000
         });
     </script>
+    
     <script src="chatbot.js"></script>
+
+    <!-- search js -->
     <script>
         // Configuration
         const API_BASE_URL = "http://localhost/cure_booking/api.php";
