@@ -226,12 +226,19 @@ body {
   padding: 40px 0;
 }
 
-.doctors-grid {
+/*.doctors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 15px;
   padding: 0 15px;
+}*/
+.doctors-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
 }
+
 
 .doctor-card {
   border-radius: 12px;
@@ -244,7 +251,7 @@ body {
 .doctor-card:hover {
   transform: translateY(-3px);
 }
-
+/*
 .doctor-img {
   height: 120px;
   width: 120px;
@@ -273,7 +280,7 @@ body {
   font-weight: 500;
   color: #666;
   margin-bottom: 15px;
-}
+}*/
 
 .all-docs-wrapper {
   display: flex;
@@ -557,4 +564,104 @@ footer {
 .app-btn-text-large {
     font-size: 16px;
     font-weight: bold;
+}
+
+
+/*Doctor card section */
+.card {
+    width: 260px;
+    border-radius: 25px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* optional shadow */
+    overflow: hidden;
+}
+
+/* IMAGE AND OVERLAY */
+.image-content,
+.card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 14px;
+}
+
+.image-content {
+    row-gap: 5px;
+    position: relative;
+    padding: 25px 0;
+}
+
+.doc-overlay {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    left: 0;
+    top: 0;
+    background-color: #3B82F6;
+    border-radius: 25px 25px 0 25px;
+    z-index: 1;
+}
+
+.doc-overlay::before,
+.doc-overlay::after {
+    content: '';
+    height: 40px;
+    width: 40px;
+    right: 0;
+    bottom: -40px;
+    background-color: #3B82F6;
+    position: absolute;
+}
+
+.doc-overlay::after {
+    border-radius: 0 25px 0 0;
+    background-color: white;
+}
+
+.card-image {
+    position: relative;
+    height: 120px;
+    width: 120px;
+    border-radius: 50%;
+    background: #fff;
+    overflow: hidden;
+    padding: 3px;
+    border: 4px solid #4070F4;
+    z-index: 2;
+}
+
+.card-img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+}
+
+.description {
+    font-size: 13px;
+    margin-top: 6px;
+    color: #707070;
+    text-align: center;
+}
+
+.button {
+    border: none;
+    font-size: 14px;
+    color: #fff;
+    padding: 6px 12px;
+    background-color: #3B82F6;
+    border-radius: 6px;
+    margin: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.button:hover {
+    background: #265DF2;
 }
