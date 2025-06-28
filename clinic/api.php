@@ -9,7 +9,7 @@ if (!isset($_SESSION['clinic_logged_in']) || !isset($_SESSION['clinic_id'])) {
     exit();
 }
 
-include_once 'database_connection.php';
+include_once './include/database_connection.php';
 
 $clinic_id = $_SESSION['clinic_id'];
 

@@ -8,7 +8,7 @@
     }
 
     // Database connection
-    include './database_connection.php'; // Assuming you have a database connection file
+    include './include/database_connection.php'; // Assuming you have a database connection file
 
     // Get clinic ID from session
     $clinic_id = null;
