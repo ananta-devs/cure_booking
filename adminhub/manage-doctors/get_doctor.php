@@ -461,6 +461,27 @@ function getClinicAvailability() {
     }
 }
 
+function getClinicsList() {
+    global $pdo;
+    
+    try {
+        $sql = "SELECT clinic_id, clinic_name, clinic_email, contact_number, location, 
+                       available_timing, about, status, created_at, updated_at
+                FROM clinics 
+                WHERE status = 'active' 
+                ORDER BY clinic_name";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+        $clinics = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        sendResponse('success', 'Clinics retrieved successfully', ['clinics' => $clinics]);
+        
+    } catch (Exception $e) {
+        sendResponse('error', 'Error retrieving clinics: ' . $e->getMessage());
+    }
+}
+
 // Route actions
 $action = getRequestData();
 
@@ -471,6 +492,7 @@ switch ($action) {
     case 'update': updateDoctor(); break;
     case 'delete': deleteDoctor(); break;
     case 'get_clinic_availability': getClinicAvailability(); break;
+    case 'get_clinics': getClinicsList(); break;
     default: sendResponse('error', 'Invalid action specified');
 }
 
