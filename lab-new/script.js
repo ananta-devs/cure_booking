@@ -122,7 +122,15 @@ class LabTestManager {
 
     setMinDate() {
         if (this.elements.dateInput) {
-            this.elements.dateInput.min = new Date().toISOString().split("T")[0];
+            // Get current date and add 1 day
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            // Format the date as YYYY-MM-DD for the input
+            const tomorrowFormatted = tomorrow.toISOString().split("T")[0];
+            
+            // Set minimum date to tomorrow
+            this.elements.dateInput.min = tomorrowFormatted;
         }
     }
 

@@ -117,7 +117,7 @@
             <form id="bookingForm" action="api.php" method="post">
                 <div class="form-group">
                     <label for="name">Full Name</label>
-                    <input type="text" id="name" name="name" required value="<?= $isLoggedIn ? htmlspecialchars($userInfo['name']) : '' ?>">
+                    <input type="text" id="name" name="name" required >
                 </div>
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
@@ -125,7 +125,7 @@
                 </div>
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required value="<?= $isLoggedIn ? htmlspecialchars($userInfo['email']) : '' ?>">
+                    <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
                     <label for="address">Address for Sample Collection</label>
