@@ -3,7 +3,7 @@
 session_start();
 
 // Check if user is logged in
-if (!isset($_SESSION['user_id']) && !isset($_SESSION['email'])) {
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['user_email'])) {
     header("Location: login.php");
     exit();
 }
@@ -29,7 +29,7 @@ try {
     die("Connection failed: " . $e->getMessage());
 }
 
-$user_email = $_SESSION['email'] ?? '';
+$user_email = $_SESSION['user_email'] ?? '';
 $user_id = $_SESSION['user_id'] ?? 0;
 
 if ($order_type === 'lab') {
@@ -43,10 +43,10 @@ if ($order_type === 'lab') {
             ) as items
         FROM lab_orders lo
         LEFT JOIN lab_order_items loi ON lo.id = loi.order_id
-        WHERE lo.id = ? AND ((lo.booked_by_user_id = ? AND lo.booked_by_user_id IS NOT NULL) OR lo.email = ?)
+        WHERE lo.id = ? AND (lo.email = ? OR lo.booked_by_email = ?)
         GROUP BY lo.id
     ");
-    $stmt->execute([$order_id, $user_id, $user_email]);
+    $stmt->execute([$order_id, $user_email, $user_email]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
 } else {
     // Get medicine order details
@@ -61,10 +61,10 @@ if ($order_type === 'lab') {
             ) as items
         FROM medicine_orders mo
         LEFT JOIN medicine_order_items moi ON mo.id = moi.order_id
-        WHERE mo.id = ? AND ((mo.booked_by_user_id = ? AND mo.booked_by_user_id IS NOT NULL) OR mo.email = ?)
+        WHERE mo.id = ? AND (mo.email = ? OR mo.booked_by_email = ?)
         GROUP BY mo.id
     ");
-    $stmt->execute([$order_id, $user_id, $user_email]);
+    $stmt->execute([$order_id, $user_email, $user_email]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
@@ -73,7 +73,7 @@ if (!$order) {
 }
 
 // Generate receipt content
-$receipt_number = $order_type === 'lab' ? 'LAB-' . $order['id'] : 'MED-' . $order['order_number'];
+$receipt_number = $order_type === 'lab' ? 'LAB-' . $order['id'] : 'MED-' . ($order['order_number'] ?? $order['id']);
 $receipt_date = date('d-M-Y_H-i-s');
 $filename = "Receipt_{$receipt_number}_{$receipt_date}.txt";
 
@@ -95,7 +95,17 @@ Name: {$order['customer_name']}
 Phone: {$order['phone']}
 Email: {$order['email']}
 Address: {$order['address']}
+";
 
+// Add booked by information if different from patient
+if (!empty($order['booked_by_email']) && $order['booked_by_email'] !== $order['email']) {
+    $receipt_content .= "
+Booked By: {$order['booked_by_name']}
+Booker Email: {$order['booked_by_email']}
+";
+}
+
+$receipt_content .= "
 ==============================================
                 ORDER DETAILS
 ==============================================
@@ -106,6 +116,13 @@ if ($order_type === 'lab') {
 Sample Collection Date: " . date('d M Y', strtotime($order['sample_collection_date'])) . "
 Time Slot: {$order['time_slot']}
 ";
+    if (!empty($order['booking_id'])) {
+        $receipt_content .= "Booking ID: {$order['booking_id']}\n";
+    }
+} else {
+    if (!empty($order['order_number'])) {
+        $receipt_content .= "Order Number: {$order['order_number']}\n";
+    }
 }
 
 $receipt_content .= "

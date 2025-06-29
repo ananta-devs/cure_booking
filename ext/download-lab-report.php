@@ -38,10 +38,10 @@ $stmt = $pdo->prepare("
         lo.email,
         lo.status,
         lo.report_file,
-        lo.booked_by_user_id
+        lo.booked_by_email
     FROM lab_orders lo
     WHERE lo.id = ? 
-    AND ((lo.booked_by_user_id = ? AND lo.booked_by_user_id IS NOT NULL) 
+    AND ((lo.booked_by_email = ? AND lo.booked_by_email IS NOT NULL) 
          OR lo.email = ?)
 ");
 
@@ -65,7 +65,7 @@ if (empty($order['report_file'])) {
 
 // Define the upload directory where reports are stored
 // Adjust this path according to your server setup
-$upload_dir = "http://localhost/adminhub/lab-bookings/uploads/reports/";  // Change this to your actual upload directory
+$upload_dir = "http://localhost/adminhub/lab-bookings/uploads/lab_reports/";
 $file_path = $upload_dir . $order['report_file'];
 
 // Check if file exists on server
