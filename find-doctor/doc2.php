@@ -1,8 +1,8 @@
 <?php
-    session_start();
-    $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
-    include '../include/header.php';
-    include '../styles.php';
+session_start();
+$isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
+include '../include/header.php';
+include '../styles.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -140,8 +140,13 @@
 
         /* Animations */
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes slideIn {
@@ -149,6 +154,7 @@
                 opacity: 0;
                 transform: translateY(-50px) scale(0.95);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -160,13 +166,16 @@
                 opacity: 0;
                 transform: scale(0.3);
             }
+
             50% {
                 opacity: 1;
                 transform: scale(1.05);
             }
+
             70% {
                 transform: scale(0.9);
             }
+
             100% {
                 opacity: 1;
                 transform: scale(1);
@@ -178,6 +187,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -190,32 +200,33 @@
                 margin: 20% auto;
                 width: 95%;
             }
-            
+
             .success-header {
                 padding: 25px 20px;
             }
-            
+
             .success-icon {
                 font-size: 3rem;
             }
-            
+
             .success-title {
                 font-size: 1.5rem;
             }
-            
+
             .success-body {
                 padding: 20px;
             }
-            
+
             .success-actions {
                 flex-direction: column;
                 gap: 10px;
             }
-            
+
             .success-btn {
                 width: 100%;
             }
         }
+
         .search-container select {
             background: url('data:image/svg+xml;utf8,<svg fill="gray" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 12px center;
             background-size: 16px 16px;
@@ -275,7 +286,8 @@
             position: absolute;
             top: 15px;
             right: 20px;
-            font-size: 28px;       /* larger size for visibility */
+            font-size: 28px;
+            /* larger size for visibility */
             font-weight: bold;
             color: #3b82f6;
             cursor: pointer;
@@ -284,7 +296,8 @@
         }
 
         .modal-content .close:hover {
-            color: #ef4444;  /* red on hover */
+            color: #ef4444;
+            /* red on hover */
             transform: scale(1.2);
         }
 
@@ -413,6 +426,25 @@
                 font-size: 0.8rem;
             }
         }
+
+        .doctor-profile-photo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            margin-right: 100px;
+        }
+
+        .doctor-profile-photo img {
+            width: 200px;
+            height: 200px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 2px solid #3B82F6;
+            /* blue border like your theme */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
     </style>
 </head>
 
@@ -528,8 +560,8 @@
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
-    <!-- <script>
+
+    <script>
         // DOM Elements
         const elements = {
             doctorsContainer: document.getElementById('doctors-container'),
@@ -687,6 +719,9 @@
                                 ${createProfileDetail('fas fa-envelope', doctor.email)}
                                 ${createProfileDetail('fas fa-money-bill-wave', doctor.fees ? `Consultation Fee: ₹ ${doctor.fees}/-` : null)}
                             </div>
+                        </div>
+                        <div class="doctor-profile-photo">
+                            <img src="http://localhost/cure_booking/adminhub/manage-doctors/uploads/${doctor.doc_img}" alt="${doctor.name}" />
                         </div>
                     </div>
                     ${doctor.bio ? `<div class="doctor-bio"><h3>About Doctor</h3><p>${doctor.bio}</p></div>` : ''}
@@ -890,13 +925,13 @@
                 if (data.success) {
                     // Close the booking modal
                     closeModal(elements.bookingModal);
-                    
+
                     // Reset the form
                     elements.bookingForm.reset();
-                    
+
                     // Show the success modal with details
                     showSuccessModal(data);
-                    
+
                 } else {
                     // Enhanced error handling for daily limit
                     let errorMessage = data.message;
@@ -945,16 +980,16 @@
                         const remaining = 4 - count;
 
 
-                            if (!document.querySelector('.daily-booking-status')) {
-                                dateInput.parentNode.appendChild(statusDiv);
-                            }
+                        if (!document.querySelector('.daily-booking-status')) {
+                            dateInput.parentNode.appendChild(statusDiv);
+                        }
 
-                            if (remaining === 0) {
-                                timeSelect.innerHTML = '<option value="">Daily booking limit reached - choose another date</option>';
-                                timeSelect.disabled = true;
-                            } else {
-                                timeSelect.disabled = false;
-                            }
+                        if (remaining === 0) {
+                            timeSelect.innerHTML = '<option value="">Daily booking limit reached - choose another date</option>';
+                            timeSelect.disabled = true;
+                        } else {
+                            timeSelect.disabled = false;
+                        }
                     }
                 }
             });
@@ -995,7 +1030,7 @@
         function showSuccessModal(data) {
             const successModal = document.getElementById('successModal');
             const successDetails = document.getElementById('successDetails');
-            
+
             // Populate appointment details if available
             if (data.appointment_details) {
                 const details = data.appointment_details;
@@ -1025,11 +1060,11 @@
                     </div>
                 `;
             }
-            
+
             // Show the modal
             successModal.style.display = 'block';
             document.body.style.overflow = 'hidden';
-            
+
             // Auto-close after 8 seconds (optional)
             setTimeout(() => {
                 if (successModal.style.display === 'block') {
@@ -1057,8 +1092,7 @@
                 closeSuccessModal();
             }
         });
-
-    </script> -->
+    </script>
     <!---AOS Library --->
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
@@ -1069,7 +1103,7 @@
     </script>
 </body>
 <?php
-    include '../include/footer.php';
+include '../include/footer.php';
 ?>
 
 </html>
