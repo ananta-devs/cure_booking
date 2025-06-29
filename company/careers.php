@@ -26,12 +26,10 @@
         .contact-container p {
             font-size: 1.5rem;
             color: #6b7280;
-            /* Gray-500 */
         }
 
         .contact-container span {
             color: #374151;
-            /* Gray-700 */
             font-weight: 600;
         }
 
@@ -42,7 +40,6 @@
             align-items: center;
             gap: 40px;
             font-size: 0.875rem;
-            /* text-sm */
         }
 
         .contact-content img {
@@ -64,15 +61,12 @@
 
         .contact-details p {
             color: #6b7280;
-            /* Gray-500 */
         }
 
         .contact-details .heading {
             font-weight: 600;
             font-size: 1.125rem;
-            /* text-lg */
             color: #4b5563;
-            /* Gray-600 */
         }
 
         .contact-details button {
@@ -98,7 +92,6 @@
         /* Popup Modal */
         .popup-modal {
             display: none;
-            /* Hidden by default */
             position: fixed;
             top: 0;
             left: 0;
