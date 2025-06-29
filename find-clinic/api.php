@@ -10,6 +10,9 @@ $username = "root";
 $password = "";
 $dbname = "cure_booking";
 
+// Base URL for images (adjust this according to your setup)
+$base_url = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+
 try {
     // Create connection
     $pdo = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
@@ -44,8 +47,21 @@ try {
                 $stmt->execute([$clinicId]);
                 $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
-                // Process availability schedule for each doctor
+                // Process availability schedule and image paths for each doctor
                 foreach ($doctors as &$doctor) {
+                    // Process doctor image path
+                    if (!empty($doctor['doc_img'])) {
+                        // Check if it's already a full URL
+                        if (!filter_var($doctor['doc_img'], FILTER_VALIDATE_URL)) {
+                            // If it's a relative path, make it absolute
+                            if (!str_starts_with($doctor['doc_img'], '/')) {
+                                $doctor['doc_img'] = 'http://localhost/cure_booking/adminhub/manage-doctors/uploads' . '/' . $doctor['doc_img'];
+                            } else {
+                                $doctor['doc_img'] = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $doctor['doc_img'];
+                            }
+                        }
+                    }
+                    
                     $schedule = json_decode($doctor['availability_schedule'], true);
                     $availableDays = [];
                     $availableSlots = [];
@@ -108,11 +124,30 @@ try {
             
             $clinics = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+            // Process image paths for each clinic
+            foreach ($clinics as &$clinic) {
+                if (!empty($clinic['profile_image'])) {
+                    // Check if it's already a full URL
+                    if (!filter_var($clinic['profile_image'], FILTER_VALIDATE_URL)) {
+                        // If it's a relative path, make it absolute
+                        if (!str_starts_with($clinic['profile_image'], '/')) {
+                            $clinic['profile_image'] = 'http://localhost/cure_booking/adminhub/manage-clinics/uploads' . '/' . $clinic['profile_image'];
+                        } else {
+                            $clinic['profile_image'] = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . $clinic['profile_image'];
+                        }
+                    }
+                }
+                
+                // Add image validation
+                $clinic['has_image'] = !empty($clinic['profile_image']);
+            }
+            
             // Format the response
             $response = [
                 'success' => true,
                 'count' => count($clinics),
-                'data' => $clinics
+                'data' => $clinics,
+                'base_url' => $base_url
             ];
             
             echo json_encode($response);

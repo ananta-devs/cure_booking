@@ -82,7 +82,7 @@ if ($_POST['action'] === 'add') {
             $target_path = $upload_dir . $filename;
             
             if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $target_path)) {
-                $profile_image_path = 'uploads/clinics/' . $filename;
+                $profile_image_path = $filename;
             } else {
                 throw new Exception('Failed to upload profile image');
             }
