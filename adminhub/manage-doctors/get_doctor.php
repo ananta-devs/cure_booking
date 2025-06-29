@@ -356,8 +356,21 @@ function updateDoctor() {
 function deleteDoctor() {
     global $pdo;
     
-    // Get doctor ID from multiple possible sources
-    $doctorId = $_POST['doctor_id'] ?? $_POST['id'] ?? $_GET['id'] ?? '';
+    // Get the raw input for JSON data
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true);
+    
+    // Try to get doctor ID from JSON data first, then fallback to POST/GET
+    $doctorId = '';
+    if ($data && isset($data['doctor_id'])) {
+        $doctorId = $data['doctor_id'];
+    } elseif (isset($_POST['doctor_id'])) {
+        $doctorId = $_POST['doctor_id'];
+    } elseif (isset($_POST['id'])) {
+        $doctorId = $_POST['id'];
+    } elseif (isset($_GET['id'])) {
+        $doctorId = $_GET['id'];
+    }
     
     if (empty($doctorId)) {
         sendResponse('error', 'Doctor ID required.');
@@ -377,10 +390,21 @@ function deleteDoctor() {
         }
         
         // Delete doctor clinic assignments first (foreign key constraint)
-        $pdo->prepare("DELETE FROM doctor_clinic_assignments WHERE doctor_id = ?")->execute([$doctorId]);
+        $deleteAssignments = $pdo->prepare("DELETE FROM doctor_clinic_assignments WHERE doctor_id = ?");
+        $deleteAssignments->execute([$doctorId]);
         
         // Delete any appointments related to this doctor (if applicable)
-        $pdo->prepare("DELETE FROM appointments WHERE doctor_id = ?")->execute([$doctorId]);
+        // Only delete if appointments table exists
+        try {
+            $checkTable = $pdo->prepare("SHOW TABLES LIKE 'appointments'");
+            $checkTable->execute();
+            if ($checkTable->rowCount() > 0) {
+                $deleteAppointments = $pdo->prepare("DELETE FROM appointments WHERE doctor_id = ?");
+                $deleteAppointments->execute([$doctorId]);
+            }
+        } catch (Exception $e) {
+            // Table might not exist, continue
+        }
         
         // Delete the doctor record
         $deleteStmt = $pdo->prepare("DELETE FROM doctor WHERE doc_id = ?");

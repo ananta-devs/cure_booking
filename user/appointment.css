@@ -216,44 +216,43 @@ body {
     }
 }
 
+.appointment-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    text-align: center;
+}
 
-        .appointment-actions {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-            text-align: center;
-        }
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 0 5px;
+    transition: background-color 0.3s;
+}
 
-        .action-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin: 0 5px;
-            transition: background-color 0.3s;
-        }
+.cancel-btn {
+    background-color: #f44336;
+    color: white;
+}
 
-        .cancel-btn {
-            background-color: #f44336;
-            color: white;
-        }
+.cancel-btn:hover {
+    background-color: #d32f2f;
+}
 
-        .cancel-btn:hover {
-            background-color: #d32f2f;
-        }
+.status-cancelled {
+    background-color: #f44336;
+    color: white;
+}
 
-        .status-cancelled {
-            background-color: #f44336;
-            color: white;
-        }
+.status-completed {
+    background-color: #4caf50;
+    color: white;
+}
 
-        .status-completed {
-            background-color: #4caf50;
-            color: white;
-        }
-
-        .status-no-show {
-            background-color: #ff9800;
-            color: white;
-        }
+.status-no-show {
+    background-color: #ff9800;
+    color: white;
+}

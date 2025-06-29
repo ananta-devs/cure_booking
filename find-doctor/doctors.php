@@ -1,8 +1,8 @@
 <?php
-session_start();
-$isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
-include '../include/header.php';
-include '../styles.php';
+    session_start();
+    $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['logged_in']);
+    include '../include/header.php';
+    include '../styles.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1047,7 +1047,7 @@ include '../styles.php';
 
         // Function to redirect to appointments page
         function viewAppointments() {
-            window.location.href = '../user/appointments.php';
+            window.location.href = '../user/my-appointments.php';
         }
 
         // Add event listener to close modal when clicking outside
