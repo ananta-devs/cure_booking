@@ -103,7 +103,7 @@
                 <h4>CureBooking</h4>
                 <ul class="footer-links">
                     <li><a href="http://localhost/cure_booking/company/aboutUS.php">About Us</a></li>
-                    <!-- <li><a href="#">Careers</a></li> -->
+                    <li><a href="http://localhost/cure_booking/company/careers.php">Careers</a></li>
                     <li><a href="http://localhost/cure_booking/company/press.php">Press</a></li>
                     <li><a href="http://localhost/cure_booking/company/contactUS.php">Contact Us</a></li>
                 </ul>
@@ -112,7 +112,7 @@
             <div class="footer-column">
                 <h4>For Patients</h4>
                 <ul class="footer-links">
-                    <li><a href="http://localhost/cure_booking/find-doctor/doctors.php"">Search for Doctors</a></li>
+                    <li><a href="http://localhost/cure_booking/find-doctor/doctors.php">Search for Doctors</a></li>
                     <li><a href="http://localhost/cure_booking/lab-new/lab.php">Book Lab Tests</a></li>
                     <li><a href="http://localhost/cure_booking/medicines/medicines.php">Order Medicines</a></li>
                 </ul>

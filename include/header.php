@@ -53,6 +53,11 @@ if (session_status() == PHP_SESSION_NONE) {
 
     .logo span {
         color: #1f2937;
+        transition: all 0.3s ease;
+    }
+
+    .logo span:hover {
+        color: #2563eb;
     }
 
     .header-left {
@@ -353,7 +358,6 @@ if (session_status() == PHP_SESSION_NONE) {
     }
 </style>
 
-
 <!-- Header -->
 <header>
     <div class="container header-container">
@@ -366,7 +370,7 @@ if (session_status() == PHP_SESSION_NONE) {
             <a href="http://localhost/cure_booking/index.php" class="logo">
                 <img src="http://localhost/cure_booking/assets/curebookinglogo.png" alt="CureBooking Logo">
                 <div>
-                    <p>Cure<span>Booking</span></p>
+                    <p>Cure<span class="booking">Booking</span></p>
                 </div>
             </a>
         </div>

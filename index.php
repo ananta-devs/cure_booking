@@ -78,7 +78,7 @@
                 <div class="service-card" data-aos="fade-up">
                     <a href="http://localhost/cure_booking/medicines/medicines.php">
                         <div class="service-img">
-                            <img src="http://localhost/cure_booking/assets/medicine-img.jpg" alt="Medicines">
+                            <img src="http://localhost/cure_booking/assets/medicine-photo.avif" alt="Medicines">
                         </div>
                         <div class="service-content">
                             <h3>Medicines</h3>
