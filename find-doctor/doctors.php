@@ -528,8 +528,8 @@
             </div>
         </div>
     </div>
-
-    <script>
+    <script src="script.js"></script>
+    <!-- <script>
         // DOM Elements
         const elements = {
             doctorsContainer: document.getElementById('doctors-container'),
@@ -1058,7 +1058,7 @@
             }
         });
 
-    </script>
+    </script> -->
     <!---AOS Library --->
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
