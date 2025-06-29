@@ -20,7 +20,261 @@
     <title>Profile Card</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <style>
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .return {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .return a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .return i { margin-right: 8px; }
+
+        .profile-header {
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .profile-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .joined-date {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .edit-name-btn, .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .edit-name-btn {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .edit-name-btn:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .action-btn {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .action-btn:hover { background: #fecaca; }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background-color 0.2s;
+        }
+
+        .contact-item:hover { background: #f9fafb; }
+        .contact-item:last-child { border-bottom: none; }
+
+        .contact-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .phone-icon { background: #fef3c7; }
+        .email-icon { background: #dbeafe; }
+        .password-icon { background: #e0e7ff; }
+
+        .contact-info {
+            flex: 1;
+        }
+
+        .contact-label {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .contact-value {
+            color: #1f2937;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .contact-value.placeholder {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #374151;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-secondary, .btn-primary {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-secondary {
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+        }
+
+        .btn-primary {
+            border: none;
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary:hover { background: #f9fafb; }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .phone-svg {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23d97706'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'/%3E%3C/svg%3E") no-repeat center/contain;
+        }
+
+        .email-svg {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563eb'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'/%3E%3C/svg%3E") no-repeat center/contain;
+        }
+
+        .password-svg {
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234f46e5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'/%3E%3C/svg%3E") no-repeat center/contain;
+        }
+
+        .message {
+            margin: 16px 24px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        @media (max-width: 768px) {
+            .profile-card { max-width: 100%; }
+            .profile-header, .contact-item { padding: 16px 20px; }
+            .message { margin: 12px 20px; }
+        }
+            <style>
         * {
             margin: 0;
             padding: 0;
@@ -45,20 +299,6 @@
             width: 100%;
             max-width: 500px;
         }
-
-        .return {
-            padding: 20px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .return a {
-            color: #3b82f6;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .return i { margin-right: 8px; }
-
 
         .profile-header {
             padding: 24px;
@@ -324,7 +564,7 @@
         @media (min-width: 1536px) {
             .profile-card { max-width: 1000px; }
         }
-
+    </style>
     </style>
 </head>
 <body>

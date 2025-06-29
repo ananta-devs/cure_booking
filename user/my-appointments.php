@@ -1,66 +1,126 @@
 <?php
-    // Start session
     session_start();
 
-    // Check if user is logged in
-    if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    // Database configuration
+    $db_config = [
+        'host' => 'localhost',
+        'username' => 'root',
+        'password' => '',
+        'database' => 'cure_booking'
+    ];
+
+    function getDbConnection($config) {
+        $conn = new mysqli($config['host'], $config['username'], $config['password'], $config['database']);
+        if ($conn->connect_error) {
+            return false;
+        }
+        return $conn;
+    }
+
+    function validateUser() {
+        if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in'] || empty($_SESSION['user_email'])) {
+            return false;
+        }
+        return $_SESSION['user_email'];
+    }
+
+    // Handle AJAX cancel appointment request
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'cancel_appointment') {
+        header('Content-Type: application/json');
+        
+        $user_email = validateUser();
+        if (!$user_email) {
+            echo json_encode(['success' => false, 'message' => 'User not logged in']);
+            exit();
+        }
+
+        $conn = getDbConnection($db_config);
+        if (!$conn) {
+            echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+            exit();
+        }
+
+        $appointment_id = intval($_POST['appointment_id'] ?? 0);
+        if (!$appointment_id) {
+            echo json_encode(['success' => false, 'message' => 'Invalid appointment ID']);
+            exit();
+        }
+
+        // Check appointment validity and ownership
+        $check_sql = "SELECT status, appointment_date, appointment_time FROM appointments WHERE id = ? AND booked_by_email = ?";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("is", $appointment_id, $user_email);
+        $check_stmt->execute();
+        $result = $check_stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'Appointment not found']);
+            exit();
+        }
+
+        $appointment = $result->fetch_assoc();
+
+        // Validate cancellation eligibility
+        if (strtolower($appointment['status']) === 'cancelled') {
+            echo json_encode(['success' => false, 'message' => 'Appointment already cancelled']);
+            exit();
+        }
+
+        if (strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']) <= time()) {
+            echo json_encode(['success' => false, 'message' => 'Cannot cancel past appointments']);
+            exit();
+        }
+
+        // Cancel appointment
+        $update_sql = "UPDATE appointments SET status = 'cancelled', updated_at = NOW() WHERE id = ? AND booked_by_email = ?";
+        $update_stmt = $conn->prepare($update_sql);
+        $update_stmt->bind_param("is", $appointment_id, $user_email);
+
+        if ($update_stmt->execute() && $update_stmt->affected_rows > 0) {
+            echo json_encode(['success' => true, 'message' => 'Appointment cancelled successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to cancel appointment']);
+        }
+        
+        $conn->close();
+        exit();
+    }
+
+    // Regular page access validation
+    $user_email = validateUser();
+    if (!$user_email) {
         header('Location: ../login.php');
         exit();
     }
 
-    // Database connection
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "cure_booking";
-
-    $conn = new mysqli($servername, $username, $password, $dbname);
-
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
+    $conn = getDbConnection($db_config);
+    if (!$conn) {
+        die("Database connection failed");
     }
 
-    $user_email = $_SESSION['user_email'] ?? '';
-
-    // Validate user email
-    if (empty($user_email)) {
-        header('Location: ../login.php');
-        exit();
-    }
-
-    // Fetch user's appointments
-    $sql = "SELECT 
-                a.id, 
-                a.doctor_id, 
-                a.doctor_name, 
-                a.doctor_specialization, 
-                a.clinic_id, 
-                a.clinic_name, 
-                a.patient_name, 
-                a.patient_phone, 
-                a.patient_email, 
-                a.gender, 
-                a.appointment_date, 
-                a.appointment_time, 
-                a.booking_date, 
-                a.booked_by_email, 
-                a.booked_by_name, 
-                a.status, 
-                a.created_at, 
-                a.updated_at 
-            FROM appointments a 
-            WHERE a.booked_by_email = ? 
-            ORDER BY a.appointment_date DESC, a.appointment_time DESC";
+    // Fetch appointments
+    $sql = "SELECT id, doctor_name, doctor_specialization, clinic_name, patient_name, patient_phone, 
+                patient_email, appointment_date, appointment_time, booking_date, booked_by_name, 
+                status, created_at 
+            FROM appointments 
+            WHERE booked_by_email = ? 
+            ORDER BY created_at DESC";
 
     $stmt = $conn->prepare($sql);
-
-    if (!$stmt) {
-        die("Error preparing statement: " . $conn->error);
-    }
-
     $stmt->bind_param("s", $user_email);
     $stmt->execute();
     $result = $stmt->get_result();
+
+    function getAppointmentStatus($appointment) {
+        $db_status = strtolower($appointment['status']);
+        $appointment_time = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
+        
+        if ($db_status === 'cancelled') return ['cancelled', 'Cancelled'];
+        if ($db_status === 'completed') return ['completed', 'Completed'];
+        if ($db_status === 'no_show') return ['no-show', 'No Show'];
+        if ($appointment_time > time()) return ['upcoming', $db_status === 'confirmed' ? 'Confirmed' : 'Pending'];
+        return ['past', 'Completed'];
+    }
 ?>
 
 <!DOCTYPE html>
@@ -77,46 +137,22 @@
     <div class="appointments-container">
         <div class="page-header">
             <h1>My Appointments</h1>
-            <p>View and manage appointments you've booked for others</p>
+            <p>View and manage appointments you've booked</p>
         </div>
 
         <?php if ($result->num_rows > 0): ?>
             <div class="appointments-grid">
-                <?php while ($appointment = $result->fetch_assoc()): ?>
-                    <?php
-                    // Determine appointment status based on date and time
-                    $appointment_datetime = $appointment['appointment_date'] . ' ' . $appointment['appointment_time'];
-                    $appointment_timestamp = strtotime($appointment_datetime);
-                    $current_timestamp = time();
-                    
-                    // Check database status first, then determine by time
-                    $db_status = strtolower($appointment['status']);
-                    
-                    if ($db_status === 'cancelled') {
-                        $status = 'cancelled';
-                        $status_text = 'Cancelled';
-                    } elseif ($db_status === 'completed') {
-                        $status = 'completed';
-                        $status_text = 'Completed';
-                    } elseif ($db_status === 'no_show') {
-                        $status = 'no-show';
-                        $status_text = 'No Show';
-                    } elseif ($appointment_timestamp > $current_timestamp) {
-                        $status = 'upcoming';
-                        $status_text = ($db_status === 'confirmed') ? 'Confirmed' : 'Pending';
-                    } else {
-                        $status = 'past';
-                        $status_text = 'Completed';
-                    }
-                    ?>
+                <?php while ($appointment = $result->fetch_assoc()): 
+                    [$status, $status_text] = getAppointmentStatus($appointment);
+                ?>
                     <div class="appointment-card">
                         <div class="appointment-header">
                             <div class="doctor-info">
-                                <div class="doctor-name">Dr. <?php echo htmlspecialchars($appointment['doctor_name']); ?></div>
-                                <div class="doctor-specialization"><?php echo htmlspecialchars($appointment['doctor_specialization']); ?></div>
+                                <div class="doctor-name">Dr. <?= htmlspecialchars($appointment['doctor_name']) ?></div>
+                                <div class="doctor-specialization"><?= htmlspecialchars($appointment['doctor_specialization']) ?></div>
                             </div>
-                            <div class="appointment-status status-<?php echo $status; ?>">
-                                <?php echo $status_text; ?>
+                            <div class="appointment-status status-<?= $status ?>">
+                                <?= $status_text ?>
                             </div>
                         </div>
 
@@ -124,8 +160,8 @@
                             <div class="detail-item">
                                 <div class="detail-icon">📅</div>
                                 <div class="detail-text">
-                                    <div class="detail-label">Appointment Date</div>
-                                    <?php echo date('M d, Y', strtotime($appointment['appointment_date'])); ?>
+                                    <div class="detail-label">Date</div>
+                                    <?= date('M d, Y', strtotime($appointment['appointment_date'])) ?>
                                 </div>
                             </div>
 
@@ -133,40 +169,32 @@
                                 <div class="detail-icon">⏰</div>
                                 <div class="detail-text">
                                     <div class="detail-label">Time</div>
-                                    <?php echo date('h:i A', strtotime($appointment['appointment_time'])); ?>
+                                    <?= date('h:i A', strtotime($appointment['appointment_time'])) ?>
                                 </div>
                             </div>
 
                             <div class="detail-item">
                                 <div class="detail-icon">👤</div>
                                 <div class="detail-text">
-                                    <div class="detail-label">Patient Name</div>
-                                    <?php echo htmlspecialchars($appointment['patient_name']); ?>
+                                    <div class="detail-label">Patient</div>
+                                    <?= htmlspecialchars($appointment['patient_name']) ?>
                                 </div>
                             </div>
 
                             <div class="detail-item">
                                 <div class="detail-icon">📞</div>
                                 <div class="detail-text">
-                                    <div class="detail-label">Patient Phone</div>
-                                    <?php echo htmlspecialchars($appointment['patient_phone']); ?>
+                                    <div class="detail-label">Phone</div>
+                                    <?= htmlspecialchars($appointment['patient_phone']) ?>
                                 </div>
                             </div>
 
-                            <div class="detail-item">
-                                <div class="detail-icon">✉️</div>
-                                <div class="detail-text">
-                                    <div class="detail-label">Patient Email</div>
-                                    <?php echo htmlspecialchars($appointment['patient_email']); ?>
-                                </div>
-                            </div>
-
-                            <?php if (!empty($appointment['clinic_name'])): ?>
+                            <?php if ($appointment['clinic_name']): ?>
                             <div class="detail-item">
                                 <div class="detail-icon">🏥</div>
                                 <div class="detail-text">
                                     <div class="detail-label">Clinic</div>
-                                    <?php echo htmlspecialchars($appointment['clinic_name']); ?>
+                                    <?= htmlspecialchars($appointment['clinic_name']) ?>
                                 </div>
                             </div>
                             <?php endif; ?>
@@ -174,22 +202,22 @@
                             <div class="detail-item">
                                 <div class="detail-icon">🆔</div>
                                 <div class="detail-text">
-                                    <div class="detail-label">Appointment ID</div>
-                                    #<?php echo $appointment['id']; ?>
+                                    <div class="detail-label">ID</div>
+                                    #<?= $appointment['id'] ?>
                                 </div>
                             </div>
                         </div>
 
                         <div class="booking-date">
-                            Booked on: <?php echo date('M d, Y \a\t h:i A', strtotime($appointment['booking_date'])); ?>
-                            <?php if (!empty($appointment['booked_by_name'])): ?>
-                                <br><small style="color: #512da8;">Booked by: You (<?php echo htmlspecialchars($appointment['booked_by_name']); ?>)</small>
+                            Booked: <?= date('M d, Y', strtotime($appointment['booking_date'])) ?>
+                            <?php if ($appointment['booked_by_name']): ?>
+                                <small>by: <?= htmlspecialchars($appointment['booked_by_name']) ?></small>
                             <?php endif; ?>
                         </div>
 
-                        <?php if ($status === 'upcoming' && $db_status !== 'cancelled'): ?>
+                        <?php if ($status === 'upcoming'): ?>
                         <div class="appointment-actions">
-                            <button class="action-btn cancel-btn" onclick="cancelAppointment(<?php echo $appointment['id']; ?>)">
+                            <button class="action-btn cancel-btn" onclick="cancelAppointment(<?= $appointment['id'] ?>)">
                                 Cancel Appointment
                             </button>
                         </div>
@@ -201,78 +229,54 @@
             <div class="no-appointments">
                 <div class="no-appointments-icon">📋</div>
                 <h3>No Appointments Found</h3>
-                <p>You haven't booked any appointments for others yet.</p>
-                <a href="../find-doctor/doctors.php" class="book-appointment-btn">Book Your First Appointment</a>
+                <p>You haven't booked any appointments yet.</p>
+                <a href="../find-doctor/doctors.php" class="book-appointment-btn">Book Appointment</a>
             </div>
         <?php endif; ?>
     </div>
 
     <script>
-        // Add JavaScript functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('My Appointments page loaded');
-            console.log('Total appointments displayed: <?php echo $result->num_rows; ?>');
-        });
-
-        // Cancel appointment function
         function cancelAppointment(appointmentId) {
-            if (confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
-                // Show loading state
-                const cancelBtn = event.target;
-                const originalText = cancelBtn.textContent;
-                cancelBtn.textContent = 'Cancelling...';
-                cancelBtn.disabled = true;
-                
-                fetch('cancel-appointment.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        appointment_id: appointmentId
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        alert('Appointment cancelled successfully!');
-                        location.reload(); // Reload the page to reflect changes
-                    } else {
-                        alert('Error cancelling appointment: ' + (data.message || 'Unknown error'));
-                        // Restore button state
-                        cancelBtn.textContent = originalText;
-                        cancelBtn.disabled = false;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while cancelling the appointment. Please try again.');
-                    // Restore button state
-                    cancelBtn.textContent = originalText;
-                    cancelBtn.disabled = false;
-                });
-            }
-        }
-
-        const style = document.createElement('style');
-        style.textContent = `
-            .cancel-btn:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Print appointment details function
-        function printAppointment(appointmentId) {
-            window.print();
+            if (!confirm('Cancel this appointment? This cannot be undone.')) return;
+            
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Cancelling...';
+            btn.disabled = true;
+            
+            const formData = new FormData();
+            formData.append('action', 'cancel_appointment');
+            formData.append('appointment_id', appointmentId);
+            
+            fetch('my-appointments.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Appointment cancelled successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                alert('An error occurred. Please try again.');
+                btn.textContent = originalText;
+                btn.disabled = false;
+            });
         }
     </script>
+
+    <style>
+        .cancel-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
 </body>
 </html>
 
