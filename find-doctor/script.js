@@ -1,3 +1,4 @@
+
 // DOM Elements
 const elements = {
     doctorsContainer: document.getElementById('doctors-container'),
@@ -29,7 +30,7 @@ function setupEventListeners() {
     if (elements.closeModal) {
         elements.closeModal.addEventListener('click', () => closeModal(elements.modal));
     }
-    
+
     if (elements.closeBookingModal) {
         elements.closeBookingModal.addEventListener('click', () => closeModal(elements.bookingModal));
     }
@@ -42,10 +43,10 @@ function setupEventListeners() {
     if (elements.bookingForm) {
         elements.bookingForm.addEventListener('submit', handleBookingSubmit);
     }
-    
+
     const clinicSelect = document.querySelector('#clinic');
     const dateInput = document.querySelector('#date');
-    
+
     if (clinicSelect) clinicSelect.addEventListener('change', loadTimeSlots);
     if (dateInput) dateInput.addEventListener('change', loadTimeSlots);
 }
@@ -68,11 +69,11 @@ async function fetchDoctors(filters = {}) {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
         const responseText = await response.text();
-        
+
         if (responseText.trim().startsWith('<') || responseText.includes('<br')) {
             throw new Error('Server returned an error instead of JSON data');
         }
-        
+
         const doctors = JSON.parse(responseText);
 
         if (doctors.success === false || doctors.error) {
@@ -81,7 +82,7 @@ async function fetchDoctors(filters = {}) {
 
         currentDoctors = doctors;
         displayDoctors(doctors);
-        
+
     } catch (error) {
         console.error('Fetch error:', error);
         elements.doctorsContainer.innerHTML = `
@@ -176,6 +177,20 @@ async function openDoctorModal(doctorId) {
                         ${createProfileDetail('fas fa-money-bill-wave', doctor.fees ? `Consultation Fee: ₹ ${doctor.fees}/-` : null)}
                     </div>
                 </div>
+                <div class="doctor-profile-photo" 
+                    style="display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    margin-top: 30px;
+                    margin-right: 100px;">
+                    <img src="http://localhost/cure_booking/adminhub/manage-doctors/uploads/${doctor.doc_img}" alt="${doctor.name}"
+                    style="width: 200px;
+                            height: 200px;
+                            border-radius: 6px;
+                            object-fit: cover;
+                            border: 2px solid #3B82F6;
+                            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);"/>
+                </div>
             </div>
             ${doctor.bio ? `<div class="doctor-bio"><h3>About Doctor</h3><p>${doctor.bio}</p></div>` : ''}
             ${clinicInfoHTML}
@@ -223,7 +238,7 @@ function createClinicInfo(doctor, availabilityData) {
 
     clinicNames.forEach((clinicName, index) => {
         const clinicLocation = clinicLocations[index] || 'Location not specified';
-        const clinicAvailability = availabilityData.availability && availabilityData.availability[clinicName] 
+        const clinicAvailability = availabilityData.availability && availabilityData.availability[clinicName]
             ? formatAvailabilitySchedule(availabilityData.availability[clinicName])
             : null;
 
@@ -245,7 +260,7 @@ function formatAvailabilitySchedule(schedule) {
     if (!schedule || typeof schedule !== 'object') return '';
 
     let formattedSchedule = '<div class="availability-schedule">';
-    
+
     const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     const availableDays = [];
 
@@ -281,17 +296,17 @@ function formatAvailabilitySchedule(schedule) {
 async function fetchDoctorAvailability(doctorId) {
     try {
         const response = await fetch(`api.php?action=get_doctor_availability&doctor_id=${doctorId}`);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (!data.success) {
             throw new Error(data.message || 'Failed to fetch availability');
         }
-        
+
         return data;
     } catch (error) {
         console.error('Error fetching doctor availability:', error);
@@ -307,11 +322,11 @@ async function openBookingForm(doctorId) {
     }
 
     selectedDoctorForBooking = doctor;
-    
+
     // Populate doctor info in booking form
     const doctorNameSpan = document.querySelector('#selectedDoctorName');
     const doctorSpecialtySpan = document.querySelector('#selectedDoctorSpecialty');
-    
+
     if (doctorNameSpan) doctorNameSpan.textContent = doctor.name;
     if (doctorSpecialtySpan) doctorSpecialtySpan.textContent = doctor.specialty;
 
@@ -334,13 +349,13 @@ async function openBookingForm(doctorId) {
 
     // Populate clinic options
     await populateClinicOptions(doctor);
-    
+
     // Set date constraints
     const dateInput = document.querySelector('#date');
     if (dateInput) {
         const today = new Date().toISOString().split('T')[0];
         dateInput.min = today;
-        
+
         const maxDate = new Date();
         maxDate.setMonth(maxDate.getMonth() + 3);
         dateInput.max = maxDate.toISOString().split('T')[0];
@@ -350,7 +365,7 @@ async function openBookingForm(doctorId) {
     // Clear previous selections
     const clinicSelect = document.querySelector('#clinic');
     const timeSelect = document.querySelector('#time');
-    
+
     if (clinicSelect) clinicSelect.value = '';
     if (timeSelect) {
         timeSelect.innerHTML = '<option value="">Select time slot</option>';
@@ -375,7 +390,7 @@ async function populateClinicOptions(doctor) {
         clinicNames.forEach((clinicName, index) => {
             const location = clinicLocations[index] || '';
             const displayText = location ? `${clinicName} - ${location}` : clinicName;
-            
+
             const option = document.createElement('option');
             option.value = clinicName;
             option.textContent = displayText;
@@ -394,12 +409,12 @@ async function loadTimeSlots() {
     const clinicSelect = document.querySelector('#clinic');
     const dateInput = document.querySelector('#date');
     const timeSelect = document.querySelector('#time');
-    
+
     if (!clinicSelect || !dateInput || !timeSelect || !selectedDoctorForBooking) return;
-    
+
     const clinic = clinicSelect.value;
     const date = dateInput.value;
-    
+
     if (!clinic || !date) {
         timeSelect.innerHTML = '<option value="">Select time slot</option>';
         timeSelect.disabled = true;
@@ -411,26 +426,26 @@ async function loadTimeSlots() {
 
     try {
         const response = await fetch(`api.php?action=get_time_slots&doctor_id=${selectedDoctorForBooking.id}&clinic_name=${encodeURIComponent(clinic)}&date=${date}`);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (!data.success) {
             throw new Error(data.message || 'Failed to load time slots');
         }
 
         timeSelect.innerHTML = '<option value="">Select time slot</option>';
-        
+
         if (data.time_slots && data.time_slots.length > 0) {
             let hasAvailableSlots = false;
-            
+
             data.time_slots.forEach(slot => {
                 const option = document.createElement('option');
                 option.value = slot.value;
-                
+
                 if (slot.available) {
                     option.textContent = slot.label;
                     option.disabled = false;
@@ -440,13 +455,13 @@ async function loadTimeSlots() {
                     option.disabled = true;
                     option.style.color = '#999';
                 }
-                
+
                 timeSelect.appendChild(option);
             });
-            
+
             if (hasAvailableSlots) {
                 timeSelect.disabled = false;
-                
+
                 // Add helpful message option
                 const infoOption = document.createElement('option');
                 infoOption.value = '';
@@ -462,7 +477,7 @@ async function loadTimeSlots() {
         } else {
             timeSelect.innerHTML = '<option value="">No slots available</option>';
         }
-        
+
     } catch (error) {
         console.error('Error loading time slots:', error);
         timeSelect.innerHTML = '<option value="">Error loading slots</option>';
@@ -472,31 +487,31 @@ async function loadTimeSlots() {
 
 async function handleBookingSubmit(e) {
     e.preventDefault();
-    
+
     const submitButton = e.target.querySelector('button[type="submit"]');
     const originalText = submitButton.textContent;
-    
+
     submitButton.textContent = 'Booking...';
     submitButton.disabled = true;
 
     try {
         const formData = new FormData(e.target);
-        
+
         // Ensure doctor_id is included
         let doctorId = formData.get('doctor_id');
         if (!doctorId && selectedDoctorForBooking) {
             doctorId = selectedDoctorForBooking.id;
             formData.set('doctor_id', doctorId);
         }
-        
+
         // Validate required fields
         const requiredFields = ['doctor_id', 'name', 'phone', 'email', 'date', 'time', 'clinic'];
         const missingFields = requiredFields.filter(field => !formData.get(field) || formData.get(field).trim() === '');
-        
+
         if (missingFields.length > 0) {
             throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
         }
-        
+
         formData.append('action', 'book_appointment');
 
         const response = await fetch('api.php', {
@@ -514,7 +529,7 @@ async function handleBookingSubmit(e) {
             showNotification('Appointment booked successfully! Your exact time has been assigned.', 'success');
             closeModal(elements.bookingModal);
             e.target.reset();
-            
+
             if (result.appointment_details) {
                 showAppointmentConfirmationWithTimeInfo(result.appointment_details);
             }
@@ -533,26 +548,64 @@ async function handleBookingSubmit(e) {
 
 function showAppointmentConfirmationWithTimeInfo(details) {
     const confirmationHTML = `
-        <div class="appointment-confirmation">
-            <h3><i class="fas fa-check-circle"></i> Appointment Confirmed</h3>
-            <div class="confirmation-details">
-                <p><strong>Patient:</strong> ${details.patient_name}</p>
-                <p><strong>Doctor:</strong> ${details.doctor_name}</p>
-                <p><strong>Date:</strong> ${details.appointment_date}</p>
-                <p><strong>Assigned Time:</strong> ${details.appointment_time}</p>
-                <p><strong>Clinic:</strong> ${details.clinic_name}</p>
-                <p><strong>Appointment ID:</strong> #${details.appointment_id}</p>
+        <div class="appointment-confirmation-card" style="background: #ffffff;
+                    border-radius: 16px;
+                    padding: 24px 28px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+                    max-width: 480px;
+                    margin: 0 auto;
+                    font-family: 'Segoe UI', sans-serif;
+                    color: #333;
+                    animation: fadeInScale 0.4s ease;">
+            <div class="confirmation-header" style="text-align: center;
+                    margin-bottom: 20px;">
+                <i class="fas fa-check-circle success-icon" style="color: #4CAF50;
+                    font-size: 40px;
+                    margin-bottom: 10px;"></i>
+                <h3 style="font-size: 22px;
+                    margin: 0;
+                    color: #333;">Appointment Confirmed</h3>
             </div>
-            <div class="time-assignment-info">
-                <p><i class="fas fa-info-circle"></i> <strong>Time Assignment:</strong></p>
-                <p>Your appointment time has been automatically assigned based on availability. Appointments are scheduled in 20-minute intervals.</p>
+
+            <div class="confirmation-body">
+                <div class="confirmation-info" style="margin-bottom: 20px;">
+                    <p style="margin: 8px 0;
+                            font-size: 15px;"><strong>Patient:</strong> ${details.patient_name}</p>
+                    <p style="margin: 8px 0;
+                            font-size: 15px;"><strong>Doctor:</strong> ${details.doctor_name}</p>
+                    <p style="margin: 8px 0;
+                            font-size: 15px;"><strong>Date:</strong> ${details.appointment_date}</p>
+                    <p style="margin: 8px 0;
+                            font-size: 15px;"><strong>Assigned Time:</strong> ${details.appointment_time}</p>
+                    <p style="margin: 8px 0;
+                            font-size: 15px;"><strong>Clinic:</strong> ${details.clinic_name}</p>
+                    <p style="margin: 8px 0;
+                            font-size: 15px;"><strong>Appointment ID:</strong> #${details.appointment_id}</p>
+                </div>
+
+                <div class="confirmation-extra-info" style="background-color: #f0f7ff;
+                    border-left: 4px solid #2196F3;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    color: #333;
+                    margin-bottom: 16px;">
+                    <p><i class="fas fa-info-circle"></i> <strong>Time Assignment:</strong></p>
+                    <p>Your appointment time has been automatically assigned based on availability. Appointments are scheduled in 20-minute intervals.</p>
+                </div>
+                <p class="confirmation-note" style="font-size: 14px;
+                    color: #D84315;
+                    font-weight: 500;
+                    text-align: center;">
+                    📌 Please arrive 15 minutes before your appointment time.
+                </p>
             </div>
-            <p class="confirmation-note">Please arrive 15 minutes before your appointment time.</p>
         </div>
     `;
-    
+
     showModal(confirmationHTML, 'Appointment Confirmation');
 }
+
 
 
 function showNotification(message, type = 'info') {
@@ -561,11 +614,11 @@ function showNotification(message, type = 'info') {
 
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    
-    const icon = type === 'success' ? 'fas fa-check-circle' : 
-                 type === 'error' ? 'fas fa-exclamation-circle' : 
-                 'fas fa-info-circle';
-    
+
+    const icon = type === 'success' ? 'fas fa-check-circle' :
+        type === 'error' ? 'fas fa-exclamation-circle' :
+            'fas fa-info-circle';
+
     notification.innerHTML = `
         <i class="${icon}"></i>
         <span>${message}</span>
