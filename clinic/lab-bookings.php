@@ -283,20 +283,6 @@
                     </div>
                 </div>
 
-                <!-- Table Actions -->
-                <div class="table-actions">
-                    <div class="bulk-actions">
-                        <button type="button" class="export-btn" onclick="exportBookings()">
-                            <i class="fa fa-download"></i> Export CSV
-                        </button>
-                    </div>
-                    
-                    <div class="table-controls">
-                        <button type="button" class="filter-btn filter-btn-apply" onclick="loadBookings()" title="Refresh">
-                            <i class="fa fa-sync-alt"></i> Refresh
-                        </button>
-                    </div>
-                </div>
 
                 <!-- Table Container -->
                 <div id="scheduleContainer" class="schedule-Container">
