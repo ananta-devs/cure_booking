@@ -109,9 +109,9 @@
 }
 
 .details-content {
-    background: white;
+    background: #e3f2fd;
     border-radius: 12px;
-    max-width: 600px;
+    max-width: 550px;
     max-height: 80vh;
     overflow-y: auto;
     position: relative;
@@ -119,6 +119,7 @@
 
 .details-card {
     padding: 24px;
+    align-items: center;
 }
 
 .details-header {
