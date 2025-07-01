@@ -480,6 +480,15 @@
                     <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select name="gender" id="gender">
+                        <option value="">Select a Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Others</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="clinic">Select Clinic</label>
                     <select name="clinic" id="clinic">
                         <option value="">Select a clinic</option>
