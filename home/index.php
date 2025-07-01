@@ -158,8 +158,6 @@
                     <button type="submit" class="all-docs-btn">View All Doctors</button>
                 </form>
             </div>
-
-            <!----<a href="http://localhost/cure_booking/find-doctor/doctors.php" class="all-docs-btn" data-aos="fade-up"><u>View All Doctors</u></a>--->
         </div>
     </section>
 

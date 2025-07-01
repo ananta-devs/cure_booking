@@ -204,8 +204,7 @@
                     if (sendPasswordResetOTPEmail($user['email'], $user['name'], $otp)) {
                         echo json_encode(['success' => true, 'message' => 'Verification code sent to your email']);
                     } else {
-                        // For testing purposes, still allow proceed even if email fails
-                        echo json_encode(['success' => true, 'message' => 'Verification code generated (email may not be configured). OTP: ' . $otp]);
+                        echo json_encode(['success' => false, 'message' => 'Failed to send verification code. Please try again.']);
                     }
                     
                 } catch (PDOException $e) {
@@ -284,10 +283,9 @@
                     
                     // Send new OTP email
                     if (sendPasswordResetOTPEmail($reset_data['email'], $reset_data['name'], $new_otp, true)) {
-                        echo json_encode(['success' => true, 'message' => 'New verification code sent successfully']);
+                        echo json_encode(['success' => true, 'message' => 'New verification code sent to your email']);
                     } else {
-                        // For testing, still return success with OTP
-                        echo json_encode(['success' => true, 'message' => 'New verification code generated: ' . $new_otp]);
+                        echo json_encode(['success' => false, 'message' => 'Failed to send verification code. Please try again.']);
                     }
                     
                 } catch (Exception $e) {
@@ -426,9 +424,7 @@
                         $_SESSION['show_otp'] = true;
                         echo json_encode(['success' => true, 'message' => 'OTP sent to your email']);
                     } else {
-                        // For testing purposes, still allow proceed even if email fails
-                        $_SESSION['show_otp'] = true;
-                        echo json_encode(['success' => true, 'message' => 'OTP generated (email may not be configured). OTP: ' . $otp]);
+                        echo json_encode(['success' => false, 'message' => 'Failed to send OTP. Please try again.']);
                     }
 
                 } catch (PDOException $e) {
@@ -535,10 +531,9 @@
                     
                     // Send new OTP email
                     if (sendOTPEmail($temp_user['email'], $temp_user['name'], $new_otp, true)) {
-                        echo json_encode(['success' => true, 'message' => 'New OTP sent successfully']);
+                        echo json_encode(['success' => true, 'message' => 'New OTP sent to your email']);
                     } else {
-                        // For testing, still return success with OTP
-                        echo json_encode(['success' => true, 'message' => 'New OTP generated: ' . $new_otp]);
+                        echo json_encode(['success' => false, 'message' => 'Failed to send OTP. Please try again.']);
                     }
                     
                 } catch (Exception $e) {
@@ -801,62 +796,11 @@
                 $password_stmt->close();
                 exit();
 
-            case 'delete_account':
-                // Check if user is logged in
-                if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-                    header('Content-Type: application/json');
-                    echo json_encode(['success' => false, 'message' => 'Not authenticated']);
-                    exit();
-                }
-                
-                header('Content-Type: application/json');
-                
-                $user_id = $_SESSION['user_id'];
-                $password = $_POST['password'] ?? '';
-                
-                if (empty($password)) {
-                    echo json_encode(['success' => false, 'message' => 'Password is required to delete account']);
-                    exit();
-                }
-                
-                // Verify password before deletion
-                $verify_stmt = $conn->prepare("SELECT password FROM users WHERE id = ?");
-                $verify_stmt->bind_param("i", $user_id);
-                $verify_stmt->execute();
-                $verify_result = $verify_stmt->get_result();
-                
-                if ($verify_result->num_rows === 1) {
-                    $user_data = $verify_result->fetch_assoc();
-                    
-                    if (password_verify($password, $user_data['password'])) {
-                        // Delete user account
-                        $delete_stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-                        $delete_stmt->bind_param("i", $user_id);
-                        
-                        if ($delete_stmt->execute()) {
-                            // Clear session
-                            session_unset();
-                            session_destroy();
-                            
-                            echo json_encode(['success' => true, 'message' => 'Account deleted successfully']);
-                        } else {
-                            echo json_encode(['success' => false, 'message' => 'Failed to delete account']);
-                        }
-                        
-                        $delete_stmt->close();
-                    } else {
-                        echo json_encode(['success' => false, 'message' => 'Incorrect password']);
-                    }
-                } else {
-                    echo json_encode(['success' => false, 'message' => 'User not found']);
-                }
-                
-                $verify_stmt->close();
-                exit();
+           
 
             default:
                 header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => 'Invalid action']);
+                echo json_encode(['success' => false]);
                 exit();
         }
     }
@@ -916,10 +860,41 @@
                 
                 $user_stmt->close();
                 exit();
+
+            case 'cancel_signup':
+                session_start();
+                
+                // Clear all OTP-related session data
+                if (isset($_SESSION['otp_email'])) {
+                    unset($_SESSION['otp_email']);
+                }
+                if (isset($_SESSION['otp_code'])) {
+                    unset($_SESSION['otp_code']);
+                }
+                if (isset($_SESSION['otp_expiry'])) {
+                    unset($_SESSION['otp_expiry']);
+                }
+                if (isset($_SESSION['temp_user_data'])) {
+                    unset($_SESSION['temp_user_data']);
+                }
+                if (isset($_SESSION['show_otp'])) {
+                    unset($_SESSION['show_otp']);
+                }
+                if (isset($_SESSION['signup_in_progress'])) {
+                    unset($_SESSION['signup_in_progress']);
+                }
+                
+                // If there was a partially created user account, you might want to delete it
+                // This depends on your database structure and how you handle partial signups
+                
+                echo json_encode([
+                    'success' => true,
+                ]);
+                break;
                 
             default:
                 header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => 'Invalid GET action']);
+                echo json_encode(['success' => false]);
                 exit();
         }
     }

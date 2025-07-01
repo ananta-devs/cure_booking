@@ -8,7 +8,7 @@
         echo '<div class="alert success">' . $_SESSION['success'] . '</div>';
         unset($_SESSION['success']);
     }
-?>
+    ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -83,6 +83,15 @@
         .container button.hidden {
         background-color: transparent;
         border-color: #fff;
+        }
+
+        .container button.cancel-btn {
+        background-color: #6b7280;
+        margin-left: 10px;
+        }
+
+        .container button.cancel-btn:hover {
+        background-color: #4b5563;
         }
 
         .container form {
@@ -195,6 +204,12 @@
         font-size: 12px;
         color: #666;
         margin-top: 5px;
+        }
+
+        .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
         }
 
         @keyframes move {
@@ -372,6 +387,15 @@
             height: 40px;
             font-size: 16px;
         }
+
+        .button-group {
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .button-group button {
+            margin: 5px 0;
+        }
         }
 
         /* Hide mobile toggle by default */
@@ -412,11 +436,14 @@
                     <input type="text" class="otp-input" maxlength="1" name="otp5" required>
                     <input type="text" class="otp-input" maxlength="1" name="otp6" required>
                 </div>
-                <button type="submit">Verify OTP</button>
+                <div class="button-group">
+                    <button type="submit">Verify OTP</button>
+                    <button type="button" class="cancel-btn" id="cancel-signup">Cancel Signup</button>
+                </div>
                 <div class="timer" id="timer">Resend OTP in <span id="countdown">60</span>s</div>
                 <a href="#" class="resend-otp" id="resend-otp" style="display: none;">Resend OTP</a>
                 <div class="mobile-toggle">
-                    <p><a href="#" id="back-to-signup">Back to Sign Up</a></p>
+                    <p><a href="#" id="back-to-signup">Back to Sign Up</a> | <a href="#" id="mobile-cancel-signup">Cancel</a></p>
                 </div>
             </form>
         </div>
@@ -460,6 +487,8 @@
         const mobileLoginBtn = document.getElementById('mobile-login');
         const backToSignupBtn = document.getElementById('back-to-signup');
         const resendOtpBtn = document.getElementById('resend-otp');
+        const cancelSignupBtn = document.getElementById('cancel-signup');
+        const mobileCancelSignupBtn = document.getElementById('mobile-cancel-signup');
         const signupForm = document.getElementById('signup-form');
         const otpForm = document.getElementById('otp-form');
         const signinForm = document.getElementById('signin-form');
@@ -493,6 +522,85 @@
             e.preventDefault();
             container.classList.remove("otp-active");
             container.classList.add("active");
+        });
+
+        // Cancel signup functionality
+        function cancelSignup() {
+            // Send request to cancel signup process (silently)
+            const formData = new FormData();
+            formData.append('action', 'cancel_signup');
+            
+            fetch('api.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Reset UI to login form (no alerts)
+                resetToLogin();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resetToLogin();
+            });
+        }
+
+        // Reset UI to login form
+        function resetToLogin() {
+            // Clear all forms
+            signupForm.reset();
+            otpForm.reset();
+            
+            // Clear OTP inputs
+            const otpInputs = document.querySelectorAll('.otp-input');
+            otpInputs.forEach(input => input.value = '');
+            
+            // Clear countdown
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            // Reset UI to sign in form
+            container.classList.remove("active");
+            container.classList.remove("otp-active");
+            
+            // Reset timer display
+            document.getElementById('timer').style.display = 'none';
+            document.getElementById('resend-otp').style.display = 'none';
+        }
+
+        // Cancel signup event listeners
+        cancelSignupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            cancelSignup();       
+        });
+
+        mobileCancelSignupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            cancelSignup();
+        });
+
+        // Handle page refresh/navigation away during OTP process
+        window.addEventListener('beforeunload', (e) => {
+            if (container.classList.contains('otp-active')) {
+                // Cancel signup silently when user navigates away
+                const formData = new FormData();
+                formData.append('action', 'cancel_signup');
+                
+                // Use sendBeacon for reliable delivery during page unload
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('api.php', formData);
+                } else {
+                    // Fallback for browsers that don't support sendBeacon
+                    fetch('api.php', {
+                        method: 'POST',
+                        body: formData,
+                        keepalive: true
+                    }).catch(() => {
+                        // Ignore errors during page unload
+                    });
+                }
+            }
         });
 
         // OTP Input handling
@@ -530,7 +638,7 @@
             e.preventDefault();
             
             const formData = new FormData(signupForm);
-            formData.append('action', 'signup_otp'); // Use signup_otp action
+            formData.append('action', 'signup_otp');
             
             // Disable submit button
             const submitBtn = signupForm.querySelector('button[type="submit"]');
@@ -549,15 +657,18 @@
                     container.classList.remove("active");
                     container.classList.add("otp-active");
                     startCountdown();
-                    showAlert(data.message, 'success');
+                    // Only show OTP-related success messages
+                    if (data.message && data.message.toLowerCase().includes('otp')) {
+                        showAlert(data.message, 'success');
+                    }
                 } else {
-                    // Show error message
-                    showAlert(data.message, 'error');
+                    // No error alerts shown
+                    console.error('Signup failed:', data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showAlert('An error occurred. Please try again.', 'error');
+                // No error alerts shown
             })
             .finally(() => {
                 // Re-enable submit button
@@ -571,7 +682,7 @@
             e.preventDefault();
             
             const formData = new FormData(signinForm);
-            formData.append('action', 'signin'); // Use signin action
+            formData.append('action', 'signin');
             
             // Disable submit button
             const submitBtn = signinForm.querySelector('button[type="submit"]');
@@ -586,18 +697,16 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showAlert(data.message, 'success');
-                    // Redirect to dashboard after successful login
-                    setTimeout(() => {
-                        window.location.href = 'http://localhost/cure_booking/home/index.php';
-                    }, 1500);
+                    // No success alert, just redirect
+                    window.location.href = 'http://localhost/cure_booking/home/index.php';
                 } else {
-                    showAlert(data.message, 'error');
+                    // No error alerts shown
+                    console.error('Signin failed:', data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showAlert('An error occurred. Please try again.', 'error');
+                // No error alerts shown
             })
             .finally(() => {
                 // Re-enable submit button
@@ -626,23 +735,18 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showAlert(data.message, 'success');
-                    // Redirect to sign in after successful verification
+                    // No success alert, just redirect to login
                     setTimeout(() => {
-                        container.classList.remove("otp-active");
-                        container.classList.remove("active");
-                        // Clear OTP inputs
-                        otpInputs.forEach(input => input.value = '');
-                        // Clear signup form
-                        signupForm.reset();
-                    }, 2000);
+                        resetToLogin();
+                    }, 1000);
                 } else {
-                    showAlert(data.message, 'error');
+                    // No error alerts shown
+                    console.error('OTP verification failed:', data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showAlert('An error occurred. Please try again.', 'error');
+                // No error alerts shown
             })
             .finally(() => {
                 // Re-enable submit button
@@ -694,15 +798,19 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showAlert(data.message, 'success');
                     startCountdown();
+                    // Only show OTP-related success messages
+                    if (data.message && data.message.toLowerCase().includes('otp')) {
+                        showAlert(data.message, 'success');
+                    }
                 } else {
-                    showAlert(data.message, 'error');
+                    // No error alerts shown
+                    console.error('Resend OTP failed:', data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showAlert('An error occurred. Please try again.', 'error');
+                // No error alerts shown
             })
             .finally(() => {
                 // Re-enable button after request completes
@@ -713,7 +821,7 @@
             });
         });
 
-        // Show alert function
+        // Show alert function (only for OTP-related messages)
         function showAlert(message, type) {
             // Remove existing alerts
             const existingAlerts = document.querySelectorAll('.custom-alert');
@@ -799,11 +907,12 @@
             });
         }, 5000);
 
-        // Check if OTP form should be shown on page load (in case of refresh)
-        <?php if (isset($_SESSION['show_otp']) && $_SESSION['show_otp'] === true): ?>
-        container.classList.add("otp-active");
-        startCountdown();
-        <?php endif; ?>
+        <?php 
+        // Clear OTP session on page load to prevent persistent OTP state
+        if (isset($_SESSION['show_otp'])) {
+            unset($_SESSION['show_otp']);
+        }
+        ?>
     </script>
 </body>
 
