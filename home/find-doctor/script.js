@@ -631,6 +631,7 @@ async function handleBookingSubmit(e) {
             "name",
             "phone",
             "email",
+            "gender",
             "date",
             "time",
             "clinic",

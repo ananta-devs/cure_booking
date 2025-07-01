@@ -181,7 +181,7 @@ function bookAppointment($conn) {
             return;
         }
 
-        $required = ['doctor_id', 'name', 'phone', 'email', 'date', 'time', 'clinic'];
+        $required = ['doctor_id', 'name', 'phone', 'email', 'gender', 'date', 'time', 'clinic', ];
         $data = [];
         
         foreach ($required as $field) {
@@ -241,7 +241,7 @@ function bookAppointment($conn) {
             return;
         }
 
-        $gender = 'other';
+    
 
         // Insert the appointment with the determined time
         $insert_stmt = $conn->prepare("INSERT INTO appointments 
@@ -259,7 +259,7 @@ function bookAppointment($conn) {
             $data['name'], 
             $data['phone'], 
             $data['email'], 
-            $gender,
+            $data['gender'],
             $data['date'], 
             $final_time,
             $user_email,
