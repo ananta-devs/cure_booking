@@ -47,7 +47,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalTitle"><i class="fa fa-file-medical"></i> Booking Details</h2>
-                <button class="modal-close" onclick="closeModal()">
+                <button class="modal-close" onclick="closeModal('bookingModal')">
                     <i class="fa fa-times"></i>
                 </button>
             </div>
@@ -64,7 +64,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fa fa-upload"></i> Upload Lab Report</h3>
-                <button type="button" class="close-modal">
+                <button class="modal-close" onclick="closeModal('uploadReportModal')">
                     <i class="fa fa-times"></i>
                 </button>
             </div>
@@ -110,7 +110,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fa fa-edit"></i> Update Booking Status</h3>
-                <button class="modal-close" onclick="closeStatusModal()">
+                <button class="modal-close" onclick="closeModal('statusUpdateModal')">
                     <i class="fa fa-times"></i>
                 </button>
             </div>
@@ -138,7 +138,7 @@
                     </div>
 
                     <div class="status-buttons">
-                        <button type="button" class="status-btn status-btn-cancel" onclick="closeStatusModal()">
+                        <button type="button" class="btn btn-secondary close-modal">
                             <i class="fa fa-times"></i> Cancel
                         </button>
                         <button type="submit" class="status-btn status-btn-update">

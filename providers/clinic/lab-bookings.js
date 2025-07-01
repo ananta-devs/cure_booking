@@ -1,5 +1,6 @@
 // Optimized Lab Bookings JavaScript
 document.addEventListener("DOMContentLoaded", function () {
+    addDisabledUploadButtonStyles();
     loadBookings();
     setInterval(loadBookings, 30000);
     initializeEventHandlers();
@@ -15,10 +16,11 @@ async function loadBookings() {
         const response = await fetch("lab-api.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: "action=get_bookings"
+            body: "action=get_bookings",
         });
 
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
 
         const text = await response.text();
         const data = JSON.parse(text);
@@ -28,7 +30,9 @@ async function loadBookings() {
             displayBookings(allBookings);
             updateStatistics(allBookings);
         } else {
-            showError("Failed to load bookings: " + (data.message || 'Unknown error'));
+            showError(
+                "Failed to load bookings: " + (data.message || "Unknown error")
+            );
         }
     } catch (error) {
         console.error("Error loading bookings:", error);
@@ -43,7 +47,7 @@ async function loadBookings() {
 function displayBookings(bookings) {
     const table = document.querySelector(".bookings-table");
     if (!table) return;
-    
+
     // Remove existing tbody
     const existingTbody = table.querySelector("tbody");
     if (existingTbody) existingTbody.remove();
@@ -60,7 +64,9 @@ function displayBookings(bookings) {
                 </div>
             </td></tr>`;
     } else {
-        bookings.forEach(booking => tbody.appendChild(createBookingRow(booking)));
+        bookings.forEach((booking) =>
+            tbody.appendChild(createBookingRow(booking))
+        );
     }
 
     table.appendChild(tbody);
@@ -70,20 +76,29 @@ function displayBookings(bookings) {
 function createBookingRow(booking) {
     const row = document.createElement("tr");
     const {
-        booking_id: id = 'N/A',
-        customer_name: name = 'N/A',
-        email = 'N/A',
-        phone = 'N/A',
-        formatted_collection_date: collectionDate = 'N/A',
-        time_slot: timeSlot = 'N/A',
+        booking_id: id = "N/A",
+        customer_name: name = "N/A",
+        email = "N/A",
+        phone = "N/A",
+        formatted_collection_date: collectionDate = "N/A",
+        time_slot: timeSlot = "N/A",
         test_count: testCount = 0,
-        tests = 'N/A',
+        tests = "N/A",
         total_amount: amount = 0,
-        status = 'Pending',
-        status_class: statusClass = 'status-pending',
+        status = "Pending",
+        status_class: statusClass = "status-pending",
         has_report: hasReport = false,
-        formatted_created_date: createdDate = 'N/A'
+        formatted_created_date: createdDate = "N/A",
     } = booking;
+
+    // Determine if upload button should be enabled
+    const isUploadEnabled = status === "Sample Collected";
+    const uploadButtonClass = isUploadEnabled
+        ? "upload-btn"
+        : "upload-btn disabled";
+    const uploadButtonTitle = isUploadEnabled
+        ? "Upload Report"
+        : "Upload only available after Sample Collection";
 
     row.innerHTML = `
         <td><div class="booking-id">${id}</div><div class="booking-date">${createdDate}</div></td>
@@ -98,7 +113,11 @@ function createBookingRow(booking) {
         <td><div class="amount">₹${amount}</div></td>
         <td>
             <span class="status-badge ${statusClass}">${status}</span>
-            ${hasReport ? '<div class="report-indicator"><i class="fa fa-file-alt"></i> Report Available</div>' : ''}
+            ${
+                hasReport
+                    ? '<div class="report-indicator"><i class="fa fa-file-alt"></i> Report Available</div>'
+                    : ""
+            }
         </td>
         <td><div class="action-buttons">
             <button class="action-btn view-btn" onclick="viewBookingDetails('${id}')" title="View Details">
@@ -107,14 +126,41 @@ function createBookingRow(booking) {
             <button class="action-btn status-btn" onclick="showStatusModal('${id}', '${status}')" title="Update Status">
                 <i class="fa fa-edit"></i>
             </button>
-            <button class="action-btn upload-btn" onclick="showUploadModal('${id}')" title="Upload Report">
+            <button class="action-btn ${uploadButtonClass}" 
+                onclick="${
+                    isUploadEnabled
+                        ? `showUploadModal('${id}')`
+                        : "return false;"
+                }" 
+                title="${uploadButtonTitle}"
+                ${!isUploadEnabled ? "disabled" : ""}>
                 <i class="fa fa-upload"></i>
-            </button>
-            <button class="action-btn delete-btn" onclick="deleteBooking('${id}')" title="Delete Booking">
-                <i class="fa fa-trash"></i>
             </button>
         </div></td>`;
     return row;
+}
+
+function addDisabledUploadButtonStyles() {
+    const style = document.createElement("style");
+    style.textContent = `
+        .upload-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            background-color: #ccc !important;
+            color: #666 !important;
+        }
+        
+        .upload-btn.disabled:hover {
+            background-color: #ccc !important;
+            color: #666 !important;
+            transform: none !important;
+        }
+        
+        .upload-btn.disabled i {
+            color: #666 !important;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // Update statistics
@@ -122,12 +168,18 @@ function updateStatistics(bookings) {
     const today = new Date().toISOString().split("T")[0];
     const stats = {
         total: bookings.length,
-        pending: bookings.filter(b => b.status === "Pending").length,
-        completed: bookings.filter(b => b.status === "Completed").length,
-        today: bookings.filter(b => b.sample_collection_date === today).length
+        pending: bookings.filter((b) => b.status === "Pending").length,
+        completed: bookings.filter((b) => b.status === "Completed").length,
+        today: bookings.filter((b) => b.sample_collection_date === today)
+            .length,
     };
 
-    ['totalBookings', 'pendingBookings', 'completedBookings', 'todayBookings'].forEach((id, i) => {
+    [
+        "totalBookings",
+        "pendingBookings",
+        "completedBookings",
+        "todayBookings",
+    ].forEach((id, i) => {
         const el = document.getElementById(id);
         if (el) el.textContent = Object.values(stats)[i];
     });
@@ -136,14 +188,20 @@ function updateStatistics(bookings) {
 // View booking details
 async function viewBookingDetails(bookingId) {
     try {
-        const response = await fetch(`lab-api.php?action=get_booking_details&booking_id=${bookingId}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
+        const response = await fetch(
+            `lab-api.php?action=get_booking_details&booking_id=${bookingId}`
+        );
+        if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+
         const data = await response.json();
         if (data.success) {
             showBookingModal(data.data);
         } else {
-            showError("Failed to load booking details: " + (data.message || 'Unknown error'));
+            showError(
+                "Failed to load booking details: " +
+                    (data.message || "Unknown error")
+            );
         }
     } catch (error) {
         console.error("Error loading booking details:", error);
@@ -162,21 +220,37 @@ function showBookingModal(booking) {
             <div class="detail-section">
                 <h3><i class="fa fa-user"></i> Customer Information</h3>
                 <div class="detail-grid">
-                    <div class="detail-item"><label>Name:</label><span>${booking.customer_name || 'N/A'}</span></div>
-                    <div class="detail-item"><label>Phone:</label><span>${booking.phone || 'N/A'}</span></div>
-                    <div class="detail-item"><label>Email:</label><span>${booking.email || 'N/A'}</span></div>
-                    <div class="detail-item"><label>Address:</label><span>${booking.address || 'N/A'}</span></div>
+                    <div class="detail-item"><label>Name:</label><span>${
+                        booking.customer_name || "N/A"
+                    }</span></div>
+                    <div class="detail-item"><label>Phone:</label><span>${
+                        booking.phone || "N/A"
+                    }</span></div>
+                    <div class="detail-item"><label>Email:</label><span>${
+                        booking.email || "N/A"
+                    }</span></div>
+                    <div class="detail-item"><label>Address:</label><span>${
+                        booking.address || "N/A"
+                    }</span></div>
                 </div>
             </div>
             
             <div class="detail-section">
                 <h3><i class="fa fa-calendar"></i> Booking Information</h3>
                 <div class="detail-grid">
-                    <div class="detail-item"><label>Booking ID:</label><span>${booking.booking_id || 'N/A'}</span></div>
-                    <div class="detail-item"><label>Collection Date:</label><span>${booking.formatted_collection_date || 'N/A'}</span></div>
-                    <div class="detail-item"><label>Time Slot:</label><span>${booking.time_slot || 'N/A'}</span></div>
+                    <div class="detail-item"><label>Booking ID:</label><span>${
+                        booking.booking_id || "N/A"
+                    }</span></div>
+                    <div class="detail-item"><label>Collection Date:</label><span>${
+                        booking.formatted_collection_date || "N/A"
+                    }</span></div>
+                    <div class="detail-item"><label>Time Slot:</label><span>${
+                        booking.time_slot || "N/A"
+                    }</span></div>
                     <div class="detail-item"><label>Status:</label>
-                        <span class="status-badge ${getStatusClass(booking.status || 'Pending')}">${booking.status || 'Pending'}</span>
+                        <span class="status-badge ${getStatusClass(
+                            booking.status || "Pending"
+                        )}">${booking.status || "Pending"}</span>
                     </div>
                 </div>
             </div>
@@ -184,33 +258,56 @@ function showBookingModal(booking) {
             <div class="detail-section">
                 <h3><i class="fa fa-flask"></i> Test Details</h3>
                 <div class="tests-list">
-                    ${booking.tests?.length > 0
-                        ? booking.tests.map(test => `<div class="test-item">${test}</div>`).join("")
-                        : '<div class="no-tests">No tests found</div>'}
+                    ${
+                        booking.tests?.length > 0
+                            ? booking.tests
+                                  .map(
+                                      (test) =>
+                                          `<div class="test-item">${test}</div>`
+                                  )
+                                  .join("")
+                            : '<div class="no-tests">No tests found</div>'
+                    }
                 </div>
-                <div class="total-amount"><strong>Total Amount: ₹${booking.total_amount || 0}</strong></div>
+                <div class="total-amount"><strong>Total Amount: ₹${
+                    booking.total_amount || 0
+                }</strong></div>
             </div>
             
-            ${booking.has_report ? `
+            ${
+                booking.has_report
+                    ? `
                 <div class="detail-section">
                     <h3><i class="fa fa-file-alt"></i> Report Information</h3>
                     <div class="report-info">
-                        <div class="report-item"><label>Report File:</label><span>${booking.report_file || 'N/A'}</span></div>
-                        <div class="report-item"><label>Uploaded At:</label><span>${booking.formatted_report_date || 'N/A'}</span></div>
+                        <div class="report-item"><label>Report File:</label><span>${
+                            booking.report_file || "N/A"
+                        }</span></div>
+                        <div class="report-item"><label>Uploaded At:</label><span>${
+                            booking.formatted_report_date || "N/A"
+                        }</span></div>
                         <div class="report-actions">
-                            <a href="uploads/lab_reports/${booking.report_file}" target="_blank" class="btn btn-primary">
+                            <a href="uploads/lab_reports/${
+                                booking.report_file
+                            }" target="_blank" class="btn btn-primary">
                                 <i class="fa fa-download"></i> Download Report
                             </a>
                         </div>
                     </div>
                 </div>
-            ` : ''}
+            `
+                    : ""
+            }
             
             <div class="detail-section">
                 <h3><i class="fa fa-info-circle"></i> Booking Timeline</h3>
                 <div class="timeline-info">
-                    <div class="timeline-item"><label>Created:</label><span>${booking.formatted_created_date || 'N/A'}</span></div>
-                    <div class="timeline-item"><label>Last Updated:</label><span>${booking.formatted_updated_date || 'N/A'}</span></div>
+                    <div class="timeline-item"><label>Created:</label><span>${
+                        booking.formatted_created_date || "N/A"
+                    }</span></div>
+                    <div class="timeline-item"><label>Last Updated:</label><span>${
+                        booking.formatted_updated_date || "N/A"
+                    }</span></div>
                 </div>
             </div>
         </div>`;
@@ -224,10 +321,15 @@ function showStatusModal(bookingId, currentStatus) {
     const elements = {
         bookingInfo: document.getElementById("statusBookingInfo"),
         statusSelect: document.getElementById("statusSelect"),
-        hiddenBookingId: document.getElementById("statusBookingId")
+        hiddenBookingId: document.getElementById("statusBookingId"),
     };
 
-    if (!modal || !elements.bookingInfo || !elements.statusSelect || !elements.hiddenBookingId) {
+    if (
+        !modal ||
+        !elements.bookingInfo ||
+        !elements.statusSelect ||
+        !elements.hiddenBookingId
+    ) {
         console.error("Status modal elements not found", elements);
         return;
     }
@@ -241,7 +343,7 @@ function showStatusModal(bookingId, currentStatus) {
 // Show upload modal - Fixed to work with the correct modal
 function showUploadModal(bookingId) {
     console.log("Opening upload modal for booking:", bookingId);
-    
+
     const modal = document.getElementById("uploadReportModal");
     if (!modal) {
         console.error("Upload modal not found");
@@ -253,7 +355,9 @@ function showUploadModal(bookingId) {
         hiddenBookingId: document.getElementById("uploadBookingId"),
         fileInput: document.getElementById("reportFile"),
         fileInfo: document.getElementById("fileInfo"),
-        uploadBtn: document.querySelector('#uploadReportForm button[type="submit"]')
+        uploadBtn: document.querySelector(
+            '#uploadReportForm button[type="submit"]'
+        ),
     };
 
     console.log("Modal elements found:", elements);
@@ -262,25 +366,25 @@ function showUploadModal(bookingId) {
     if (elements.bookingInfo) {
         elements.bookingInfo.textContent = `Booking ID: ${bookingId}`;
     }
-    
+
     if (elements.hiddenBookingId) {
         elements.hiddenBookingId.value = bookingId;
     }
-    
+
     // Reset form
     if (elements.fileInput) {
-        elements.fileInput.value = '';
+        elements.fileInput.value = "";
     }
-    
+
     if (elements.fileInfo) {
-        elements.fileInfo.innerHTML = '';
+        elements.fileInfo.innerHTML = "";
     }
-    
+
     // Keep upload button disabled until file is selected
     if (elements.uploadBtn) {
         elements.uploadBtn.disabled = true;
     }
-    
+
     modal.style.display = "flex";
 }
 
@@ -288,28 +392,37 @@ function showUploadModal(bookingId) {
 async function updateBookingStatus() {
     const bookingId = document.getElementById("statusBookingId")?.value;
     const status = document.getElementById("statusSelect")?.value;
-    
+
     if (!bookingId || !status) {
         showError("Please select a status");
         return;
     }
 
-    await performApiAction("update_status", { booking_id: bookingId, status }, 
-        "Updating status...", "Status updated successfully", "statusUpdateModal");
+    await performApiAction(
+        "update_status",
+        { booking_id: bookingId, status },
+        "Updating status...",
+        "Status updated successfully",
+        "statusUpdateModal"
+    );
 }
 
 // Upload report - Fixed validation and error handling
 async function uploadReport() {
     const bookingId = document.getElementById("uploadBookingId")?.value;
     const fileInput = document.getElementById("reportFile");
-    
-    console.log("Upload report called", { bookingId, fileInput, files: fileInput?.files });
-    
+
+    console.log("Upload report called", {
+        bookingId,
+        fileInput,
+        files: fileInput?.files,
+    });
+
     if (!bookingId) {
         showError("Booking ID is missing");
         return;
     }
-    
+
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
         showError("Please select a file to upload");
         return;
@@ -317,7 +430,7 @@ async function uploadReport() {
 
     const file = fileInput.files[0];
     console.log("Selected file:", file);
-    
+
     const validation = validateFile(file);
     if (!validation.valid) {
         showError(validation.message);
@@ -325,59 +438,68 @@ async function uploadReport() {
     }
 
     const formData = new FormData();
-    formData.append('action', 'upload_report');
-    formData.append('booking_id', bookingId);
-    formData.append('report_file', file);
+    formData.append("action", "upload_report");
+    formData.append("booking_id", bookingId);
+    formData.append("report_file", file);
 
-    console.log("Uploading with FormData:", { 
-        action: 'upload_report', 
-        booking_id: bookingId, 
-        file_name: file.name 
+    console.log("Uploading with FormData:", {
+        action: "upload_report",
+        booking_id: bookingId,
+        file_name: file.name,
     });
 
-    await performApiAction(null, formData, "Uploading report...", "Report uploaded successfully", "uploadReportModal");
-}
-
-// Delete booking
-async function deleteBooking(bookingId) {
-    if (!confirm(`Are you sure you want to delete booking ${bookingId}? This action cannot be undone.`)) return;
-
-    await performApiAction("delete_booking", { booking_id: bookingId }, 
-        "Deleting booking...", "Booking deleted successfully");
+    await performApiAction(
+        null,
+        formData,
+        "Uploading report...",
+        "Report uploaded successfully",
+        "uploadReportModal"
+    );
 }
 
 // Generic API action handler
-async function performApiAction(action, data, loadingMsg, successMsg, modalToClose = null) {
+async function performApiAction(
+    action,
+    data,
+    loadingMsg,
+    successMsg,
+    modalToClose = null
+) {
     try {
         showLoader(loadingMsg);
-        
+
         const formData = data instanceof FormData ? data : new FormData();
         if (action && !(data instanceof FormData)) {
-            formData.append('action', action);
-            Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+            formData.append("action", action);
+            Object.entries(data).forEach(([key, value]) =>
+                formData.append(key, value)
+            );
         }
 
         console.log("Performing API action:", action || "FormData", formData);
 
-        const response = await fetch("lab-api.php", { 
-            method: "POST", 
-            body: formData 
+        const response = await fetch("lab-api.php", {
+            method: "POST",
+            body: formData,
         });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
 
         const text = await response.text();
         console.log("API response text:", text);
-        
+
         const result = JSON.parse(text);
         console.log("API response:", result);
-        
+
         if (result.success) {
             showSuccess(successMsg);
             if (modalToClose) closeModal(modalToClose);
             loadBookings();
         } else {
-            showError("Operation failed: " + (result.message || 'Unknown error'));
+            showError(
+                "Operation failed: " + (result.message || "Unknown error")
+            );
         }
     } catch (error) {
         console.error("API Error:", error);
@@ -389,29 +511,41 @@ async function performApiAction(action, data, loadingMsg, successMsg, modalToClo
 
 // File validation - Fixed to be more permissive
 function validateFile(file) {
-    console.log("Validating file:", { 
-        name: file.name, 
-        type: file.type, 
-        size: file.size 
+    console.log("Validating file:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
     });
-    
+
     // Check file size first (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-        return { valid: false, message: "File size too large. Maximum 10MB allowed" };
-    }
-    
-    // Check file extension
-    const fileName = file.name.toLowerCase();
-    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
-    const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
-    
-    if (!hasValidExtension) {
-        return { 
-            valid: false, 
-            message: `Invalid file type. Only PDF, JPG, PNG, DOC, DOCX allowed. Selected: ${fileName}` 
+        return {
+            valid: false,
+            message: "File size too large. Maximum 10MB allowed",
         };
     }
-    
+
+    // Check file extension
+    const fileName = file.name.toLowerCase();
+    const allowedExtensions = [
+        ".pdf",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".doc",
+        ".docx",
+    ];
+    const hasValidExtension = allowedExtensions.some((ext) =>
+        fileName.endsWith(ext)
+    );
+
+    if (!hasValidExtension) {
+        return {
+            valid: false,
+            message: `Invalid file type. Only PDF, JPG, PNG, DOC, DOCX allowed. Selected: ${fileName}`,
+        };
+    }
+
     console.log("File validation passed");
     return { valid: true };
 }
@@ -419,22 +553,22 @@ function validateFile(file) {
 // Initialize all event handlers
 function initializeEventHandlers() {
     console.log("Initializing event handlers");
-    
+
     // Form handlers
     const statusForm = document.getElementById("statusUpdateForm");
     const uploadForm = document.getElementById("uploadReportForm");
-    
+
     if (statusForm) {
-        statusForm.addEventListener("submit", e => { 
-            e.preventDefault(); 
-            updateBookingStatus(); 
+        statusForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            updateBookingStatus();
         });
     }
-    
+
     if (uploadForm) {
-        uploadForm.addEventListener("submit", e => { 
-            e.preventDefault(); 
-            uploadReport(); 
+        uploadForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            uploadReport();
         });
     }
 
@@ -442,28 +576,30 @@ function initializeEventHandlers() {
     const fileInput = document.getElementById("reportFile");
     if (fileInput) {
         console.log("Setting up file input handler");
-        fileInput.addEventListener("change", function(e) {
+        fileInput.addEventListener("change", function (e) {
             console.log("File input changed:", e.target.files);
-            
+
             const file = e.target.files[0];
-            const uploadBtn = document.querySelector('#uploadReportForm button[type="submit"]');
+            const uploadBtn = document.querySelector(
+                '#uploadReportForm button[type="submit"]'
+            );
             const fileInfo = document.getElementById("fileInfo");
-            
+
             if (file) {
                 console.log("File selected:", file.name);
-                
+
                 const validation = validateFile(file);
                 if (!validation.valid) {
                     console.log("File validation failed:", validation.message);
                     showError(validation.message);
-                    e.target.value = '';
+                    e.target.value = "";
                     if (uploadBtn) uploadBtn.disabled = true;
-                    if (fileInfo) fileInfo.innerHTML = '';
+                    if (fileInfo) fileInfo.innerHTML = "";
                     return;
                 }
-                
+
                 console.log("File validation passed, updating UI");
-                
+
                 // Update file info display
                 if (fileInfo) {
                     fileInfo.innerHTML = `
@@ -471,10 +607,12 @@ function initializeEventHandlers() {
                             <i class="fa fa-file"></i>
                             <span>${file.name}</span>
                             <small>(${formatFileSize(file.size)})</small>
-                            <div class="file-details">Type: ${file.type || 'Unknown'}</div>
+                            <div class="file-details">Type: ${
+                                file.type || "Unknown"
+                            }</div>
                         </div>`;
                 }
-                
+
                 // Enable upload button
                 if (uploadBtn) {
                     uploadBtn.disabled = false;
@@ -486,7 +624,7 @@ function initializeEventHandlers() {
                     uploadBtn.disabled = true;
                     console.log("Upload button disabled");
                 }
-                if (fileInfo) fileInfo.innerHTML = '';
+                if (fileInfo) fileInfo.innerHTML = "";
             }
         });
     } else {
@@ -494,78 +632,134 @@ function initializeEventHandlers() {
     }
 
     // Filter handlers
-    ['statusFilter'].forEach(id => {
+    ["statusFilter"].forEach((id) => {
         const element = document.getElementById(id);
         if (element) element.addEventListener("change", filterBookings);
     });
 
-    // Modal handlers
-    document.addEventListener("click", function(e) {
-        if (e.target.classList.contains("modal") || e.target.classList.contains("modal-overlay")) {
+    // Initialize modal close handlers
+    initializeModalCloseHandlers();
+}
+
+function initializeModalCloseHandlers() {
+    console.log("Initializing modal close handlers");
+
+    // Handle clicks on modal overlay/background
+    document.addEventListener("click", function (e) {
+        // Close modal when clicking on overlay background
+        if (
+            e.target.classList.contains("modal") ||
+            e.target.classList.contains("modal-overlay")
+        ) {
             e.target.style.display = "none";
         }
-        if (e.target.classList.contains("close-modal") || e.target.classList.contains("modal-close")) {
-            const modal = e.target.closest(".modal") || e.target.closest(".modal-overlay");
-            if (modal) modal.style.display = "none";
+
+        // Handle close button clicks
+        if (
+            e.target.classList.contains("close-modal") ||
+            e.target.classList.contains("modal-close")
+        ) {
+            const modal =
+                e.target.closest(".modal") ||
+                e.target.closest(".modal-overlay");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // Handle close icon inside buttons
+        if (
+            e.target.parentElement &&
+            (e.target.parentElement.classList.contains("close-modal") ||
+                e.target.parentElement.classList.contains("modal-close"))
+        ) {
+            const modal =
+                e.target.closest(".modal") ||
+                e.target.closest(".modal-overlay");
+            if (modal) {
+                modal.style.display = "none";
+            }
         }
     });
 
-    document.addEventListener("keydown", function(e) {
+    // Handle ESC key
+    document.addEventListener("keydown", function (e) {
         if (e.key === "Escape") {
-            document.querySelectorAll('.modal[style*="flex"], .modal-overlay[style*="flex"]').forEach(modal => {
-                modal.style.display = "none";
-            });
+            document
+                .querySelectorAll(
+                    '.modal[style*="flex"], .modal-overlay[style*="flex"], .modal[style*="block"]'
+                )
+                .forEach((modal) => {
+                    modal.style.display = "none";
+                });
         }
     });
 }
 
-// Filter bookings
+// Filter bookings - FIXED VERSION
 function filterBookings() {
     const statusFilter = document.getElementById("statusFilter");
 
     let filtered = [...allBookings];
 
     if (statusFilter?.value && statusFilter.value !== "All Statuses") {
-        filtered = filtered.filter(booking => booking.status === statusFilter.value);
+        filtered = filtered.filter(
+            (booking) => booking.status === statusFilter.value
+        );
     }
 
     displayBookings(filtered);
-    updateStatistics(filtered);
+
+    // FIXED: Always pass allBookings to keep total count accurate
+    updateStatistics(allBookings);
 }
 
 // Utility functions
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = "none";
-        console.log("Closed modal:", modalId);
+function closeModal(modalId = null) {
+    if (modalId) {
+        // Close specific modal by ID
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = "none";
+            console.log("Closed modal:", modalId);
+        }
+    } else {
+        // Close all open modals if no specific ID provided
+        document
+            .querySelectorAll(
+                '.modal[style*="flex"], .modal-overlay[style*="flex"], .modal[style*="block"]'
+            )
+            .forEach((modal) => {
+                modal.style.display = "none";
+            });
+        console.log("Closed all open modals");
     }
 }
 
 function getStatusClass(status) {
     const statusMap = {
-        'Pending': 'status-pending',
-        'Confirmed': 'status-confirmed',
-        'Sample Collected': 'status-collected',
-        'In Progress': 'status-progress',
-        'Upload Done': 'status-uploaded',
-        'Completed': 'status-completed',
-        'Cancelled': 'status-cancelled'
+        Pending: "status-pending",
+        Confirmed: "status-confirmed",
+        "Sample Collected": "status-collected",
+        "In Progress": "status-progress",
+        "Upload Done": "status-uploaded",
+        Completed: "status-completed",
+        Cancelled: "status-cancelled",
     };
-    return statusMap[status] || 'status-pending';
+    return statusMap[status] || "status-pending";
 }
 
 function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 function debounce(func, wait) {
     let timeout;
-    return function(...args) {
+    return function (...args) {
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(this, args), wait);
     };
@@ -609,15 +803,15 @@ function showError(message) {
 
 function showToast(message, type, duration) {
     // Remove existing toasts
-    document.querySelectorAll('.toast').forEach(toast => toast.remove());
-    
+    document.querySelectorAll(".toast").forEach((toast) => toast.remove());
+
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
     toast.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        background: ${type === "success" ? "#4CAF50" : "#f44336"};
         color: white;
         padding: 15px 20px;
         border-radius: 5px;
@@ -628,9 +822,11 @@ function showToast(message, type, duration) {
         gap: 10px;
         max-width: 400px;
     `;
-    
+
     toast.innerHTML = `
-        <i class="fa fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <i class="fa fa-${
+            type === "success" ? "check-circle" : "exclamation-circle"
+        }"></i>
         <span>${message}</span>
         <button class="close-toast" onclick="this.parentElement.remove()" style="
             background: none;
@@ -642,7 +838,7 @@ function showToast(message, type, duration) {
         ">
             <i class="fa fa-times"></i>
         </button>`;
-    
+
     document.body.appendChild(toast);
     setTimeout(() => {
         if (toast.parentElement) {

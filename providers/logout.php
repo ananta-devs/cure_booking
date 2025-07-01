@@ -18,7 +18,7 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 // Determine redirect URL based on user type
-$redirectUrl = 'http://localhost/cure_booking/index.php'; // Default
+$redirectUrl = 'http://localhost/cure_booking/home/index.php'; // Default
 
 
 
