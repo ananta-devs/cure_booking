@@ -188,7 +188,7 @@
             <p>Please login to your account</p>
         </div>
         <div class="form-container">
-            <form id="login-form" action="log.php" method="post">
+            <form id="login-form" action="login_handler.php" method="post">
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" name="email" placeholder="Enter your email" required>
@@ -224,7 +224,7 @@
             formData.append('password', password);
             
             // Send login request - use relative path
-            fetch('log.php', {
+            fetch('login_handler.php', {
                 method: 'POST',
                 body: formData
             })

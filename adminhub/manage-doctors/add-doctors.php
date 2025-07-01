@@ -266,40 +266,6 @@
             // Add first clinic selection by default
             addClinicSelection();
             
-            // Form submission with validation
-            // doctorForm.addEventListener('submit', function(e) {
-            //     e.preventDefault();
-                
-            //     if (validateForm()) {
-            //         // Using FormData to handle file uploads
-            //         const formData = new FormData(doctorForm);
-            //         formData.append('action', 'add');
-                    
-            //         // Add clinic assignments data
-            //         const clinicAssignments = collectClinicAssignments();
-            //         formData.append('clinic_assignments', JSON.stringify(clinicAssignments));
-
-            //         // AJAX submission
-            //         fetch('get_doctor.php', {
-            //             method: 'POST',
-            //             body: formData
-            //         })
-            //         .then(response => response.json())
-            //         .then(data => {
-            //             if (data.status === 'success') {
-            //                 showMessage(data.message, 'success');
-            //                 doctorForm.reset();
-            //                 resetClinicSelections();
-            //             } else {
-            //                 showMessage(data.message, 'error');
-            //             }
-            //         })
-            //         .catch(error => {
-            //             showMessage('An error occurred while saving the data.', 'error');
-            //             console.error('Error:', error);
-            //         });
-            //     }
-            // });
             // Form submission with enhanced error handling and debugging
         doctorForm.addEventListener('submit', function(e) {
             e.preventDefault();

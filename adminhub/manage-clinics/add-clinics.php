@@ -112,8 +112,8 @@
                     // Show loading message
                     showMessage('Processing...', 'info');
 
-                    // AJAX submission
-                    fetch('process_clinic.php', {
+                    // AJAX submission to api.php
+                    fetch('api.php', {
                         method: 'POST',
                         body: formData
                     })
@@ -185,6 +185,24 @@
                     isValid = false;
                 }
                 
+                // Validate file if selected
+                const fileInput = document.getElementById('profile_image');
+                if (fileInput && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                    const maxSize = 5 * 1024 * 1024; // 5MB
+                    
+                    if (!allowedTypes.includes(file.type)) {
+                        markInvalid(fileInput, 'Only JPG, JPEG, PNG, GIF and WEBP files are allowed');
+                        isValid = false;
+                    } else if (file.size > maxSize) {
+                        markInvalid(fileInput, 'File size must be less than 5MB');
+                        isValid = false;
+                    } else {
+                        markValid(fileInput);
+                    }
+                }
+                
                 return isValid;
             }
             
@@ -208,7 +226,7 @@
             function markValid(input) {
                 if (!input) return;
                 
-                input.style.borderColor = '#ddd';
+                input.style.borderColor = '#28a745';
                 const errorMsg = input.parentElement.querySelector('.error-text');
                 if (errorMsg) {
                     errorMsg.remove();
@@ -232,8 +250,9 @@
             }
             
             function isValidPhone(phone) {
+                // More comprehensive phone validation
                 const re = /^[\+]?[1-9][\d]{0,15}$/;
-                return re.test(phone.replace(/\s/g, ''));
+                return re.test(phone.replace(/[\s\-\(\)]/g, ''));
             }
             
             function getFieldLabel(fieldId) {
@@ -257,16 +276,16 @@
                 // Set colors based on type
                 switch(type) {
                     case 'success':
-                        messageDiv.style.cssText += 'background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;';
+                        messageDiv.style.cssText = 'display: block; padding: 10px; margin: 10px 0; border-radius: 5px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;';
                         break;
                     case 'error':
-                        messageDiv.style.cssText += 'background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;';
+                        messageDiv.style.cssText = 'display: block; padding: 10px; margin: 10px 0; border-radius: 5px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;';
                         break;
                     case 'info':
-                        messageDiv.style.cssText += 'background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;';
+                        messageDiv.style.cssText = 'display: block; padding: 10px; margin: 10px 0; border-radius: 5px; background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;';
                         break;
                     default:
-                        messageDiv.style.cssText += 'background-color: #f8f9fa; color: #495057; border: 1px solid #dee2e6;';
+                        messageDiv.style.cssText = 'display: block; padding: 10px; margin: 10px 0; border-radius: 5px; background-color: #f8f9fa; color: #495057; border: 1px solid #dee2e6;';
                 }
                 
                 // Scroll to message
@@ -286,8 +305,12 @@
                 emailInput.addEventListener('input', function() {
                     if (this.value.trim() && !isValidEmail(this.value)) {
                         markInvalid(this, 'Please enter a valid email address');
-                    } else {
+                    } else if (this.value.trim()) {
                         markValid(this);
+                    } else {
+                        this.style.borderColor = '';
+                        const errorMsg = this.parentElement.querySelector('.error-text');
+                        if (errorMsg) errorMsg.remove();
                     }
                 });
             }
@@ -297,8 +320,12 @@
                 contactInput.addEventListener('input', function() {
                     if (this.value.trim() && !isValidPhone(this.value)) {
                         markInvalid(this, 'Please enter a valid phone number');
-                    } else {
+                    } else if (this.value.trim()) {
                         markValid(this);
+                    } else {
+                        this.style.borderColor = '';
+                        const errorMsg = this.parentElement.querySelector('.error-text');
+                        if (errorMsg) errorMsg.remove();
                     }
                 });
             }
@@ -308,8 +335,36 @@
                 passwordInput.addEventListener('input', function() {
                     if (this.value.length < 6 && this.value.length > 0) {
                         markInvalid(this, 'Password must be at least 6 characters long');
-                    } else {
+                    } else if (this.value.length >= 6) {
                         markValid(this);
+                    } else {
+                        this.style.borderColor = '';
+                        const errorMsg = this.parentElement.querySelector('.error-text');
+                        if (errorMsg) errorMsg.remove();
+                    }
+                });
+            }
+            
+            // File input validation
+            const fileInput = document.getElementById('profile_image');
+            if (fileInput) {
+                fileInput.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        const file = this.files[0];
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                        const maxSize = 5 * 1024 * 1024; // 5MB
+                        
+                        if (!allowedTypes.includes(file.type)) {
+                            markInvalid(this, 'Only JPG, JPEG, PNG, GIF and WEBP files are allowed');
+                        } else if (file.size > maxSize) {
+                            markInvalid(this, 'File size must be less than 5MB');
+                        } else {
+                            markValid(this);
+                        }
+                    } else {
+                        this.style.borderColor = '';
+                        const errorMsg = this.parentElement.querySelector('.error-text');
+                        if (errorMsg) errorMsg.remove();
                     }
                 });
             }
@@ -331,6 +386,20 @@
             background-color: #d1ecf1;
             color: #0c5460;
             border: 1px solid #bee5eb;
+        }
+        
+        .form-group input:valid {
+            border-color: #28a745;
+        }
+        
+        .form-group input:invalid {
+            border-color: #dc3545;
+        }
+        
+        .error-text {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
         }
     </style>
 </body>

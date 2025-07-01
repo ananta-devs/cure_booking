@@ -28,7 +28,7 @@ include '../include/database_connection.php';
                 <div class="success-message" id="successMsg" style="display:none;">Admin added successfully!</div>
                 <div class="error-alert" id="errorMsg" style="display:none;"></div>
                 
-                <form id="adminForm" method="POST" action="admin_actions.php" enctype="multipart/form-data">
+                <form id="adminForm" method="POST" action="api.php" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="add_admin">
                     <div class="two-columns">
                         <div class="column">
@@ -105,7 +105,7 @@ include '../include/database_connection.php';
             successMsg.style.display = 'none';
             errorMsg.style.display = 'none';
             
-            fetch('admin_actions.php', {
+            fetch('api.php', {
                 method: 'POST',
                 body: new FormData(form)
             })

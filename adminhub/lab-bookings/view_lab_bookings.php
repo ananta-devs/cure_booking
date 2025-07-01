@@ -603,7 +603,7 @@
         showLoadingState();
         
         // Fetch order details via AJAX
-        fetch('get_order_details.php?order_id=' + orderId)
+        fetch('api.php?order_id=' + orderId)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

@@ -1,78 +1,78 @@
 <?php
-session_start();
-if (!isset($_SESSION['adm_id'])) {
-    header("Location: login.php");
-    exit();
-}
+    session_start();
+    if (!isset($_SESSION['adm_id'])) {
+        header("Location: login.php");
+        exit();
+    }
 
-$pdo = new PDO("mysql:host=localhost;dbname=cure_booking", "root", "");
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = new PDO("mysql:host=localhost;dbname=cure_booking", "root", "");
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
-    
-    if ($_POST['action'] === 'updateImage') {
-        $adminId = $_SESSION['adm_id'];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+        header('Content-Type: application/json');
         
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-            $uploadDir = 'sett/admin_images/';
-            if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+        if ($_POST['action'] === 'updateImage') {
+            $adminId = $_SESSION['adm_id'];
             
-            if (getimagesize($_FILES['image']['tmp_name']) === false) {
-                echo json_encode(['success' => false, 'message' => 'Invalid image file']);
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
+                $uploadDir = 'sett/admin_images/';
+                if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+                
+                if (getimagesize($_FILES['image']['tmp_name']) === false) {
+                    echo json_encode(['success' => false, 'message' => 'Invalid image file']);
+                    exit;
+                }
+                
+                $imageName = date('YmdHis') . '.' . pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+                $uploadPath = $uploadDir . $imageName;
+                
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
+                    $stmt = $pdo->prepare("UPDATE admin SET adm_img = ? WHERE adm_id = ?");
+                    $stmt->execute([$imageName, $adminId]);
+                    echo json_encode(['success' => true, 'message' => 'Image updated successfully']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
+                }
+            }
+            exit;
+        }
+        
+        if ($_POST['action'] === 'changePassword') {
+            $adminId = $_SESSION['adm_id'];
+            $currentPassword = $_POST['currentPassword'] ?? '';
+            $newPassword = $_POST['newPassword'] ?? '';
+            
+            $stmt = $pdo->prepare("SELECT adm_pass FROM admin WHERE adm_id = ?");
+            $stmt->execute([$adminId]);
+            $admin = $stmt->fetch();
+            
+            if (!$admin) {
+                echo json_encode(['success' => false, 'message' => 'Admin not found']);
                 exit;
             }
             
-            $imageName = date('YmdHis') . '.' . pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $uploadPath = $uploadDir . $imageName;
+            $storedPassword = $admin['adm_pass'];
+            $isPasswordCorrect = password_get_info($storedPassword)['algo'] !== null 
+                ? password_verify($currentPassword, $storedPassword)
+                : ($storedPassword === $currentPassword);
             
-            if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
-                $stmt = $pdo->prepare("UPDATE admin SET adm_img = ? WHERE adm_id = ?");
-                $stmt->execute([$imageName, $adminId]);
-                echo json_encode(['success' => true, 'message' => 'Image updated successfully']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
+            if (!$isPasswordCorrect) {
+                echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+                exit;
             }
-        }
-        exit;
-    }
-    
-    if ($_POST['action'] === 'changePassword') {
-        $adminId = $_SESSION['adm_id'];
-        $currentPassword = $_POST['currentPassword'] ?? '';
-        $newPassword = $_POST['newPassword'] ?? '';
-        
-        $stmt = $pdo->prepare("SELECT adm_pass FROM admin WHERE adm_id = ?");
-        $stmt->execute([$adminId]);
-        $admin = $stmt->fetch();
-        
-        if (!$admin) {
-            echo json_encode(['success' => false, 'message' => 'Admin not found']);
+            
+            $hashedNewPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("UPDATE admin SET adm_pass = ? WHERE adm_id = ?");
+            $stmt->execute([$hashedNewPassword, $adminId]);
+            
+            echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
             exit;
         }
-        
-        $storedPassword = $admin['adm_pass'];
-        $isPasswordCorrect = password_get_info($storedPassword)['algo'] !== null 
-            ? password_verify($currentPassword, $storedPassword)
-            : ($storedPassword === $currentPassword);
-        
-        if (!$isPasswordCorrect) {
-            echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
-            exit;
-        }
-        
-        $hashedNewPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("UPDATE admin SET adm_pass = ? WHERE adm_id = ?");
-        $stmt->execute([$hashedNewPassword, $adminId]);
-        
-        echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
-        exit;
     }
-}
 
-$stmt = $pdo->prepare("SELECT * FROM admin WHERE adm_id = ?");
-$stmt->execute([$_SESSION['adm_id']]);
-$currentAdmin = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("SELECT * FROM admin WHERE adm_id = ?");
+    $stmt->execute([$_SESSION['adm_id']]);
+    $currentAdmin = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">

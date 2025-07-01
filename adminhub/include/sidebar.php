@@ -1,4 +1,3 @@
-<!-- Modified sidebar.php -->
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Poppins:wght@400;500;600;700&display=swap');
 
@@ -216,17 +215,17 @@
         padding: 10px;
     }
     @media screen and (min-width: 769px) {
-    /* Keep sidebar visible on large screens */
-    #sidebar {
-        width: 280px !important; /* Use !important to override any inline styles */
+        /* Keep sidebar visible on large screens */
+        #sidebar {
+            width: 280px !important; /* Use !important to override any inline styles */
+        }
+        
+        /* Ensure the content is properly shifted with sidebar visible */
+        #content {
+            width: calc(100% - 280px);
+            left: 280px;
+        }
     }
-    
-    /* Ensure the content is properly shifted with sidebar visible */
-    #content {
-        width: calc(100% - 280px);
-        left: 280px;
-    }
-}
 </style>
 
 <section id="sidebar">
@@ -235,7 +234,7 @@
     
     <a href="#" class="brand">
         <i class='bx bxs-smile'></i>
-        <span class="text">AdminHub</span>
+        <span class="text">CureBooking</span>
     </a>
     <ul class="side-menu top">
         <li class="active">
@@ -319,7 +318,7 @@
     </ul>
     <ul class="side-menu">
         <li>
-            <a href="http://localhost/cure_booking/adminhub/sett/admin.php">
+            <a href="http://localhost/cure_booking/adminhub/sett/settings.php">
                 <i class='bx bxs-cog'></i>
                 <span class="text">Settings</span>
             </a>

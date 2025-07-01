@@ -46,210 +46,6 @@ body {
 	overflow-x: hidden;
 }
 
-/* SIDEBAR */
-#sidebar {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 280px;
-	height: 100%;
-	background: var(--light);
-	z-index: 2000;
-	font-family: var(--lato);
-	transition: .3s ease;
-	overflow-x: hidden;
-	scrollbar-width: none;
-}
-#sidebar::--webkit-scrollbar {
-	display: none;
-}
-#sidebar.hide {
-	width: 60px;
-}
-#sidebar .brand {
-	font-size: 24px;
-	font-weight: 700;
-	height: 56px;
-	display: flex;
-	align-items: center;
-	color: var(--blue);
-	position: sticky;
-	top: 0;
-	left: 0;
-	background: var(--light);
-	z-index: 500;
-	padding-bottom: 20px;
-	box-sizing: content-box;
-}
-#sidebar .brand .bx {
-	min-width: 60px;
-	display: flex;
-	justify-content: center;
-}
-#sidebar .side-menu {
-	width: 100%;
-	margin-top: 48px;
-}
-#sidebar .side-menu li {
-	min-height: 48px;
-	background: transparent;
-	margin-left: 6px;
-	border-radius: 48px 0 0 48px;
-	padding: 4px;
-	position: relative;
-}
-#sidebar .side-menu li.active {
-	background: var(--grey);
-	position: relative;
-    height: 50px;
-}
-#sidebar .side-menu li.active::before {
-	content: '';
-	position: absolute;
-	width: 40px;
-	height: 40px;
-	border-radius: 50%;
-	top: -40px;
-	right: 0;
-	box-shadow: 20px 20px 0 var(--grey);
-	z-index: -1;
-}
-#sidebar .side-menu li.active::after {
-	content: '';
-	position: absolute;
-	width: 40px;
-	height: 40px;
-	border-radius: 50%;
-	bottom: -40px;
-	right: 0;
-	box-shadow: 20px -20px 0 var(--grey);
-	z-index: -1;
-}
-#sidebar .side-menu li a {
-	width: 100%;
-	height: 100%;
-	background: var(--light);
-	display: flex;
-	align-items: center;
-	border-radius: 48px;
-	font-size: 16px;
-	color: var(--dark);
-	white-space: nowrap;
-	overflow-x: hidden;
-}
-#sidebar .side-menu.top li.active a {
-	color: var(--blue);
-}
-#sidebar.hide .side-menu li a {
-	width: calc(48px - (4px * 2));
-	transition: width .3s ease;
-}
-#sidebar .side-menu li a.logout {
-	color: var(--red);
-}
-#sidebar .side-menu.top li a:hover {
-	color: var(--blue);
-}
-#sidebar .side-menu li a .bx {
-	min-width: calc(60px  - ((4px + 6px) * 2));
-	display: flex;
-	justify-content: center;
-}
-
-/* New dropdown menu styles */
-#sidebar .side-menu li .menu-header {
-	width: 100%;
-	height: 100%;
-	background: var(--light);
-	display: flex;
-	align-items: center;
-	border-radius: 48px;
-	font-size: 16px;
-	color: var(--dark);
-	white-space: nowrap;
-	overflow-x: hidden;
-	cursor: pointer;
-	/* padding: 10px; */
-	position: relative;
-}
-
-#sidebar .side-menu li .menu-header:hover {
-	color: var(--blue);
-}
-
-#sidebar .side-menu li .menu-header .bx {
-	min-width: calc(60px - ((4px + 6px) * 2));
-	display: flex;
-	justify-content: center;
-}
-
-#sidebar .side-menu li .menu-header .dropdown-icon {
-	/* margin-left: auto; */
-	/* transition: transform 0.3s ease; */
-    display: none;
-}
-
-#sidebar .side-menu li .menu-header .dropdown-icon.rotate {
-	transform: rotate(180deg);
-}
-
-#sidebar .side-menu li.expanded {
-	height: auto;
-	padding-bottom: 0;
-}
-
-#sidebar .side-menu li .submenu {
-	padding-left: 30px;
-	margin-top: 5px;
-	margin-bottom: 10px;
-}
-
-#sidebar .side-menu li  .submenu li{
-	height: 36px;
-	margin-bottom: 8px;
-	display: flex;
-	align-items: center;
-	/* padding-left: 15px; */
-	margin-left: 0;
-	/* border-radius: 10px; */
-	cursor: pointer;
-	transition: all 0.3s;
-}
-
-#sidebar .side-menu li .submenu li:hover {
-	/* background: var(--grey); */
-	color: var(--blue);
-}
-
-#sidebar.hide .side-menu li .menu-header {
-	width: calc(48px - (4px * 2));
-	transition: width .3s ease;
-}
-
-#sidebar.hide .side-menu li .menu-header span,
-#sidebar.hide .side-menu li .menu-header .dropdown-icon {
-	display: none;
-}
-
-#sidebar.hide .side-menu li .submenu {
-	position: absolute;
-	left: 60px;
-	top: 0;
-	width: 200px;
-	background: var(--light);
-	border-radius: 10px;
-	box-shadow: 0 0 10px rgba(0,0,0,0.1);
-	z-index: 2001;
-	display: none;
-	padding: 10px;
-}
-
-#sidebar.hide .side-menu li:hover .submenu {
-	display: block;
-}
-
-/* SIDEBAR */
-
 /* CONTENT */
 #content {
 	position: relative;
@@ -384,7 +180,6 @@ body {
 #content nav #switch-mode:checked + .switch-mode::before {
 	left: calc(100% - (25px - 4px) - 2px);
 }
-/* NAVBAR */
 
 /* MAIN */
 #content main {
@@ -422,18 +217,6 @@ body {
 #content main .head-title .left .breadcrumb li a.active {
 	color: var(--blue);
 	pointer-events: unset;
-}
-#content main .head-title .btn-download {
-	height: 36px;
-	padding: 0 16px;
-	border-radius: 36px;
-	background: var(--blue);
-	color: var(--light);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	grid-gap: 10px;
-	font-weight: 500;
 }
 
 #content main .box-info {
@@ -505,9 +288,6 @@ body {
 	font-size: 24px;
 	font-weight: 600;
 }
-#content main .table-data .head .bx {
-	cursor: pointer;
-}
 
 #content main .table-data .order {
 	flex-grow: 1;
@@ -531,12 +311,6 @@ body {
 	align-items: center;
 	grid-gap: 12px;
 	padding-left: 6px;
-}
-#content main .table-data .order table td img {
-	width: 36px;
-	height: 36px;
-	border-radius: 50%;
-	object-fit: cover;
 }
 #content main .table-data .order table tbody tr:hover {
 	background: var(--grey);
@@ -587,14 +361,14 @@ body {
 #content main .table-data .todo .todo-list li:last-child {
 	margin-bottom: 0;
 }
-/* MAIN */
-/* CONTENT */
+#content main .table-data .todo .todo-list li.no-appointments {
+	/* Custom styling for no appointments message if needed */
+}
+#content main .table-data .todo .todo-list li .appointment-info {
+	/* Custom styling for appointment info container if needed */
+}
 
 @media screen and (max-width: 768px) {
-	#sidebar {
-		width: 200px;
-	}
-
 	#content {
 		width: calc(100% - 60px);
 		left: 200px;
@@ -602,10 +376,6 @@ body {
 
 	#content nav .nav-link {
 		display: none;
-	}
-	
-	#sidebar.hide .side-menu li .submenu {
-		left: 200px;
 	}
 }
 
@@ -652,28 +422,11 @@ body {
 	#content main .table-data .todo .todo-list {
 		min-width: 420px;
 	}
-	
-	/* Adjust submenu positioning for mobile */
-	#sidebar.hide .side-menu li .submenu {
-		width: 180px;
-		left: 60px;
-	}
 }
 
-/* For very small screens */
 @media screen and (max-width: 320px) {
-	#sidebar.hide .side-menu li .submenu {
-		width: 160px;
-		left: 60px;
-	}
-	
 	#content {
 		width: 100%;
 		left: 0;
-	}
-	
-	#sidebar.hide ~ #content {
-		width: calc(100% - 60px);
-		left: 60px;
 	}
 }
