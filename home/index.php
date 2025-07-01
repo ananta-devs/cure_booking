@@ -144,8 +144,10 @@
                     <?php endforeach; ?>
                 <?php else: ?>
                     <div class="doctor-card" data-aos="fade-up">
-                        <div class="doctor-img">
-                            <img src="assets/icons/cardiology.png" alt="Doctor">
+                        <div class="doc-circle">
+                            <div class="doctor-img">
+                                <i class="fa-solid fa-user-doctor"></i>
+                            </div>
                         </div>
                         <div class="doctor-content">
                             <h3>No doctors available</h3>
@@ -170,7 +172,7 @@
                     and manage your health records - all from the convenience of your smartphone.</p>
                 <div class="app-buttons">
                     <a href="https://play.google.com/store/" target="blank" class="app-btn">
-                        <img class="store" src="http://localhost/cure_booking/assets/play-store.png" />
+                        <img class="store" src="http://localhost/cure_booking/home/assets/play-store.png" />
                         <div class="btn-text">
                             <span class="app-btn-text-small">Get it on</span>
                             <span class="app-btn-text-large">Google Play</span>
