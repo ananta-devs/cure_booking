@@ -64,7 +64,7 @@
             <h2 class="section-title">Our Services</h2>
             <div class="services-grid">
                 <div class="service-card" data-aos="fade-up">
-                    <a href="http://localhost/cure_booking/find-doctor/doctors.php">
+                    <a href="http://localhost/cure_booking/home/find-doctor/doctors.php">
                         <div class="service-img">
                             <img src="http://localhost/cure_booking/home/assets/doctor-img.jpg" alt="Find Doctors Near You">
                         </div>
@@ -76,7 +76,7 @@
                 </div>
 
                 <div class="service-card" data-aos="fade-up">
-                    <a href="http://localhost/cure_booking/medicines/medicines.php">
+                    <a href="http://localhost/cure_booking/home/medicines/medicines.php">
                         <div class="service-img">
                             <img src="http://localhost/cure_booking/home/assets/medicine-photo.avif" alt="Medicines">
                         </div>
@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="service-card" data-aos="fade-up">
-                    <a href="http://localhost/cure_booking/find-doctor/doctors.php">
+                    <a href="http://localhost/cure_booking/home/find-doctor/doctors.php">
                         <div class="service-img">
                             <img src="http://localhost/cure_booking/home/assets/lab-img.jpg" alt="Lab Tests">
                         </div>
@@ -100,7 +100,7 @@
                 </div>
 
                 <div class="service-card" data-aos="fade-up">
-                    <a href="http://localhost/cure_booking/find-clinic/clinics.php">
+                    <a href="http://localhost/cure_booking/home/find-clinic/clinics.php">
                         <div class="service-img">
                             <img src="http://localhost/cure_booking/home/assets/clinic-img.jpg" alt="Clinic">
                         </div>

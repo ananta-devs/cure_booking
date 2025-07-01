@@ -114,7 +114,11 @@ function filterDoctors() {
 function displayDoctors(doctorsToDisplay) {
     if (!doctorsToDisplay || doctorsToDisplay.length === 0) {
         elements.doctorsContainer.innerHTML =
-            '<div class="error-message"><i class="fas fa-user-md"></i><p>No doctors found matching your criteria.</p></div>';
+            '<div class="error-message" data-aos="fade" data-aos-delay="400"><i class="fas fa-user-md"></i><p>No doctors found matching your criteria.</p></div>';
+        elements.doctorsContainer.style.display = 'flex';
+        elements.doctorsContainer.style.flexDirection = 'column';
+        elements.doctorsContainer.style.justifyContent = 'center';
+        elements.doctorsContainer.style.alignItems = 'center';
         return;
     }
 
@@ -133,29 +137,24 @@ function createDoctorCard(doctor) {
             <div data-aos="zoom-in" data-aos-duration="800">
                 <h3 class="doctor-name">${doctor.name}</h3>
                 <p class="doctor-specialty">${doctor.specialty}</p>
-                ${
-                    doctor.location
-                        ? `<div class="doctor-location"><i class="fas fa-map-marker-alt"></i><span>${doctor.location}</span></div>`
-                        : ""
-                }
-                ${
-                    doctor.experience
-                        ? `<div class="doctor-experience"><i class="fas fa-user-md"></i><span>${doctor.experience} Years Experience</span></div>`
-                        : ""
-                }
-                ${
-                    doctor.fees
-                        ? `<div class="doctor-fees"><i class="fas fa-money-bill-wave"></i><span>Consultation: ₹ ${doctor.fees}/-</span></div>`
-                        : ""
-                }
+                ${doctor.location
+            ? `<div class="doctor-location"><i class="fas fa-map-marker-alt"></i><span>${doctor.location}</span></div>`
+            : ""
+        }
+                ${doctor.experience
+            ? `<div class="doctor-experience"><i class="fas fa-user-md"></i><span>${doctor.experience} Years Experience</span></div>`
+            : ""
+        }
+                ${doctor.fees
+            ? `<div class="doctor-fees"><i class="fas fa-money-bill-wave"></i><span>Consultation: ₹ ${doctor.fees}/-</span></div>`
+            : ""
+        }
             </div>
             <div class="doctor-actions" data-aos="fade" data-aos-duration="800">
-                <button class="view-profile-btn" data-id="${
-                    doctor.id
-                }">View Profile</button>
-                <button class="book-btn" data-id="${
-                    doctor.id
-                }">Book Now</button>
+                <button class="view-profile-btn" data-id="${doctor.id
+        }">View Profile</button>
+                <button class="book-btn" data-id="${doctor.id
+        }">Book Now</button>
             </div>
         </div>
     `;
@@ -202,26 +201,26 @@ async function openDoctorModal(doctorId) {
                     <p class="doctor-specialty">${doctor.specialty}</p>
                     <div class="doctor-profile-details">
                         ${createProfileDetail(
-                            "fas fa-graduation-cap",
-                            doctor.education
-                        )}
+            "fas fa-graduation-cap",
+            doctor.education
+        )}
                         ${createProfileDetail(
-                            "fas fa-map-marker-alt",
-                            doctor.location
-                        )}
+            "fas fa-map-marker-alt",
+            doctor.location
+        )}
                         ${createProfileDetail(
-                            "fas fa-user-md",
-                            doctor.experience
-                                ? `${doctor.experience} Years Experience`
-                                : null
-                        )}
+            "fas fa-user-md",
+            doctor.experience
+                ? `${doctor.experience} Years Experience`
+                : null
+        )}
                         ${createProfileDetail("fas fa-envelope", doctor.email)}
                         ${createProfileDetail(
-                            "fas fa-money-bill-wave",
-                            doctor.fees
-                                ? `Consultation Fee: ₹ ${doctor.fees}/-`
-                                : null
-                        )}
+            "fas fa-money-bill-wave",
+            doctor.fees
+                ? `Consultation Fee: ₹ ${doctor.fees}/-`
+                : null
+        )}
                     </div>
                 </div>
                 <div class="doctor-profile-photo" 
@@ -230,9 +229,8 @@ async function openDoctorModal(doctorId) {
                     align-items: center;
                     margin-top: 30px;
                     margin-right: 100px;">
-                    <img src="http://localhost/cure_booking/adminhub/manage-doctors/uploads/${
-                        doctor.doc_img
-                    }" alt="${doctor.name}"
+                    <img src="http://localhost/cure_booking/adminhub/manage-doctors/uploads/${doctor.doc_img
+            }" alt="${doctor.name}"
                     style="width: 200px;
                             height: 200px;
                             border-radius: 6px;
@@ -241,10 +239,9 @@ async function openDoctorModal(doctorId) {
                             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);"/>
                 </div>
             </div>
-            ${
-                doctor.bio
-                    ? `<div class="doctor-bio"><h3>About Doctor</h3><p>${doctor.bio}</p></div>`
-                    : ""
+            ${doctor.bio
+                ? `<div class="doctor-bio"><h3>About Doctor</h3><p>${doctor.bio}</p></div>`
+                : ""
             }
             ${clinicInfoHTML}
         `;
@@ -263,33 +260,32 @@ function createBasicDoctorProfile(doctor) {
                 <p class="doctor-specialty">${doctor.specialty}</p>
                 <div class="doctor-profile-details">
                     ${createProfileDetail(
-                        "fas fa-graduation-cap",
-                        doctor.education
-                    )}
+        "fas fa-graduation-cap",
+        doctor.education
+    )}
                     ${createProfileDetail(
-                        "fas fa-map-marker-alt",
-                        doctor.location
-                    )}
+        "fas fa-map-marker-alt",
+        doctor.location
+    )}
                     ${createProfileDetail(
-                        "fas fa-user-md",
-                        doctor.experience
-                            ? `${doctor.experience} Years Experience`
-                            : null
-                    )}
+        "fas fa-user-md",
+        doctor.experience
+            ? `${doctor.experience} Years Experience`
+            : null
+    )}
                     ${createProfileDetail("fas fa-envelope", doctor.email)}
                     ${createProfileDetail(
-                        "fas fa-money-bill-wave",
-                        doctor.fees
-                            ? `Consultation Fee: ₹ ${doctor.fees}/-`
-                            : null
-                    )}
+        "fas fa-money-bill-wave",
+        doctor.fees
+            ? `Consultation Fee: ₹ ${doctor.fees}/-`
+            : null
+    )}
                 </div>
             </div>
         </div>
-        ${
-            doctor.bio
-                ? `<div class="doctor-bio"><h3>About Doctor</h3><p>${doctor.bio}</p></div>`
-                : ""
+        ${doctor.bio
+            ? `<div class="doctor-bio"><h3>About Doctor</h3><p>${doctor.bio}</p></div>`
+            : ""
         }
     `;
 }
@@ -313,8 +309,8 @@ function createClinicInfo(doctor, availabilityData) {
             Array.isArray(doctor.availability) &&
             doctor.availability.length > 0
             ? `<div class="doctor-clinics-section"><h3>Availability:</h3><div class="clinic-item"><div class="clinic-availability"><i class="fas fa-calendar-alt"></i><span><strong>Available Days:</strong> ${doctor.availability.join(
-                  ", "
-              )}</span></div></div></div>`
+                ", "
+            )}</span></div></div></div>`
             : "";
     }
 
@@ -326,10 +322,10 @@ function createClinicInfo(doctor, availabilityData) {
             clinicLocations[index] || "Location not specified";
         const clinicAvailability =
             availabilityData.availability &&
-            availabilityData.availability[clinicName]
+                availabilityData.availability[clinicName]
                 ? formatAvailabilitySchedule(
-                      availabilityData.availability[clinicName]
-                  )
+                    availabilityData.availability[clinicName]
+                )
                 : null;
 
         clinicInfoHTML += `
@@ -338,11 +334,10 @@ function createClinicInfo(doctor, availabilityData) {
                     <h4 class="clinic-name">${clinicName}</h4>
                     <p class="clinic-location"><i class="fas fa-map-marker-alt"></i> ${clinicLocation}</p>
                 </div>
-                ${
-                    clinicAvailability
-                        ? `<div class="clinic-availability">${clinicAvailability}</div>`
-                        : ""
-                }
+                ${clinicAvailability
+                ? `<div class="clinic-availability">${clinicAvailability}</div>`
+                : ""
+            }
             </div>
         `;
     });
@@ -539,8 +534,7 @@ async function loadTimeSlots() {
 
     try {
         const response = await fetch(
-            `api.php?action=get_time_slots&doctor_id=${
-                selectedDoctorForBooking.id
+            `api.php?action=get_time_slots&doctor_id=${selectedDoctorForBooking.id
             }&clinic_name=${encodeURIComponent(clinic)}&date=${date}`
         );
 
@@ -757,8 +751,8 @@ function showNotification(message, type = "info") {
         type === "success"
             ? "fas fa-check-circle"
             : type === "error"
-            ? "fas fa-exclamation-circle"
-            : "fas fa-info-circle";
+                ? "fas fa-exclamation-circle"
+                : "fas fa-info-circle";
 
     notification.innerHTML = `
         <i class="${icon}"></i>
@@ -811,4 +805,5 @@ function showModal(content, title = "") {
     modal.querySelector(".modal-body").innerHTML = content;
     modal.style.display = "block";
     document.body.style.overflow = "hidden";
+
 }
