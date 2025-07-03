@@ -2,7 +2,7 @@
 session_start();
 
 // Set timezone at the beginning of the script
-date_default_timezone_set('Asia/Kolkata'); // Set to your timezone
+date_default_timezone_set('Asia/Kolkata');
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
