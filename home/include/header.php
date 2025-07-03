@@ -429,7 +429,7 @@
                             <span class="arrow">▼</span>
                         </button>
                         <div class="dropdown-content" id="userDropdownContent">
-                            <a href="http://localhost/cure_booking/home/user/profile_card.php">My Profile</a>
+                            <a href="http://localhost/cure_booking/home/user/profile.php">My Profile</a>
                             <a href="http://localhost/cure_booking/home/user/my-appointments.php">My Appointments</a>
                             <a href="http://localhost/cure_booking/home/user/my-orders.php">My Orders</a>
                             <a href="http://localhost/cure_booking/home/user/logout.php">Logout</a>

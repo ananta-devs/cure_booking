@@ -11,7 +11,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Appointments - Clinic Dashboard</title>
+    <title>CureBooking | Manage Appointments - Clinic Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="manage-doctors.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">

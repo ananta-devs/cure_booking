@@ -2,12 +2,6 @@
 // login.php - Login page display
 session_start();
 
-// Check if user is already logged in
-// if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true && isset($_SESSION['doctor_id'])) {
-//     header('Location: .php');
-//     exit;
-// }
-
 // Get role from URL parameter
 $role = isset($_GET['role']) ? strtolower(trim($_GET['role'])) : '';
 
@@ -26,7 +20,7 @@ $welcomeText = $role === 'doctor' ? 'Welcome Back, Doctor' : 'Welcome Back';
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><?php echo $pageTitle; ?></title>
+    <title>CureBooking | <?php echo $pageTitle; ?></title>
     <style>
         * {
             margin: 0;

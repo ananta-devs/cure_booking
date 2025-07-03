@@ -6,7 +6,7 @@
 	<link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
 	<link rel="stylesheet" href="styles.css">
 	<link rel="stylesheet" href="form.css">
-	<title>AdminHub</title>
+	<title>CureBooking | Add Clinics</title>
 </head>
 <body>
     <?php

@@ -403,7 +403,7 @@
         display: none;
         }
     </style>
-    <title>Modern Login Page | CureBooking</title>
+    <title>CureBooking | Login</title>
 </head>
 
 <body>
@@ -455,7 +455,7 @@
                 <span>or use your email password</span>
                 <input type="email" name="email" placeholder="Email" required>
                 <input type="password" name="password" placeholder="Password" required>
-                <a href="pass.php">Forget Your Password?</a>
+                <a href="forgot-password.php">Forget Your Password?</a>
                 <button type="submit">Sign In</button>
                 <div class="mobile-toggle">
                     <p>Don't have an account? <a href="#" id="mobile-register">Sign Up</a></p>

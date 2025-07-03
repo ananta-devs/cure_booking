@@ -6,7 +6,7 @@
 	<link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
 	<link rel="stylesheet" href="styles.css">
 	<link rel="stylesheet" href="form.css">
-	<title>AdminHub</title>
+	<title>CureBooking | Add Doctors</title>
     <style>
         .clinic-selection-container {
             margin: 20px 0;
@@ -286,7 +286,7 @@
                 formData.append('clinic_assignments', JSON.stringify(clinicAssignments));
 
                 // AJAX submission with enhanced error handling
-                fetch('get_doctor.php', {
+                fetch('api.php', {
                     method: 'POST',
                     body: formData
                 })

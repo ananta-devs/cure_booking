@@ -157,7 +157,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders - CureBooking </title>
+    <title>CureBooking | My Orders </title>
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
     <link rel="stylesheet" href="order.css">
     <style>

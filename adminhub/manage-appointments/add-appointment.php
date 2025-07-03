@@ -18,7 +18,7 @@
     
 	<!-- Boxicons -->
 	<link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-    <title>Doctor Appointment Form</title>
+    <title>CureBooking | Add Appointment</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="form.css">
 </head>

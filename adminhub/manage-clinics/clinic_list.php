@@ -10,7 +10,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinics List - Cure Booking</title>
+    <title>CureBooking | View Clinics</title>
     <link rel="stylesheet" href="style.css">
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="styles.css">
@@ -458,92 +458,92 @@
     }
 
     // Delete clinic
-function deleteClinic(clinicId) {
-    console.log('Attempting to delete clinic with ID:', clinicId);
-    
-    // Validate clinic ID
-    if (!clinicId || isNaN(clinicId)) {
-        showMessage("error", "Invalid clinic ID");
-        deleteModal.style.display = "none";
-        return;
-    }
-    
-    // Show loading state
-    document.getElementById("confirmDelete").disabled = true;
-    document.getElementById("confirmDelete").textContent = "Deleting...";
-    
-    // Method 1: Try with JSON body (current method)
-    fetch("api.php", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            action: "delete",
-            clinic_id: parseInt(clinicId)
-        }),
-    })
-    .then((response) => {
-        console.log('Delete response status:', response.status);
-        return response.text(); // Get as text first to see what we're getting
-    })
-    .then((text) => {
-        console.log('Delete response text:', text);
+    function deleteClinic(clinicId) {
+        console.log('Attempting to delete clinic with ID:', clinicId);
         
-        // Try to parse as JSON
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            console.error('JSON parse error:', e);
-            throw new Error('Invalid JSON response: ' + text);
-        }
-        
-        if (data.status === "success") {
-            showMessage("success", data.message || "Clinic deleted successfully");
+        // Validate clinic ID
+        if (!clinicId || isNaN(clinicId)) {
+            showMessage("error", "Invalid clinic ID");
             deleteModal.style.display = "none";
-            loadClinics(); // Reload the clinics list
-            clinicIdToDelete = null; // Reset the variable
-        } else {
-            showMessage("error", data.message || "Failed to delete clinic");
+            return;
         }
-    })
-    .catch((error) => {
-        console.error("Error deleting clinic:", error);
         
-        // If the first method fails, try with form data as fallback
-        console.log('Trying fallback method with FormData...');
+        // Show loading state
+        document.getElementById("confirmDelete").disabled = true;
+        document.getElementById("confirmDelete").textContent = "Deleting...";
         
-        const formData = new FormData();
-        formData.append('action', 'delete');
-        formData.append('clinic_id', clinicId);
-        
+        // Method 1: Try with JSON body (current method)
         fetch("api.php", {
             method: "POST",
-            body: formData
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                action: "delete",
+                clinic_id: parseInt(clinicId)
+            }),
         })
-        .then(response => response.json())
-        .then(data => {
+        .then((response) => {
+            console.log('Delete response status:', response.status);
+            return response.text(); // Get as text first to see what we're getting
+        })
+        .then((text) => {
+            console.log('Delete response text:', text);
+            
+            // Try to parse as JSON
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                throw new Error('Invalid JSON response: ' + text);
+            }
+            
             if (data.status === "success") {
                 showMessage("success", data.message || "Clinic deleted successfully");
                 deleteModal.style.display = "none";
-                loadClinics();
-                clinicIdToDelete = null;
+                loadClinics(); // Reload the clinics list
+                clinicIdToDelete = null; // Reset the variable
             } else {
                 showMessage("error", data.message || "Failed to delete clinic");
             }
         })
-        .catch(fallbackError => {
-            console.error("Fallback delete also failed:", fallbackError);
-            showMessage("error", "An error occurred while deleting clinic: " + error.message);
+        .catch((error) => {
+            console.error("Error deleting clinic:", error);
+            
+            // If the first method fails, try with form data as fallback
+            console.log('Trying fallback method with FormData...');
+            
+            const formData = new FormData();
+            formData.append('action', 'delete');
+            formData.append('clinic_id', clinicId);
+            
+            fetch("api.php", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    showMessage("success", data.message || "Clinic deleted successfully");
+                    deleteModal.style.display = "none";
+                    loadClinics();
+                    clinicIdToDelete = null;
+                } else {
+                    showMessage("error", data.message || "Failed to delete clinic");
+                }
+            })
+            .catch(fallbackError => {
+                console.error("Fallback delete also failed:", fallbackError);
+                showMessage("error", "An error occurred while deleting clinic: " + error.message);
+            });
+        })
+        .finally(() => {
+            // Reset button state
+            document.getElementById("confirmDelete").disabled = false;
+            document.getElementById("confirmDelete").textContent = "Delete";
         });
-    })
-    .finally(() => {
-        // Reset button state
-        document.getElementById("confirmDelete").disabled = false;
-        document.getElementById("confirmDelete").textContent = "Delete";
-    });
-}
+    }
 
     // Show message
     function showMessage(type, message) {

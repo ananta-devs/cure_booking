@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
-    <title>Contact Us - CureBooking</title>
+    <title>CureBooking | Careers</title>
     <link rel="stylesheet" href="career.css">
 </head>
 

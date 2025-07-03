@@ -12,7 +12,7 @@
         <!-- My CSS -->
         <link rel="stylesheet" href="styles.css" />
 
-        <title>AdminHub</title>
+        <title>CureBooking | Admin</title>
     </head>
     <body>
         <?php

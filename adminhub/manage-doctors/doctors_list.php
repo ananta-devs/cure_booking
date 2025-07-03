@@ -10,7 +10,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctors List - Cure Booking</title>
+    <title>CureBooking | View Doctors</title>
     <link rel="stylesheet" href="style_doctor.css">
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="styles.css">
@@ -248,7 +248,7 @@
         function loadDoctors() {
             doctorsTableContainer.innerHTML = '<div class="loading">Loading doctors list...</div>';
 
-            fetch("get_doctor.php?action=list")
+            fetch("api.php?action=list")
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "success") {
@@ -336,7 +336,7 @@
 
         // Open view modal
         function openViewModal(doctorId) {
-            fetch(`get_doctor.php?action=get&id=${doctorId}`)
+            fetch(`api.php?action=get&id=${doctorId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "success") {
@@ -430,7 +430,7 @@
         }
 
         function loadAvailableClinics() {
-            fetch("get_doctor.php?action=get_clinics")
+            fetch("api.php?action=get_clinics")
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "success") {
@@ -450,7 +450,7 @@
 
         // Open edit modal
         function openEditModal(doctorId) {
-            fetch(`get_doctor.php?action=get&id=${doctorId}`)
+            fetch(`api.php?action=get&id=${doctorId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "success") {
@@ -694,7 +694,7 @@
 
             formData.append("clinic_assignments", JSON.stringify(clinicAssignments));
 
-            fetch("get_doctor.php", {
+            fetch("api.php", {
                 method: "POST",
                 body: formData,
             })
@@ -715,7 +715,7 @@
         }
 
         function deleteDoctor(doctorId) {
-            fetch("get_doctor.php", {
+            fetch("api.php", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
