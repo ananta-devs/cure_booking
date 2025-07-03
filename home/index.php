@@ -156,7 +156,7 @@
                 <?php endif; ?>
             </div>
             <div class="all-docs-wrapper" data-aos="fade-up">
-                <form action="http://localhost/cure_booking/find-doctor/doctors.php" method="get">
+                <form action="http://localhost/cure_booking/home/find-doctor/doctors.php" method="get">
                     <button type="submit" class="all-docs-btn">View All Doctors</button>
                 </form>
             </div>

@@ -1,6 +1,9 @@
 <?php
 session_start();
 
+// Set timezone at the beginning of the script
+date_default_timezone_set('Asia/Kolkata'); // Set to your timezone
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -17,6 +20,10 @@ if ($conn->connect_error) {
 }
 
 $conn->set_charset("utf8");
+
+// Set MySQL timezone to match PHP timezone
+$conn->query("SET time_zone = '+05:30'"); // GMT+5:30 for India
+
 $action = $_REQUEST['action'] ?? '';
 
 try {
@@ -258,6 +265,8 @@ function saveLabOrder($conn) {
     }
 
     $bookingId = 'LB-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+    
+    // Use current timestamp with proper timezone
     $bookingTime = date('Y-m-d H:i:s');
 
     // Insert order
@@ -301,7 +310,8 @@ function saveLabOrder($conn) {
         'totalAmount' => number_format($calculatedTotal, 2, '.', ''),
         'itemsCount' => count($validatedCart),
         'bookedBy' => $bookedByName,
-        'clinic' => $clinicName ?: 'Home Collection'
+        'clinic' => $clinicName ?: 'Home Collection',
+        'bookingTime' => $bookingTime // Return the actual booking time for debugging
     ]);
 }
 
