@@ -347,7 +347,7 @@ function updateClinic() {
                         }
                     }
                 }
-                $profile_image = $uploadPath;
+                $profile_image = $fileName;
             } else {
                 echo json_encode(['status' => 'error', 'message' => 'Failed to upload image']);
                 return;
