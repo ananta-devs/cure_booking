@@ -65,7 +65,7 @@ body {
 
 .doctor-details .specialization {
     margin: 0 0 10px 0;
-    color: #7f8c8d;
+    color: #000000;
     font-size: 1.1rem;
     font-weight: 500;
 }
@@ -585,7 +585,7 @@ body {
 }
 
 .password-strength-bar::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
