@@ -193,12 +193,6 @@
                         <div class="stat-card">
                             <div class="stat-number"><?php echo $patients_today; ?></div>
                             <div class="stat-label">Total Patients Today</div>
-                            <div class="stat-trend <?php echo $patient_change >= 0 ? 'trend-up' : 'trend-down'; ?>">
-                                <?php 
-                                echo $patient_change >= 0 ? '↗' : '↘'; 
-                                echo ' ' . abs($patient_change) . '% from yesterday';
-                                ?>
-                            </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-number"><?php echo $active_doctors; ?></div>
@@ -310,57 +304,6 @@
                             </div>
                         </div>
                         <?php } ?>
-                    </div>
-
-                    <!-- Additional Dashboard Insights -->
-                    <div class="activity-section" style="margin-top: 2rem">
-                        <h2 class="section-title">Quick Insights</h2>
-                        <div style="padding: 1rem 0">
-                            <?php
-                            // Get some additional insights (filtered by clinic)
-                            $upcoming_appointments_query = "SELECT COUNT(*) as count FROM appointments WHERE appointment_date > '$today' AND status = 'confirmed'" . $clinic_where;
-                            $upcoming_appointments_result = mysqli_query($conn, $upcoming_appointments_query);
-                            $upcoming_appointments = mysqli_fetch_assoc($upcoming_appointments_result)['count'];
-
-                            $completed_appointments_query = "SELECT COUNT(*) as count FROM appointments WHERE DATE(appointment_date) = '$today' AND status = 'completed'" . $clinic_where;
-                            $completed_appointments_result = mysqli_query($conn, $completed_appointments_query);
-                            $completed_appointments = mysqli_fetch_assoc($completed_appointments_result)['count'];
-
-                            // For medicine orders, if clinic-specific filtering is needed, you might need to modify the query
-                            $pending_medicine_orders_query = "SELECT COUNT(*) as count FROM medicine_orders WHERE status = 'pending'";
-                            if ($clinic_id) {
-                                // This assumes you have a way to link medicine orders to clinics
-                                // You might need to modify this based on your business logic
-                                $pending_medicine_orders_query .= " AND booked_by_email IN (
-                                    SELECT DISTINCT booked_by_email FROM appointments WHERE clinic_id = " . intval($clinic_id) . "
-                                )";
-                            }
-                            $pending_medicine_orders_result = mysqli_query($conn, $pending_medicine_orders_query);
-                            $pending_medicine_orders = mysqli_fetch_assoc($pending_medicine_orders_result)['count'];
-                            ?>
-                            
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                                <div style="background: linear-gradient(135deg, #f7fafc, #edf2f7); border-radius: 12px; padding: 1.5rem; text-align: center;">
-                                    <h3 style="color: #2d3748; font-size: 2rem; margin: 0;"><?php echo $upcoming_appointments; ?></h3>
-                                    <p style="color: #718096; margin: 0.5rem 0 0 0;">Upcoming Appointments</p>
-                                </div>
-                                
-                                <div style="background: linear-gradient(135deg, #e6fffa, #b2f5ea); border-radius: 12px; padding: 1.5rem; text-align: center;">
-                                    <h3 style="color: #319795; font-size: 2rem; margin: 0;"><?php echo $completed_appointments; ?></h3>
-                                    <p style="color: #2c7a7b; margin: 0.5rem 0 0 0;">Completed Today</p>
-                                </div>
-                                
-                                <div style="background: linear-gradient(135deg, #fef5e7, #fad089); border-radius: 12px; padding: 1.5rem; text-align: center;">
-                                    <h3 style="color: #d69e2e; font-size: 2rem; margin: 0;"><?php echo $pending_medicine_orders; ?></h3>
-                                    <p style="color: #b7791f; margin: 0.5rem 0 0 0;">Pending Medicine Orders</p>
-                                </div>
-                            </div>
-                            
-                            <p style="margin-bottom: 1rem; color: #4a5568">
-                                Dashboard showing <?php echo $clinic_name ? 'clinic-specific' : 'real-time'; ?> data from your healthcare management system. 
-                                All metrics are updated automatically based on current database records<?php echo $clinic_name ? ' for ' . htmlspecialchars($clinic_name) : ''; ?>.
-                            </p>
-                        </div>
                     </div>
                 </div>
             </main>

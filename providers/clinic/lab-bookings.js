@@ -169,7 +169,12 @@ function updateStatistics(bookings) {
     const stats = {
         total: bookings.length,
         pending: bookings.filter((b) => b.status === "Pending").length,
-        completed: bookings.filter((b) => b.status === "Completed").length,
+        completed: bookings.filter(
+            (b) =>
+                b.status === "Completed" ||
+                b.status === "Sample Collected" ||
+                b.status === "Upload Done"
+        ).length,
         today: bookings.filter((b) => b.sample_collection_date === today)
             .length,
     };
