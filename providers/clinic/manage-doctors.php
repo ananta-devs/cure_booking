@@ -375,6 +375,8 @@
         }
 
         // Display appointments in table format
+        // Display appointments in table format
+        // Display appointments in table format
         function displayAppointments() {
             const container = document.getElementById("appointmentsContainer");
 
@@ -459,12 +461,16 @@
                                             </button>
                                             <button class="btn-action btn-edit" onclick="updateStatus(${
                                                 appointment.id
-                                            })" title="Update Status">
+                                            })" title="Update Status" ${
+                                                appointment.status === 'completed' ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''
+                                            }>
                                                 <i class="fa fa-edit"></i>
                                             </button>
                                             <button class="btn-action btn-cancel" onclick="cancelAppointment(${
                                                 appointment.id
-                                            })" title="Cancel">
+                                            })" title="Cancel" ${
+                                                appointment.status === 'completed' ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''
+                                            }>
                                                 <i class="fa fa-times"></i>
                                             </button>
                                         </div>

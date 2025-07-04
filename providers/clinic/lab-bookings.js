@@ -100,6 +100,15 @@ function createBookingRow(booking) {
         ? "Upload Report"
         : "Upload only available after Sample Collection";
 
+    // Determine if status button should be enabled
+    const isStatusEnabled = status !== "Upload Done";
+    const statusButtonClass = isStatusEnabled
+        ? "status-btn"
+        : "status-btn disabled";
+    const statusButtonTitle = isStatusEnabled
+        ? "Update Status"
+        : "Status cannot be changed after Upload Done";
+
     row.innerHTML = `
         <td><div class="booking-id">${id}</div><div class="booking-date">${createdDate}</div></td>
         <td><div class="patient-name">${name}</div><div class="patient-email">${email}</div></td>
@@ -123,7 +132,14 @@ function createBookingRow(booking) {
             <button class="action-btn view-btn" onclick="viewBookingDetails('${id}')" title="View Details">
                 <i class="fa fa-eye"></i>
             </button>
-            <button class="action-btn status-btn" onclick="showStatusModal('${id}', '${status}')" title="Update Status">
+            <button class="action-btn ${statusButtonClass}" 
+                onclick="${
+                    isStatusEnabled
+                        ? `showStatusModal('${id}', '${status}')`
+                        : "return false;"
+                }" 
+                title="${statusButtonTitle}"
+                ${!isStatusEnabled ? "disabled" : ""}>
                 <i class="fa fa-edit"></i>
             </button>
             <button class="action-btn ${uploadButtonClass}" 
@@ -157,6 +173,23 @@ function addDisabledUploadButtonStyles() {
         }
         
         .upload-btn.disabled i {
+            color: #666 !important;
+        }
+        
+        .status-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            background-color: #ccc !important;
+            color: #666 !important;
+        }
+        
+        .status-btn.disabled:hover {
+            background-color: #ccc !important;
+            color: #666 !important;
+            transform: none !important;
+        }
+        
+        .status-btn.disabled i {
             color: #666 !important;
         }
     `;
