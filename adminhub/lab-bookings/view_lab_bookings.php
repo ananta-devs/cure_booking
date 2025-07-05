@@ -216,6 +216,7 @@
                                 <th>Total Amount</th>
                                 <th>Collection Date</th>
                                 <th>Time Slot</th>
+                                <th>Booked Clinic</th>
                                 <th>Status</th>
                                 <th class="actions-column">Actions</th>
                             </tr>
@@ -252,6 +253,7 @@
                                     <td class="amount-highlight">₹<?php echo number_format($row['total_amount'], 2); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($row['sample_collection_date'])); ?></td>
                                     <td><?php echo htmlspecialchars($row['time_slot']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['clinic_name']); ?></td>
                                     <td>
                                         <span class="status status-<?php echo strtolower(str_replace(' ', '-', $row['status'])); ?>">
                                             <?php echo htmlspecialchars($row['status']); ?>
@@ -260,12 +262,12 @@
                                     <td class="actions-column">
                                         <div class="actions">
                                             <button class="btn-view" onclick="viewBookingDetails('<?php echo $row['id']; ?>')">
-                                                <i class='bx bx-show'></i> View
+                                                <i class='bx bx-show'></i>
                                             </button>
                                             
                                             <?php if(!empty($row['report_file']) && ($row['status'] == 'Upload Done' || $row['status'] == 'Completed')): ?>
                                                 <button class="btn-view" onclick="viewReport('<?php echo htmlspecialchars($row['report_file']); ?>', '<?php echo htmlspecialchars($row['customer_name']); ?>')">
-                                                    <i class='bx bx-file-blank'></i> Report
+                                                    <i class='bx bx-file-blank'></i>Report
                                                 </button>
                                             <?php endif; ?>
                                             
@@ -275,7 +277,7 @@
                                                     <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($row['booking_id']); ?>">
                                                     <input type="hidden" name="new_status" value="Confirmed">
                                                     <button type="submit" class="btn-accept">
-                                                        <i class='bx bx-check'></i>Confirm
+                                                        <i class='bx bx-check'></i>
                                                     </button>
                                                 </form>
                                                 
@@ -284,7 +286,7 @@
                                                     <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($row['booking_id']); ?>">
                                                     <input type="hidden" name="new_status" value="Cancelled">
                                                     <button type="submit" class="btn-reject">
-                                                        <i class='bx bx-x'></i>Cancel
+                                                        <i class='bx bx-x'></i>
                                                     </button>
                                                 </form>
                                             <?php elseif($row['status'] == 'Confirmed'): ?>
@@ -293,12 +295,12 @@
                                                     <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($row['booking_id']); ?>">
                                                     <input type="hidden" name="new_status" value="Sample Collected">
                                                     <button type="submit" class="btn-accept">
-                                                        <i class='bx bx-vial'></i>Collected
+                                                        <i class='bx bx-vial'></i>
                                                     </button>
                                                 </form>
                                             <?php elseif($row['status'] == 'Sample Collected'): ?>
                                                 <button class="btn-complete" onclick="openUploadModal('<?php echo htmlspecialchars($row['booking_id']); ?>', '<?php echo htmlspecialchars($row['customer_name']); ?>')">
-                                                    <i class='bx bx-upload'></i>Complete
+                                                    <i class='bx bx-upload'></i>
                                                 </button>
                                             <?php elseif($row['status'] == 'Upload Done'): ?>
                                                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
@@ -365,6 +367,10 @@
                             <div class="detail-item">
                                 <div class="detail-label">Booking Created</div>
                                 <div id="modalBookingTime" class="detail-value"></div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Booked Clinic</div>
+                                <div id="modalBookedClinic" class="detail-value"></div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Status</div>
@@ -694,7 +700,7 @@
             hour: '2-digit',
             minute: '2-digit'
         });
-        
+        document.getElementById("modalBookedClinic").textContent = order.clinic_name;
         // Set status with appropriate styling
         const statusElement = document.getElementById("modalStatus");
         statusElement.innerHTML = `<span class="status status-${order.status.toLowerCase().replace(' ', '-')}">${order.status}</span>`;

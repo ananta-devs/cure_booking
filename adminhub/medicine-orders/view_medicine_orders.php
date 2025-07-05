@@ -194,7 +194,7 @@
                                                     '<?php echo number_format($row['total_amount'], 2); ?>', 
                                                     '<?php echo date('M d, Y H:i', strtotime($row['order_date'])); ?>', 
                                                     '<?php echo $row['status']; ?>')">
-                                                    <i class='bx bx-show'></i> View
+                                                    <i class='bx bx-show'></i>
                                                 </button>
                                                 
                                                 <?php if($row['status'] == 'pending'): ?>
@@ -202,14 +202,14 @@
                                                         <input type="hidden" name="action" value="updateStatus">
                                                         <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                         <input type="hidden" name="new_status" value="confirmed">
-                                                        <button type="submit" class="btn-accept"><i class='bx bx-check'></i>Confirm</button>
+                                                        <button type="submit" class="btn-accept">Confirm</button>
                                                     </form>
                                                     
                                                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
                                                         <input type="hidden" name="action" value="updateStatus">
                                                         <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                         <input type="hidden" name="new_status" value="cancelled">
-                                                        <button type="submit" class="btn-reject"><i class='bx bx-x'></i>Cancel</button>
+                                                        <button type="submit" class="btn-reject">Cancel</button>
                                                     </form>
                                                 <?php elseif($row['status'] == 'confirmed'): ?>
                                                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
@@ -223,7 +223,7 @@
                                                         <input type="hidden" name="action" value="updateStatus">
                                                         <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                         <input type="hidden" name="new_status" value="delivered">
-                                                        <button type="submit" class="btn-deliver"><i class='bx bx-check-circle'></i>Mark Delivered</button>
+                                                        <button type="submit" class="btn-deliver">Mark Delivered</button>
                                                     </form>                                            
                                                 <?php endif; ?>
                                             </div>

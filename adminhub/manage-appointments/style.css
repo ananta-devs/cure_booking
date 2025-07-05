@@ -196,19 +196,32 @@ h1 {
 /* Action Buttons */
 .actions {
     display: flex;
-    gap: 5px;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.actions-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
 }
 
 button {
-    padding: 8px 12px;
+    padding: 8px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    font-size: 14px;
+    justify-content: center;
+    font-size: 16px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
 }
 
 .btn-accept {
@@ -256,7 +269,8 @@ button {
 
 /* Forms */
 .status-form {
-    display: inline;
+    display: inline-flex;
+    margin: 0;
 }
 
 /* Modal Styles */
@@ -338,7 +352,13 @@ button {
     border-top: 1px solid #e3e6f0;
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 8px;
+    align-items: center;
+}
+
+.modal-footer .status-form {
+    display: inline-flex;
+    margin: 0;
 }
 
 /* Empty State */
@@ -376,12 +396,24 @@ button {
     }
 
     .actions {
-        flex-direction: column;
+        flex-direction: row;
+        gap: 6px;
     }
 
+    .actions-wrapper {
+        gap: 6px;
+    }
     .modal-content {
         width: 95%;
         margin: 5% auto;
+    }
+
+    button {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        font-size: 14px;
     }
 }
 
@@ -401,11 +433,6 @@ button {
     margin: 0;
     padding: 10px;
     text-align: center;
-}
-
-.modal-footer .status-form {
-    display: inline-block;
-    margin-right: 10px;
 }
 
 .modal-footer .status-form:last-child {

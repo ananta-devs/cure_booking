@@ -263,8 +263,8 @@
                                                                 '<?php echo $displayStatus; ?>',
                                                                 '<?php echo $dbStatus; ?>',
                                                                 '<?php echo htmlspecialchars($appointmentFees, ENT_QUOTES); ?>'
-                                                            )">
-                                                                <i class='bx bx-show'></i> View
+                                                            )" title="View Details">
+                                                                <i class='bx bx-show'></i>
                                                             </button>
                                                             
                                                             <?php if($dbStatus == 'pending'): ?>
@@ -272,31 +272,29 @@
                                                                     <input type="hidden" name="action" value="updateStatus">
                                                                     <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                                     <input type="hidden" name="new_status" value="confirmed">
-                                                                    <button type="submit" class="btn-accept"><i class='bx bx-check'></i> Confirm</button>
+                                                                    <button type="submit" class="btn-accept" title="Confirm Appointment"><i class='bx bx-check'></i></button>
                                                                 </form>
                                                                 
                                                                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
                                                                     <input type="hidden" name="action" value="updateStatus">
                                                                     <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                                     <input type="hidden" name="new_status" value="cancelled">
-                                                                    <button type="submit" class="btn-reject"><i class='bx bx-x'></i> Cancel</button>
+                                                                    <button type="submit" class="btn-reject" title="Cancel Appointment"><i class='bx bx-x'></i></button>
                                                                 </form>
                                                             <?php elseif($dbStatus == 'confirmed'): ?>
                                                                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
                                                                     <input type="hidden" name="action" value="updateStatus">
                                                                     <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                                     <input type="hidden" name="new_status" value="completed">
-                                                                    <button type="submit" class="btn-complete"><i class='bx bx-check-double'></i> Complete</button>
+                                                                    <button type="submit" class="btn-complete" title="Mark as Completed"><i class='bx bx-check-double'></i></button>
                                                                 </form>
                                                                 
                                                                 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="status-form">
                                                                     <input type="hidden" name="action" value="updateStatus">
                                                                     <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                                                     <input type="hidden" name="new_status" value="cancelled">
-                                                                    <button type="submit" class="btn-reject"><i class='bx bx-x'></i> Absend</button>
+                                                                    <button type="submit" class="btn-reject" title="Mark as Absent"><i class='bx bx-x'></i></button>
                                                                 </form>
-                                                        <?php else: ?>
-                                                            <button class="btn-disabled" disabled><i class='bx bx-lock'></i> No Actions</button>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
@@ -443,6 +441,7 @@
                 modal.style.display = "block";
             }
             
+            // Updated createActionButton function for icon-only buttons
             function createActionButton(id, newStatus, buttonClass, iconClass, buttonText) {
                 const form = document.createElement("form");
                 form.action = window.location.pathname;
@@ -468,7 +467,8 @@
                 const button = document.createElement("button");
                 button.type = "submit";
                 button.className = buttonClass;
-                button.innerHTML = "<i class='bx " + iconClass + "'></i> " + buttonText;
+                button.title = buttonText; // Add title for tooltip
+                button.innerHTML = "<i class='bx " + iconClass + "'></i>";
                 
                 form.appendChild(actionInput);
                 form.appendChild(idInput);
