@@ -26,8 +26,8 @@ function sendEmailWithGmail($to, $subject, $body, $recipientName = '') {
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'noreply.curebooking@gmail.com';     
-        $mail->Password   = 'zurn mbvz ewly ztlr';          
+        $mail->Username   = 'example@email.com';  // use your mail address   
+        $mail->Password   = '**** **** **** ****';  // use the password of your email        
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 
