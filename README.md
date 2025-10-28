@@ -372,26 +372,26 @@ Welcome to the **Cure Booking System** - a comprehensive healthcare management p
 ## Features Overview
 
 ### 🔐 **Security Features**
-- **Password Encryption**: All passwords are securely hashed
-- **Email Verification**: Account activation via email
-- **Session Management**: Secure login sessions
-- **Role-Based Access**: Different access levels for different users
+- **Password Encryption**: All passwords are securely hashed.
+- **Email Verification**: Account activation via email.
+- **Session Management**: Secure login sessions.
+- **Role-Based Access**: Different access levels for different users.
 
 ### 📱 **Mobile Responsive**
-- **Responsive Design**: Works on all devices
-- **Touch Friendly**: Optimized for mobile use
-- **Fast Loading**: Optimized performance
+- **Responsive Design**: Works on all devices.
+- **Touch Friendly**: Optimized for mobile use.
+- **Fast Loading**: Optimized performance.
 
 ### 🔔 **Notification System**
-- **Email Notifications**: For bookings and updates
-- **Status Updates**: Real-time status changes
-- **Reminder System**: Appointment reminders
+- **Email Notifications**: For bookings and updates.
+- **Status Updates**: Real-time status changes.
+- **Reminder System**: Appointment reminders.
 
 ### 💾 **Data Management**
-- **Automated Backups**: Regular data backups
-- **Data Export**: Export reports and data
-- **Data Import**: Import bulk data
-- **Data Validation**: Ensure data integrity
+- **Automated Backups**: Regular data backups.
+- **Data Export**: Export reports and data.
+- **Data Import**: Import bulk data.
+- **Data Validation**: Ensure data integrity.
 
 ---
 
@@ -400,68 +400,68 @@ Welcome to the **Cure Booking System** - a comprehensive healthcare management p
 ### 🔑 **Login Issues**
 
 #### Cannot Login
-1. **Check Email/Password**: Ensure correct credentials
-2. **Account Verification**: Check if email is verified
-3. **Password Reset**: Use "Forgot Password" link
-4. **Clear Browser Cache**: Clear cookies and cache
-5. **Contact Support**: If issues persist
+1. **Check Email/Password**: Ensure correct credentials.
+2. **Account Verification**: Check if email is verified.
+3. **Password Reset**: Use "Forgot Password" link.
+4. **Clear Browser Cache**: Clear cookies and cache.
+5. **Contact Support**: If issues persist.
 
 #### Email Verification Problems
-1. **Check Spam Folder**: Verification email might be in spam
-2. **Resend Verification**: Use "Resend Verification" option
-3. **Check Email Address**: Ensure correct email is provided
-4. **Wait a Few Minutes**: Email delivery might be delayed
+1. **Check Spam Folder**: Verification email might be in spam.
+2. **Resend Verification**: Use "Resend Verification" option.
+3. **Check Email Address**: Ensure correct email is provided.
+4. **Wait a Few Minutes**: Email delivery might be delayed.
 
 ### 📅 **Booking Issues**
 
 #### Cannot Book Appointment
-1. **Check Doctor Availability**: Ensure doctor is available
-2. **Time Slot Conflict**: Choose different time
-3. **Login Status**: Ensure you're logged in
-4. **Fill All Fields**: Complete all required information
+1. **Check Doctor Availability**: Ensure doctor is available.
+2. **Time Slot Conflict**: Choose different time.
+3. **Login Status**: Ensure you're logged in.
+4. **Fill All Fields**: Complete all required information.
 
 #### Appointment Not Confirmed
-1. **Wait for Confirmation**: Appointments need doctor/clinic confirmation
-2. **Check Status**: Monitor appointment status
-3. **Contact Clinic**: Call clinic directly if urgent
-4. **Rebook if Needed**: Book alternative appointment
+1. **Wait for Confirmation**: Appointments need doctor/clinic confirmation.
+2. **Check Status**: Monitor appointment status.
+3. **Contact Clinic**: Call clinic directly if urgent.
+4. **Rebook if Needed**: Book alternative appointment.
 
 ### 🔬 **Lab Order Issues**
 
 #### Sample Not Collected
-1. **Check Collection Date**: Ensure correct date is selected
-2. **Verify Address**: Ensure complete address is provided
-3. **Contact Clinic**: Call clinic for status update
-4. **Reschedule Collection**: Request new collection date
+1. **Check Collection Date**: Ensure correct date is selected.
+2. **Verify Address**: Ensure complete address is provided.
+3. **Contact Clinic**: Call clinic for status update.
+4. **Reschedule Collection**: Request new collection date.
 
 #### Report Not Available
-1. **Check Processing Time**: Reports take time to process
-2. **Monitor Status**: Check order status regularly
-3. **Contact Clinic**: Inquire about report status
-4. **Download Issues**: Try different browser if download fails
+1. **Check Processing Time**: Reports take time to process.
+2. **Monitor Status**: Check order status regularly.
+3. **Contact Clinic**: Inquire about report status.
+4. **Download Issues**: Try different browser if download fails.
 
 ### 💊 **Medicine Order Issues**
 
 #### Order Not Delivered
-1. **Check Delivery Address**: Ensure correct address
-2. **Verify Order Status**: Check current status
-3. **Contact Support**: Call customer service
-4. **Track Order**: Use order tracking if available
+1. **Check Delivery Address**: Ensure correct address.
+2. **Verify Order Status**: Check current status.
+3. **Contact Support**: Call customer service.
+4. **Track Order**: Use order tracking if available.
 
 ### 🌐 **Technical Issues**
 
 #### Website Not Loading
-1. **Check Internet Connection**: Ensure stable connection
-2. **Try Different Browser**: Test with another browser
-3. **Clear Browser Cache**: Delete cookies and cache
-4. **Disable Ad Blockers**: Some features might be blocked
-5. **Check Server Status**: Contact support if widespread issue
+1. **Check Internet Connection**: Ensure stable connection.
+2. **Try Different Browser**: Test with another browser.
+3. **Clear Browser Cache**: Delete cookies and cache.
+4. **Disable Ad Blockers**: Some features might be blocked.
+5. **Check Server Status**: Contact support if widespread issue.
 
 #### Features Not Working
-1. **JavaScript Enabled**: Ensure JavaScript is enabled
-2. **Browser Compatibility**: Use supported browsers
-3. **Update Browser**: Use latest browser version
-4. **Disable Extensions**: Temporarily disable browser extensions
+1. **JavaScript Enabled**: Ensure JavaScript is enabled.
+2. **Browser Compatibility**: Use supported browsers.
+3. **Update Browser**: Use latest browser version.
+4. **Disable Extensions**: Temporarily disable browser extensions.
 
 ---
 
@@ -481,8 +481,8 @@ Welcome to the **Cure Booking System** - a comprehensive healthcare management p
 
 #### Emergency Support
 - **24/7 Emergency**: +91-XXXX-XXXX-XX
-- **Critical Issues Only**: System down, security issues
-- **Response Time**: Within 1 hour
+- **Critical Issues Only**: System down, security issues.
+- **Response Time**: Within 1 hour.
 
 ### 📧 **Contact Information**
 
@@ -493,18 +493,18 @@ Welcome to the **Cure Booking System** - a comprehensive healthcare management p
 
 #### Feedback & Suggestions
 - **Email**: feedback.curebooking@gmail.com
-- **Subject**: Include "Feedback" in subject line
-- **Response Time**: Within 24 hours
+- **Subject**: Include "Feedback" in subject line.
+- **Response Time**: Within 24 hours.
 
 ### 📝 **When Contacting Support**
 
 #### Information to Provide
 1. **Your Name and Account Email**
-2. **Issue Description**: Detailed problem description
-3. **Steps to Reproduce**: What you were doing when issue occurred
-4. **Browser/Device**: What you're using
-5. **Screenshots**: If applicable
-6. **Error Messages**: Exact error text
+2. **Issue Description**: Detailed problem description.
+3. **Steps to Reproduce**: What you were doing when issue occurred.
+4. **Browser/Device**: What you're using.
+5. **Screenshots**: If applicable.
+6. **Error Messages**: Exact error text.
 
 #### Response Times
 - **Critical Issues**: Within 1 hour
@@ -526,7 +526,7 @@ Welcome to the **Cure Booking System** - a comprehensive healthcare management p
 ### 📋 **Appendix B: Browser Compatibility**
 - **Chrome**: Version 70+
 - **Firefox**: Version 65+
-- **Safari**: Version 12+
+-- **Safari**: Version 12+
 - **Edge**: Version 44+
 - **Internet Explorer**: Not supported
 
