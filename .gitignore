@@ -1,0 +1,5 @@
+# Ignore common PHP and project files
+/vendor/
+/node_modules/
+.env
+.DS_Store
